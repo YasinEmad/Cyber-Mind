@@ -10,7 +10,6 @@ import {
   Beaker, 
   FileText, 
   CheckCircle, 
-  XCircle,
   AlertTriangle,
   Bug,
   Lock,
