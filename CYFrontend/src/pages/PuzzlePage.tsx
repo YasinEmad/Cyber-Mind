@@ -1,8 +1,8 @@
 
 import React from 'react';
-import PageWrapper from '../components/PageWrapper';
-import { Puzzle } from '../types';
-import PuzzleCard from '../components/PuzzleCard';
+import PageWrapper from '@/components/PageWrapper';
+import { Puzzle } from '@/types';
+import PuzzleCard from '@/components/PuzzleCard';
 
 const puzzles: Puzzle[] = [
   { id: 1, title: 'Cryptic Crossword', category: 'Logic', description: 'Unravel the hidden words through cryptic clues.' },

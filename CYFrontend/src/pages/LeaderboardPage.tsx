@@ -1,8 +1,8 @@
 
 import React from 'react';
-import PageWrapper from '../components/PageWrapper';
-import LeaderboardItem from '../components/LeaderboardItem';
-import { LeaderboardUser } from '../types';
+import PageWrapper from '@/components/PageWrapper';
+import LeaderboardItem from '@/components/LeaderboardItem';
+import { LeaderboardUser } from '@/types';
 import { ChevronDown } from 'lucide-react';
 
 const leaderboardData: LeaderboardUser[] = [

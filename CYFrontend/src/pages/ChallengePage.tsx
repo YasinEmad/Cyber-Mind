@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import PageWrapper from '../components/PageWrapper';
-import { Challenge, ChallengeDifficulty } from '../types';
-import ChallengeCard from '../components/ChallengeCard';
+import PageWrapper from '@/components/PageWrapper';
+import { Challenge, ChallengeDifficulty } from '@/types';
+import ChallengeCard from '@/components/ChallengeCard';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const challenges: Challenge[] = [

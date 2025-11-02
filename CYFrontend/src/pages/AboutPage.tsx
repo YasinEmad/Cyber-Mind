@@ -1,6 +1,6 @@
 
 import React from 'react';
-import PageWrapper from '../components/PageWrapper';
+import PageWrapper from '@/components/PageWrapper';
 import { motion } from 'framer-motion';
 import { Cpu, Target, Award, PlayCircle } from 'lucide-react';
 

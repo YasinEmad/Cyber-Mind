@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion, Variants } from 'framer-motion';
-import PageWrapper from '../components/PageWrapper';
+import PageWrapper from '@/components/PageWrapper';
 import { PlayCircle, ShieldCheck, Puzzle, BrainCircuit, Swords, Trophy, ChevronDown, ArrowRight } from 'lucide-react';
 
 const sentence: Variants = {

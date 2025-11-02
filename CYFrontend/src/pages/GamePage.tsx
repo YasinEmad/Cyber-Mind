@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import PageWrapper from '../components/PageWrapper';
+import PageWrapper from '@/components/PageWrapper';
 import { motion, TargetAndTransition } from 'framer-motion';
 import { Lock, Play } from 'lucide-react';
 
