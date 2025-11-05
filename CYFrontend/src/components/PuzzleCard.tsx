@@ -73,7 +73,8 @@ const PuzzleCard: React.FC<PuzzleCardProps> = ({ puzzle, index }) => {
         </div>
         <div className="mt-6">
           <Link
-            to={`/puzzles/${puzzle.id}`}
+  to={`/puzzles/${puzzle._id}`}
+
             className="w-full flex items-center justify-center px-4 py-2 bg-slate-700 text-slate-200 font-semibold rounded-lg group-hover:bg-purple-600 group-hover:text-white transition-colors duration-300"
           >
             <BrainCircuit className="mr-2 h-5 w-5" />

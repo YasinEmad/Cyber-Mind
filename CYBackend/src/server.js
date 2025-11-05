@@ -21,11 +21,7 @@ app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 app.use(cookieParser()); // Parse cookies
 
 // 4. Routes
-// TODO: Add your application routes here
-// Example:
-// app.use('/api/users', require('./routes/userRoutes'));
-// app.use('/api/puzzles', require('./routes/puzzleRoutes'));
-
+app.use('/api/puzzles', require('./routes/puzzleRoutes'));
 
 // 5. Error Handling Middleware
 // TODO: Add your error handling middleware here

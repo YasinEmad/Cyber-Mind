@@ -19,8 +19,9 @@ export interface LeaderboardUser {
 }
 
 export interface Puzzle {
-  id: number;
+  _id: string;
   title: string;
   category: string;
   description: string;
 }
+
