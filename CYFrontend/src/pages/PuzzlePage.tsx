@@ -4,6 +4,7 @@ import { AppDispatch, RootState } from '@/redux/store'
 import { fetchPuzzles } from '@/redux/slices/puzzleSlice'
 import PageWrapper from '@/components/PageWrapper'
 import PuzzleCard from '@/components/PuzzleCard'
+import { Link } from 'react-router-dom'
 
 const PuzzlePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
@@ -29,7 +30,9 @@ const PuzzlePage: React.FC = () => {
         {status === 'succeeded' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {puzzles.map((puzzle, index) => (
-              <PuzzleCard key={puzzle._id} puzzle={puzzle} index={index} />
+              <Link to={`/puzzles/${puzzle._id}`} key={puzzle._id}>
+                <PuzzleCard puzzle={puzzle} index={index} />
+              </Link>
             ))}
           </div>
         )}

@@ -9,6 +9,7 @@ export interface Puzzle {
   description: string
   level: number
   hints: string[]
+  answer?: string // <-- FIX: Make the answer optional
   animation_url?: string
   scenario: string
   category: string
@@ -83,6 +84,7 @@ const puzzleSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+      // ... (fetchPuzzles cases) ...
       .addCase(fetchPuzzles.pending, (state) => {
         state.status = 'loading'
       })
@@ -95,26 +97,26 @@ const puzzleSlice = createSlice({
         state.error = action.error.message ?? null
       })
 
+      // --- MODIFIED: Added pending/rejected for single puzzle fetch ---
+      .addCase(fetchPuzzleById.pending, (state) => {
+        state.status = 'loading'
+        state.puzzle = null // Clear previous puzzle
+      })
       .addCase(fetchPuzzleById.fulfilled, (state, action: PayloadAction<Puzzle>) => {
         state.status = 'succeeded'
         state.puzzle = action.payload
       })
+      .addCase(fetchPuzzleById.rejected, (state, action) => {
+        state.status = 'failed'
+        state.error = action.error.message ?? null
+      })
+      // -----------------------------------------------------------
 
       .addCase(createPuzzle.fulfilled, (state, action: PayloadAction<Puzzle>) => {
         state.status = 'succeeded'
         state.puzzles.push(action.payload)
       })
-
-      .addCase(updatePuzzle.fulfilled, (state, action: PayloadAction<Puzzle>) => {
-        state.status = 'succeeded'
-        const index = state.puzzles.findIndex((p) => p._id === action.payload._id)
-        if (index !== -1) state.puzzles[index] = action.payload
-      })
-
-      .addCase(deletePuzzle.fulfilled, (state, action: PayloadAction<string>) => {
-        state.status = 'succeeded'
-        state.puzzles = state.puzzles.filter((p) => p._id !== action.payload)
-      })
+    // ... (rest of the slice) ...
   },
 })
 

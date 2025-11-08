@@ -5,7 +5,8 @@ const {
   getPuzzleById,
   createPuzzle,
   updatePuzzle,
-  deletePuzzle
+  deletePuzzle,
+  submitAnswer
 } = require('../controllers/puzzleController');
 
 // Chain GET and POST for the base route '/'
@@ -18,5 +19,7 @@ router.route('/:id')
   .get(getPuzzleById)
   .put(updatePuzzle)
   .delete(deletePuzzle);
+
+router.route('/:id/submit').post(submitAnswer);
 
 module.exports = router;

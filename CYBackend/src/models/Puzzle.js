@@ -29,21 +29,25 @@ const puzzleSchema = new mongoose.Schema({
     required: [true, 'Scenario is required'],
     trim: true
   },
+  // --- New attribute added below ---
+  answer: {
+    type: String,
+    required: [true, 'Answer is required'],
+    trim: true,
+    select: false // Hides the answer by default from queries
+  },
+  // ---------------------------------
   category: {
     type: String,
     required: [true, 'Category is required'],
     trim: true
-  },
-  created_at: {
-    type: Date,
-    default: Date.now
   },
   active: {
     type: Boolean,
     default: true
   }
 }, {
-  timestamps: true, // This will automatically add createdAt and updatedAt fields
+  timestamps: true, // This automatically adds createdAt and updatedAt fields
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });

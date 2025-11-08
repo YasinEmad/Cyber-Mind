@@ -12,37 +12,20 @@ import {
   Lock,
 } from 'lucide-react';
 
-// --- Static Data (Embedded) ---
-
-export interface IPuzzle {
-  id: string;
-  title: string;
-  description: string;
-  scenario: string;
-  hints: string[];
-  answer: string;
-}
-
-const MOCK_PUZZLE: IPuzzle = {
-  id: '1',
-  title: 'The Binary Blockade',
-  description: 'A locked door, a keypad, and a strange binary clue.',
-  scenario:
-    "You stand before a massive steel door. A small keypad glows with a 10-digit display. Next to it, a cryptic message is etched into the wall: 'To pass, you must find the 10-bit key. It is the sum of two smaller keys: 10110 and 01101.' What 10-digit number do you enter?",
-  hints: [
-    'The problem involves binary numbers.',
-    'You need to perform binary addition on the two "smaller keys".',
-    'Remember the rules for carrying over in binary: 1 + 1 = 10 (0 and carry the 1).',
-    'The final answer should be 10 digits long. You may need to pad with leading zeros.',
-  ],
-  answer: '101011',
-};
+// --- ADDED: React-Router and Redux Imports ---
+import { useParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '@/redux/store';
+import { fetchPuzzleById } from '@/redux/slices/puzzleSlice';
+import axios from 'axios';
 
 // --- Page Component ---
 
 const SolvePuzzlePage: React.FC = () => {
-  const puzzle = MOCK_PUZZLE;
-  const { puzzleId } = { puzzleId: puzzle.id };
+  // --- ADDED: Get ID from URL and setup Redux ---
+  const { puzzleId } = useParams<{ puzzleId: string }>();
+  const dispatch = useDispatch<AppDispatch>();
+  const { puzzle, status, error } = useSelector((state: RootState) => state.puzzles);
 
   // --- States ---
   const [revealedHintsCount, setRevealedHintsCount] = useState(0);
@@ -51,11 +34,14 @@ const SolvePuzzlePage: React.FC = () => {
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number }>>([]);
 
   // --- Title Scramble Effect ---
-  const [displayedTitle, setDisplayedTitle] = useState(puzzle.title);
+  const [displayedTitle, setDisplayedTitle] = useState(''); // MODIFIED: Init as empty
   const titleIntervalRef = useRef<number | null>(null);
   const letters = '!<>-_\\/[]{}—=+*^?#_';
 
   const scrambleTitle = () => {
+    // --- ADDED: Guard clause ---
+    if (!puzzle) return;
+
     let iteration = 0;
     if (titleIntervalRef.current) {
       clearInterval(titleIntervalRef.current);
@@ -85,53 +71,112 @@ const SolvePuzzlePage: React.FC = () => {
   // --- Scenario Typewriter Effect ---
   const [displayedScenario, setDisplayedScenario] = useState('');
 
+  // --- ADDED: useEffect to fetch data ---
   useEffect(() => {
-    scrambleTitle();
+    if (puzzleId) {
+      dispatch(fetchPuzzleById(puzzleId));
+    }
+  }, [dispatch, puzzleId]);
 
-    let index = 0;
-    const scenarioInterval = setInterval(() => {
-      if (index < puzzle.scenario.length) {
-        setDisplayedScenario(puzzle.scenario.substring(0, index + 1));
-        index++;
-      } else {
+  // --- MODIFIED: useEffect for animations, dependent on 'puzzle' ---
+  useEffect(() => {
+    // --- ADDED: Guard clause to wait for puzzle data ---
+    if (puzzle) {
+      // Reset states when puzzle changes
+      setDisplayedTitle(puzzle.title); // Set title initially
+      setDisplayedScenario(''); // Reset scenario for typewriter
+      setRevealedHintsCount(0);
+      setAnswer('');
+      setFeedback('idle');
+
+      scrambleTitle(); // Start scramble animation
+
+      let index = 0;
+      const scenarioInterval = setInterval(() => {
+        if (index < puzzle.scenario.length) {
+          setDisplayedScenario(puzzle.scenario.substring(0, index + 1));
+          index++;
+        } else {
+          clearInterval(scenarioInterval);
+        }
+      }, 20);
+
+      return () => {
+        if (titleIntervalRef.current) clearInterval(titleIntervalRef.current);
         clearInterval(scenarioInterval);
-      }
-    }, 20);
-
-    return () => {
-      if (titleIntervalRef.current) clearInterval(titleIntervalRef.current);
-      clearInterval(scenarioInterval);
-    };
-  }, [puzzle.scenario, puzzle.title]);
+      };
+    }
+  }, [puzzle]); // MODIFIED: Dependency is now the puzzle object
 
   // --- Handlers ---
+
+  // --- FIX: Added the missing function definition ---
   const handleRevealHint = () => {
-    if (revealedHintsCount < puzzle.hints.length) {
-      setRevealedHintsCount((prevCount) => prevCount + 1);
-    }
+    if (!puzzle || revealedHintsCount >= puzzle.hints.length) return;
+    setRevealedHintsCount((prevCount) => prevCount + 1);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // --- FIX: Logic updated to check response.data.correct ---
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (feedback !== 'idle' || answer.trim() === '') return;
+    if (!puzzle || feedback !== 'idle' || answer.trim() === '') return;
 
-    if (answer.trim() === puzzle.answer) {
-      setFeedback('correct');
-      const newParticles = Array.from({ length: 30 }, (_, i) => ({
-        id: Date.now() + i,
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-      }));
-      setParticles(newParticles);
-      setTimeout(() => setParticles([]), 3000);
-    } else {
+    try {
+      // 1. Capture the response
+      const response = await axios.post(`/api/puzzles/${puzzleId}/submit`, {
+        answer: answer.trim(),
+      });
+
+      // 2. Check the 'correct' property from the backend response
+      if (response.data.correct) {
+        setFeedback('correct');
+        const newParticles = Array.from({ length: 30 }, (_, i) => ({
+          id: Date.now() + i,
+          x: Math.random() * 100,
+          y: Math.random() * 100,
+        }));
+        setParticles(newParticles);
+        setTimeout(() => setParticles([]), 3000);
+      } else {
+        // 3. Handle incorrect answers that still returned 200 OK
+        setFeedback('incorrect');
+        setTimeout(() => setFeedback('idle'), 2000);
+      }
+    } catch (error) {
+      // 4. Catches actual network errors or 4xx/5xx server responses
+      console.error('Submission error:', error);
       setFeedback('incorrect');
       setTimeout(() => setFeedback('idle'), 2000);
     }
   };
 
-  const visibleHints = puzzle.hints.slice(0, revealedHintsCount);
+  // --- MODIFIED: Use puzzle data and add guard ---
+  const visibleHints = puzzle ? puzzle.hints.slice(0, revealedHintsCount) : [];
 
+  // --- ADDED: Loading and Error States ---
+  if (status === 'loading') {
+    return (
+      <PageWrapper>
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+          <p className="text-slate-300 text-2xl">Loading Puzzle...</p>
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  if (status === 'failed' || !puzzle) {
+    return (
+      <PageWrapper>
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+          <p className="text-red-500 text-2xl">
+            {error || 'Puzzle not found.'}
+          </p>
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  // --- RENDER (Full UI is now here) ---
   return (
     <PageWrapper>
       {/* Success Particles */}
@@ -170,9 +215,9 @@ const SolvePuzzlePage: React.FC = () => {
               <Lock className="h-8 w-8 text-purple-400" />
               <div>
                 <p className="text-sm font-semibold text-purple-400 tracking-wider">
-                  PUZZLE #{puzzleId}
+                  PUZZLE #{puzzleId?.substring(0, 6) || puzzle._id.substring(0, 6)}...
                 </p>
-                <p className="text-xs text-slate-400">Logic Challenge</p>
+                <p className="text-xs text-slate-400">{puzzle.category}</p>
               </div>
             </motion.div>
 
@@ -215,7 +260,7 @@ const SolvePuzzlePage: React.FC = () => {
             <div className="bg-slate-900 p-4 rounded-lg border border-slate-700">
               <BrainCircuit className="h-5 w-5 text-purple-400 mb-2" />
               <p className="text-xs text-slate-400">Difficulty</p>
-              <p className="text-sm font-semibold text-white">Medium</p>
+              <p className="text-sm font-semibold text-white">Level {puzzle.level}</p>
             </div>
             <div className="bg-slate-900 p-4 rounded-lg border border-slate-700">
               <Lightbulb className="h-5 w-5 text-yellow-400 mb-2" />

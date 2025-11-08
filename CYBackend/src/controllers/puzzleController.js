@@ -17,7 +17,11 @@ exports.getPuzzles = async (req, res) => {
 // @access  Public
 exports.getPuzzleById = async (req, res) => {
   try {
+    // --- SECURITY FIX: Removed .select('+answer') ---
+    // We do NOT want to send the answer to the frontend here,
+    // otherwise users can cheat by looking at the network tab.
     const puzzle = await Puzzle.findById(req.params.id);
+    
     if (!puzzle) {
       return res.status(404).json({ message: 'Puzzle not found' });
     }
@@ -32,12 +36,9 @@ exports.getPuzzleById = async (req, res) => {
 // @access  Public (You might want to make this private/admin later)
 exports.createPuzzle = async (req, res) => {
   try {
-    // req.body will contain all fields like title, description, level, etc.
     const puzzle = await Puzzle.create(req.body);
-    // Send 201 Created status
     res.status(201).json(puzzle);
   } catch (err) {
-    // This will catch Mongoose validation errors
     res.status(400).json({ message: err.message });
   }
 };
@@ -51,8 +52,8 @@ exports.updatePuzzle = async (req, res) => {
       req.params.id,
       req.body,
       {
-        new: true, // This option returns the modified document
-        runValidators: true, // This ensures schema validations are run on update
+        new: true,
+        runValidators: true,
       }
     );
 
@@ -62,7 +63,6 @@ exports.updatePuzzle = async (req, res) => {
 
     res.json(puzzle);
   } catch (err) {
-    // Catches validation errors or server errors
     res.status(500).json({ message: err.message });
   }
 };
@@ -79,6 +79,32 @@ exports.deletePuzzle = async (req, res) => {
     }
 
     res.json({ message: 'Puzzle removed' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc    Submit an answer to a puzzle
+// @route   POST /api/puzzles/:id/submit
+// @access  Public
+exports.submitAnswer = async (req, res) => {
+  try {
+    // We DO need the answer here internally to check it
+    const puzzle = await Puzzle.findById(req.params.id).select('+answer');
+
+    if (!puzzle) {
+      return res.status(404).json({ message: 'Puzzle not found' });
+    }
+
+    const { answer } = req.body;
+
+    // --- BUG FIX: Robust comparison (ignore case and spaces) ---
+    // This ensures " Solution " matches "solution"
+    if (puzzle.answer.trim().toLowerCase() === answer.trim().toLowerCase()) { 
+      res.json({ correct: true, message: 'Correct answer!' });
+    } else {
+      res.json({ correct: false, message: 'Incorrect answer, please try again.' });
+    }
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
