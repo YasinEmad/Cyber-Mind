@@ -1,8 +1,12 @@
 
 import React from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import PageWrapper from '@/components/PageWrapper';
 import { motion } from 'framer-motion';
 import { Edit, LogOut, BarChart, CheckSquare, Trophy } from 'lucide-react';
+import { clearUser, selectUser } from '../redux/slices/userSlice';
 
 const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string; color: string }> = ({ icon, label, value, color }) => (
   <div className="bg-slate-800 p-4 rounded-lg flex items-center">
@@ -17,11 +21,25 @@ const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string; 
 );
 
 const ProfilePage: React.FC = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const user = useSelector(selectUser);
+
   const pastChallenges = [
     { title: 'Speed Runner', completed: true },
     { title: 'Puzzle Master', completed: true },
     { title: 'Quick Reflexes', completed: false },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await axios.get('/api/users/logout');
+      dispatch(clearUser());
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed', error);
+    }
+  };
 
   return (
     <PageWrapper>
@@ -34,18 +52,21 @@ const ProfilePage: React.FC = () => {
           transition={{ duration: 0.5, delay: 0.1 }}
         >
           <div className="relative mb-4">
-            <img src="https://picsum.photos/id/239/200/200" alt="User Avatar" className="w-32 h-32 rounded-full mx-auto border-4 border-cyan-400 shadow-lg"/>
+            <img src={user?.photoURL || "https://picsum.photos/id/239/200/200"} alt="User Avatar" className="w-32 h-32 rounded-full mx-auto border-4 border-cyan-400 shadow-lg"/>
             <div className="absolute bottom-1 right-1 bg-slate-900 rounded-full p-1">
                 <Edit className="w-5 h-5 text-slate-300 hover:text-cyan-400 cursor-pointer"/>
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-white">Tom Cook</h1>
-          <p className="text-slate-400">tom@example.com</p>
+          <h1 className="text-2xl font-bold text-white">{user?.name || 'User'}</h1>
+          <p className="text-slate-400">{user?.email}</p>
           <div className="mt-6 flex space-x-2">
             <button className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
               <Edit className="w-4 h-4 mr-2"/> Edit
             </button>
-            <button className="flex-1 bg-slate-700 hover:bg-red-500/80 text-slate-200 font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
+            <button 
+              onClick={handleLogout}
+              className="flex-1 bg-slate-700 hover:bg-red-500/80 text-slate-200 font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center"
+            >
               <LogOut className="w-4 h-4 mr-2"/> Logout
             </button>
           </div>

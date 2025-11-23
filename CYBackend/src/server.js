@@ -22,13 +22,14 @@ app.use(cookieParser()); // Parse cookies
 
 // 4. Routes
 app.use('/api/puzzles', require('./routes/puzzleRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
 
 // 5. Error Handling Middleware
 // TODO: Add your error handling middleware here
 
 
 // 6. Start the server
-const PORT = process.env.PORT || 5000;
+const PORT = 8080;
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

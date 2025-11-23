@@ -1,5 +1,5 @@
 
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import HomePage from '../pages/HomePage';
 import GamePage from '../pages/GamePage';
@@ -12,6 +12,9 @@ import SolvePuzzlePage from '../pages/SolvePuzzlePage';
 import PlayChallengePage from '../pages/PlayChallengePage';
 import PlayLevelPage from '../pages/PlayLevelPage';
 import MainLayout from '../layouts/MainLayout';
+import LoginPage from '../pages/LoginPage';
+import RegisterPage from '../pages/RegisterPage';
+import ProtectedRoute from './ProtectedRoute';
 
 export default function AnimatedRoutes() {
   const location = useLocation();
@@ -19,7 +22,8 @@ export default function AnimatedRoutes() {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route element={<MainLayout />}>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<Navigate to="/home" />} />
+          <Route path="/home" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/game" element={<GamePage />} />
           <Route path="/game/level/:levelId" element={<PlayLevelPage />} />
@@ -28,7 +32,11 @@ export default function AnimatedRoutes() {
           <Route path="/challenges" element={<ChallengePage />} />
           <Route path="/challenges/:challengeId" element={<PlayChallengePage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/profile" element={<ProfilePage />} />
+          </Route>
         </Route>
       </Routes>
     </AnimatePresence>

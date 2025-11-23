@@ -1,10 +1,12 @@
 
 import { configureStore } from '@reduxjs/toolkit';
 import puzzleReducer from './slices/puzzleSlice';
+import userReducer from './slices/userSlice';
 
 export const store = configureStore({
   reducer: {
     puzzles: puzzleReducer,
+    user: userReducer,
   },
 });
 

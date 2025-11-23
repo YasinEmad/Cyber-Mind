@@ -11,8 +11,11 @@ connectDB();
 
 const app = express();
 
+const cookieParser = require('cookie-parser');
+
 // Body parser
 app.use(express.json());
+app.use(cookieParser());
 
 // Mount routers
 const challengeRoutes = require('./routes/challengeRoutes');
