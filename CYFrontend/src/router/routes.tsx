@@ -15,6 +15,7 @@ import MainLayout from '../layouts/MainLayout';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
 import ProtectedRoute from './ProtectedRoute';
+import AdmainDashboard from '../pages/AdmainDashboard';
 
 export default function AnimatedRoutes() {
   const location = useLocation();
@@ -36,6 +37,7 @@ export default function AnimatedRoutes() {
           <Route path="/register" element={<RegisterPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/admin" element={<AdmainDashboard />} />
           </Route>
         </Route>
       </Routes>

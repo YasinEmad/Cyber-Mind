@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Gamepad2, Menu, X, Home, Info, Swords, Trophy, Star, User, BrainCircuit } from 'lucide-react';
+import { Gamepad2, Menu, X, Home, Info, Swords, Trophy, Star, User, BrainCircuit, ShieldCheck } from 'lucide-react';
 
 const navLinks = [
   { name: 'Home', path: '/', icon: Home },
@@ -11,6 +11,7 @@ const navLinks = [
   { name: 'Challenges', path: '/challenges', icon: Star },
   { name: 'Leaderboard', path: '/leaderboard', icon: Trophy },
   { name: 'Profile', path: '/profile', icon: User },
+  { name: 'Admin', path: '/admin', icon: ShieldCheck },
 ];
 
 const NavLinkItem: React.FC<{ to: string; children: React.ReactNode; onClick?: () => void }> = ({ to, children, onClick }) => {
