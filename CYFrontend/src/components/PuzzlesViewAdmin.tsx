@@ -1,29 +1,32 @@
-import  { useEffect } from 'react';
-import { 
-  Puzzle as PuzzleIcon, 
-  Plus, 
-  Edit, 
-  Trash2, 
+import { useState, useEffect } from 'react';
+import {
+  Puzzle as PuzzleIcon,
+  Plus,
+  Edit,
+  Trash2,
   Loader2,
   AlertCircle
 } from 'lucide-react';
+import { PuzzleForm } from './PuzzleForm'; 
 
 // Redux Imports
 import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../redux/store'; // Adjust path to your store file
-import { 
-  fetchPuzzles, 
-  deletePuzzle, 
-  Puzzle // Import the type
-} from '../redux/slices/puzzleSlice'; // Adjust path to your slice file
+import { AppDispatch, RootState } from '../redux/store';
+import {
+  fetchPuzzles,
+  deletePuzzle,
+  createPuzzle,
+  updatePuzzle,
+  Puzzle
+} from '../redux/slices/puzzleSlice';
 
 export const PuzzlesViewAdmin = () => {
   const dispatch = useDispatch<AppDispatch>();
-  
-  // Access state from Redux
   const { puzzles, status, error } = useSelector((state: RootState) => state.puzzles);
 
-  // Fetch puzzles on component mount
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedPuzzle, setSelectedPuzzle] = useState<Puzzle | null>(null);
+
   useEffect(() => {
     if (status === 'idle') {
       dispatch(fetchPuzzles());
@@ -36,7 +39,30 @@ export const PuzzlesViewAdmin = () => {
     }
   };
 
-  // --- Render States ---
+  const handleSave = (puzzleData: Omit<Puzzle, '_id'> | Puzzle) => {
+    if ('_id' in puzzleData) {
+      dispatch(updatePuzzle({ id: puzzleData._id, updatedData: puzzleData }));
+    } else {
+      dispatch(createPuzzle(puzzleData));
+    }
+    setIsFormOpen(false);
+    setSelectedPuzzle(null);
+  };
+
+  const handleEdit = (puzzle: Puzzle) => {
+    setSelectedPuzzle(puzzle);
+    setIsFormOpen(true);
+  };
+
+  const handleAdd = () => {
+    setSelectedPuzzle(null);
+    setIsFormOpen(true);
+  };
+
+  const handleCancel = () => {
+    setIsFormOpen(false);
+    setSelectedPuzzle(null);
+  };
 
   if (status === 'loading') {
     return (
@@ -52,7 +78,7 @@ export const PuzzlesViewAdmin = () => {
       <div className="flex flex-col items-center justify-center h-64 text-red-400">
         <AlertCircle size={40} className="mb-4" />
         <p>Error loading puzzles: {error}</p>
-        <button 
+        <button
           onClick={() => dispatch(fetchPuzzles())}
           className="mt-4 px-4 py-2 bg-gray-800 rounded hover:bg-gray-700 transition"
         >
@@ -64,30 +90,38 @@ export const PuzzlesViewAdmin = () => {
 
   return (
     <div className="animate-fade-in">
-      {/* Header */}
+      {isFormOpen && (
+        <PuzzleForm
+          puzzle={selectedPuzzle}
+          onSave={handleSave}
+          onCancel={handleCancel}
+        />
+      )}
+
       <div className="flex justify-between items-center mb-8">
         <div>
           <h2 className="text-3xl font-bold text-white">Puzzle Management</h2>
           <p className="text-gray-400 mt-1">Create and manage game puzzles.</p>
         </div>
-        <button className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors shadow-lg">
+        <button
+          onClick={handleAdd}
+          className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors shadow-lg"
+        >
           <Plus size={20} />
           Add New Puzzle
         </button>
       </div>
 
-      {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {puzzles.length > 0 ? (
           puzzles.map((puzzle: Puzzle) => (
             <div key={puzzle._id} className={`bg-gray-800 border ${puzzle.active ? 'border-gray-700' : 'border-red-900/50'} rounded-xl shadow-lg p-6 flex flex-col hover:border-blue-500 transition-colors`}>
-              
+
               <div className="flex justify-between items-start mb-4">
                 <div className="p-3 bg-blue-900/30 rounded-lg text-blue-400">
                   <PuzzleIcon size={24} />
                 </div>
                 <div className="flex gap-2">
-                   {/* Logic to determine badge color based on level or category */}
                   <span className="px-2 py-1 text-xs font-semibold bg-gray-700 text-gray-300 rounded-full">
                     Level {puzzle.level}
                   </span>
@@ -98,24 +132,24 @@ export const PuzzlesViewAdmin = () => {
                   )}
                 </div>
               </div>
-              
+
               <h3 className="text-xl font-bold text-white mb-2">{puzzle.title}</h3>
               <p className="text-gray-400 mb-2 text-sm uppercase tracking-wide font-semibold">{puzzle.category}</p>
               <p className="text-gray-400 mb-6 flex-grow line-clamp-3">
                 {puzzle.description}
               </p>
-              
+
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
-                <button 
-                  className="p-2 text-gray-400 hover:text-blue-400 hover:bg-gray-700 rounded-lg transition-colors" 
+                <button
+                  onClick={() => handleEdit(puzzle)}
+                  className="p-2 text-gray-400 hover:text-blue-400 hover:bg-gray-700 rounded-lg transition-colors"
                   title="Edit"
-                  // Add onClick handler for Edit here
                 >
                   <Edit size={18} />
                 </button>
-                <button 
+                <button
                   onClick={() => handleDelete(puzzle._id)}
-                  className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded-lg transition-colors" 
+                  className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded-lg transition-colors"
                   title="Delete"
                 >
                   <Trash2 size={18} />

@@ -112,11 +112,44 @@ const puzzleSlice = createSlice({
       })
       // -----------------------------------------------------------
 
-      .addCase(createPuzzle.fulfilled, (state, action: PayloadAction<Puzzle>) => {
-        state.status = 'succeeded'
-        state.puzzles.push(action.payload)
+      .addCase(createPuzzle.pending, (state) => {
+        state.status = 'loading';
       })
-    // ... (rest of the slice) ...
+      .addCase(createPuzzle.fulfilled, (state, action: PayloadAction<Puzzle>) => {
+        state.status = 'succeeded';
+        state.puzzles.push(action.payload);
+      })
+      .addCase(createPuzzle.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.error.message ?? null;
+      })
+
+      .addCase(updatePuzzle.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(updatePuzzle.fulfilled, (state, action: PayloadAction<Puzzle>) => {
+        state.status = 'succeeded';
+        const index = state.puzzles.findIndex(p => p._id === action.payload._id);
+        if (index !== -1) {
+          state.puzzles[index] = action.payload;
+        }
+      })
+      .addCase(updatePuzzle.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.error.message ?? null;
+      })
+
+      .addCase(deletePuzzle.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(deletePuzzle.fulfilled, (state, action: PayloadAction<string>) => {
+        state.status = 'succeeded';
+        state.puzzles = state.puzzles.filter(p => p._id !== action.payload);
+      })
+      .addCase(deletePuzzle.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.error.message ?? null;
+      });
   },
 })
 
