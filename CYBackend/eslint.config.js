@@ -1,13 +1,16 @@
-module.exports = {
-    "env": {
-        "browser": true,
-        "commonjs": true,
-        "es2021": true
+const globals = require("globals");
+
+module.exports = [
+  {
+    languageOptions: {
+      ecmaVersion: 12,
+      globals: {
+        ...globals.browser,
+        ...globals.commonjs,
+        ...globals.es2021,
+      },
     },
-    "extends": "eslint:recommended",
-    "parserOptions": {
-        "ecmaVersion": 12
+    rules: {
     },
-    "rules": {
-    }
-};
+  },
+];

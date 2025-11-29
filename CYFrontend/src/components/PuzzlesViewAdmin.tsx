@@ -7,7 +7,8 @@ import {
   Loader2,
   AlertCircle
 } from 'lucide-react';
-import { PuzzleForm } from './PuzzleForm'; 
+import { PuzzleForm } from './PuzzleForm';
+import DeleteAlert from './DeleteAlert';
 
 // Redux Imports
 import { useDispatch, useSelector } from 'react-redux';
@@ -26,6 +27,8 @@ export const PuzzlesViewAdmin = () => {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedPuzzle, setSelectedPuzzle] = useState<Puzzle | null>(null);
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [puzzleToDelete, setPuzzleToDelete] = useState<Puzzle | null>(null);
 
   useEffect(() => {
     if (status === 'idle') {
@@ -33,10 +36,22 @@ export const PuzzlesViewAdmin = () => {
     }
   }, [status, dispatch]);
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this puzzle?')) {
-      dispatch(deletePuzzle(id));
+  const handleDelete = (puzzle: Puzzle) => {
+    setPuzzleToDelete(puzzle);
+    setIsAlertOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (puzzleToDelete) {
+      dispatch(deletePuzzle(puzzleToDelete._id));
+      setIsAlertOpen(false);
+      setPuzzleToDelete(null);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setIsAlertOpen(false);
+    setPuzzleToDelete(null);
   };
 
   const handleSave = (puzzleData: Omit<Puzzle, '_id'> | Puzzle) => {
@@ -90,6 +105,14 @@ export const PuzzlesViewAdmin = () => {
 
   return (
     <div className="animate-fade-in">
+      {isAlertOpen && puzzleToDelete && (
+        <DeleteAlert
+          title="Delete Puzzle"
+          puzzleTitle={puzzleToDelete.title}
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
+        />
+      )}
       {isFormOpen && (
         <PuzzleForm
           puzzle={selectedPuzzle}
@@ -148,7 +171,7 @@ export const PuzzlesViewAdmin = () => {
                   <Edit size={18} />
                 </button>
                 <button
-                  onClick={() => handleDelete(puzzle._id)}
+                  onClick={() => handleDelete(puzzle)}
                   className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded-lg transition-colors"
                   title="Delete"
                 >

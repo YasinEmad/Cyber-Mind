@@ -1,13 +1,13 @@
-
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axios from '@/api/axios';
 import PageWrapper from '@/components/PageWrapper';
 import { motion } from 'framer-motion';
-import { Edit, LogOut, BarChart, CheckSquare, Trophy } from 'lucide-react';
+import { Edit, LogOut, BarChart, CheckSquare, Trophy, Puzzle, Flag } from 'lucide-react'; // <-- Import new icons
 import { clearUser, selectUser } from '../redux/slices/userSlice';
 
+// StatCard component remains the same
 const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string; color: string }> = ({ icon, label, value, color }) => (
   <div className="bg-slate-800 p-4 rounded-lg flex items-center">
     <div className={`p-3 rounded-md mr-4 ${color}`}>
@@ -33,7 +33,8 @@ const ProfilePage: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      await axios.get('/api/users/logout');
+      // In a real app, you might want to call an API to invalidate the session
+      await axios.get('/users/logout');
       dispatch(clearUser());
       navigate('/login');
     } catch (error) {
@@ -79,11 +80,18 @@ const ProfilePage: React.FC = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          {/* Stats Grid */}
+          {/* Stats Grid - Now using a 2x3 grid (6 total cards) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <StatCard icon={<Trophy className="w-6 h-6 text-white"/>} label="Total Score" value="12,450" color="bg-cyan-500/80" />
-            <StatCard icon={<CheckSquare className="w-6 h-6 text-white"/>} label="Challenges Done" value="42" color="bg-green-500/80" />
-            <StatCard icon={<BarChart className="w-6 h-6 text-white"/>} label="Global Rank" value="#1,234" color="bg-purple-500/80" />
+            {/* Original Cards */}
+            <StatCard icon={<Trophy className="w-6 h-6 text-white"/>} label="Total Score" value={user?.profile?.totalScore?.toLocaleString() || '0'} color="bg-cyan-500/80" />
+            <StatCard icon={<CheckSquare className="w-6 h-6 text-white"/>} label="Challenges Done" value={user?.profile?.challengesDone?.toString() || '0'} color="bg-green-500/80" />
+            <StatCard icon={<BarChart className="w-6 h-6 text-white"/>} label="Global Rank" value={user?.profile?.globalRank ? `#${user.profile.globalRank}` : 'N/A'} color="bg-purple-500/80" />
+            
+            {/* --- 2. New Stat Cards --- */}
+            <StatCard icon={<Puzzle className="w-6 h-6 text-white"/>} label="Puzzles Done" value={user?.profile?.puzzlesDone?.toString() || '0'} color="bg-indigo-500/80" />
+            <StatCard icon={<Flag className="w-6 h-6 text-white"/>} label="Flags Captured" value={user?.profile?.flags?.toString() || '0'} color="bg-red-500/80" />
+            {/* The 6th card slot is available, or you can adjust the grid size if you only want 5 */}
+            <div className="hidden md:block"></div> {/* Helper to keep the grid even if only 5 items */}
           </div>
           
           {/* Past Challenges */}

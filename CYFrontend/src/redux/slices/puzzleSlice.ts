@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
-import axios from 'axios'
+import axios from '@/api/axios'
 
-const API_URL = 'http://localhost:8080/api/puzzles'
+const API_URL = '/puzzles'
 
 export interface Puzzle {
   _id: string

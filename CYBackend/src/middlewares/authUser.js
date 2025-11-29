@@ -16,7 +16,7 @@ const protect = async (req, res, next) => {
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
-    const user = await User.findOne({ uid: decodedToken.uid });
+    const user = await User.findOne({ uid: decodedToken.uid }).populate('profile');
 
     if (!user) {
       return res.status(401).json({ success: false, message: 'Not authorized, user not found' });

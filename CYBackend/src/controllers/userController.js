@@ -1,5 +1,6 @@
 const admin = require('../config/firebaseAdmin');
 const User = require('../models/User');
+const Profile = require('../models/Profile');
 
 exports.handleFirebaseLogin = async (req, res, next) => {
   const { token } = req.body;
@@ -10,17 +11,30 @@ exports.handleFirebaseLogin = async (req, res, next) => {
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
-    const { uid, email, name, picture } = decodedToken;
+    const { uid, email, name, picture, email_verified } = decodedToken;
+
+    if (!email_verified) {
+      return res.status(401).json({ success: false, message: 'Email not verified' });
+    }
 
     let user = await User.findOne({ uid });
 
     if (!user) {
-      user = await User.create({
+      user = new User({
         uid,
         email,
         name,
         photoURL: picture,
       });
+
+      const profile = new Profile({
+        user: user._id,
+      });
+
+      await profile.save();
+
+      user.profile = profile._id;
+      await user.save();
     }
 
     // Set cookie
@@ -39,6 +53,7 @@ exports.handleFirebaseLogin = async (req, res, next) => {
         email: user.email,
         name: user.name,
         photoURL: user.photoURL,
+        profile: user.profile,
       },
     });
   } catch (error) {
@@ -56,7 +71,11 @@ exports.handleFirebaseRegister = async (req, res, next) => {
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
-    const { uid, email, picture } = decodedToken;
+    const { uid, email, picture, email_verified } = decodedToken;
+
+    if (!email_verified) {
+      return res.status(401).json({ success: false, message: 'Email not verified' });
+    }
 
     let user = await User.findOne({ uid });
 
@@ -64,12 +83,21 @@ exports.handleFirebaseRegister = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'User already exists' });
     }
 
-    user = await User.create({
+    user = new User({
       uid,
       email,
       name: username,
       photoURL: picture,
     });
+
+    const profile = new Profile({
+      user: user._id,
+    });
+
+    await profile.save();
+
+    user.profile = profile._id;
+    await user.save();
 
     // Set cookie
     const options = {
@@ -87,6 +115,7 @@ exports.handleFirebaseRegister = async (req, res, next) => {
         email: user.email,
         name: user.name,
         photoURL: user.photoURL,
+        profile: user.profile,
       },
     });
   } catch (error) {

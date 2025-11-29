@@ -26,6 +26,10 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  profile: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Profile',
+  },
 });
 
 module.exports = mongoose.model('User', UserSchema);

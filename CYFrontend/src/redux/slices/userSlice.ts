@@ -1,11 +1,21 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store';
 
+interface Profile {
+  rating: number;
+  puzzlesDone: number;
+  challengesDone: number;
+  flags: number;
+  totalScore: number;
+  globalRank: number;
+}
+
 interface User {
   uid: string;
   email: string;
   name: string;
   photoURL: string;
+  profile: Profile;
 }
 
 interface UserState {

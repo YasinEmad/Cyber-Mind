@@ -17,7 +17,7 @@ import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/redux/store';
 import { fetchPuzzleById } from '@/redux/slices/puzzleSlice';
-import axios from 'axios';
+import axios from '@/api/axios';
 
 // --- Page Component ---
 
@@ -123,7 +123,7 @@ const SolvePuzzlePage: React.FC = () => {
 
     try {
       // 1. Capture the response
-      const response = await axios.post(`/api/puzzles/${puzzleId}/submit`, {
+      const response = await axios.post(`/puzzles/${puzzleId}/submit`, {
         answer: answer.trim(),
       });
 
