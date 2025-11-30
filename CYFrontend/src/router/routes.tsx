@@ -13,7 +13,6 @@ import PlayChallengePage from '../pages/PlayChallengePage';
 import PlayLevelPage from '../pages/PlayLevelPage';
 import MainLayout from '../layouts/MainLayout';
 import LoginPage from '../pages/LoginPage';
-import RegisterPage from '../pages/RegisterPage';
 import ProtectedRoute from './ProtectedRoute';
 import AdmainDashboard from '../pages/AdmainDashboard';
 
@@ -34,7 +33,6 @@ export default function AnimatedRoutes() {
           <Route path="/challenges/:challengeId" element={<PlayChallengePage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/admin" element={<AdmainDashboard />} />

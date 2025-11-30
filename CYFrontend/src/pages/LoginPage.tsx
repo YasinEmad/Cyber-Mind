@@ -1,71 +1,24 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import {
-  signInWithEmailAndPassword,
   GoogleAuthProvider,
+  GithubAuthProvider,
   signInWithPopup,
-  sendEmailVerification,
-  sendPasswordResetEmail, // <-- Added for password reset feature
 } from "firebase/auth";
 import { auth } from "../firebase";
 import { setUser } from "../redux/slices/userSlice";
 import axios from "@/api/axios";
 
-// TypeScript interfaces for Reset Message state
-interface ResetMessage {
-  type: 'success' | 'error' | '';
-  text: string;
-}
-
 const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  
-  // New state for password reset feature
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const [resetEmail, setResetEmail] = useState("");
-  const [resetMessage, setResetMessage] = useState<ResetMessage>({ type: '', text: '' });
-  
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      
-      if (!userCredential.user.emailVerified) {
-        setError(
-          "Please verify your email before logging in. A verification email has been sent to your inbox."
-        );
-        await sendEmailVerification(userCredential.user);
-        setLoading(false);
-        return;
-      }
-      
-      const idToken = await userCredential.user.getIdToken();
-
-      const { data } = await axios.post("/users/auth/firebase", {
-        token: idToken,
-      });
-      
-      dispatch(setUser(data.data));
-      navigate("/profile");
-    } catch (err: any) {
-      setError(err.message || "An error occurred during sign-in.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // NOTE: Email/password login and password-reset are intentionally removed.
+  // We allow Google and GitHub sign-in (via Firebase) — backend auto-creates/updates the user on first login.
 
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider();
@@ -73,18 +26,18 @@ const LoginPage: React.FC = () => {
     setError("");
     try {
       const result = await signInWithPopup(auth, provider);
-      
+
       const idToken = await result.user.getIdToken();
-      
-      const { data } = await axios.post("/users/auth/firebase", {
+
+      // Align with backend route -> POST /api/users/auth/google
+      const { data } = await axios.post("/users/auth/google", {
         token: idToken,
       });
-      
+
       dispatch(setUser(data.data));
       navigate("/profile");
-      
     } catch (err: any) {
-      if (err.code === 'auth/popup-closed-by-user') {
+      if (err.code === "auth/popup-closed-by-user") {
         setError("Sign-in cancelled.");
       } else {
         setError(err.message || "An error occurred during Google Sign-In.");
@@ -94,120 +47,44 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  /**
-   * Handles sending the password reset email using Firebase Auth.
-   */
-  const handlePasswordReset = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGithubSignIn = async () => {
+    const provider = new GithubAuthProvider();
     setLoading(true);
-    setResetMessage({ type: '', text: '' });
-
-    // Use the email entered in the main form if reset email field is empty
-    const emailToSend = resetEmail || email; 
-
+    setError("");
     try {
-      if (!emailToSend) {
-        throw new Error("Please enter your email address to reset your password.");
-      }
-      
-      await sendPasswordResetEmail(auth, emailToSend);
-      setResetMessage({
-        type: 'success',
-        text: `A password reset link has been successfully sent to ${emailToSend}. Please check your inbox.`,
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+
+      // send to backend for verification & sync (same Firebase ID token flow)
+      // NOTE: The original code was pointing GitHub sign-in to a Google endpoint: "/users/auth/google".
+      // Assuming this is the correct endpoint for handling *any* Firebase OAuth token on the backend, I'll keep it.
+      // If your backend has a dedicated GitHub endpoint, you should change it to something like: "/users/auth/github"
+      const { data } = await axios.post("/users/auth/google", {
+        token: idToken,
       });
-      // Optionally keep the modal open to show the success message
-      // setResetEmail(""); 
+
+      dispatch(setUser(data.data));
+      navigate("/profile");
     } catch (err: any) {
-      setResetMessage({
-        type: 'error',
-        text: err.message || "Failed to send password reset email. Please check the email address.",
-      });
+      if (err.code === "auth/popup-closed-by-user") {
+        setError("Sign-in cancelled.");
+      } else {
+        setError(err.message || "An error occurred during GitHub Sign-In.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-
-  // Helper styles for error/success messages
-  const messageStyles = resetMessage.type === 'error'
-    ? "bg-red-100 border-red-400 text-red-700"
-    : "bg-green-100 border-green-400 text-green-700";
-
   return (
     <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900">
-      
-      {/* Password Reset Modal Overlay */}
-      {isResettingPassword && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 sm:p-8 w-11/12 max-w-md">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-              Reset Your Password
-            </h3>
-            
-            {/* Reset Message Display */}
-            {resetMessage.text && (
-              <div className={`mb-6 p-3 border rounded-md text-sm text-center ${messageStyles}`}>
-                {resetMessage.text}
-              </div>
-            )}
-
-            <form onSubmit={handlePasswordReset} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="reset-email"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                >
-                  Email Address
-                </label>
-                <input
-                  id="reset-email"
-                  type="email"
-                  required
-                  value={resetEmail || email}
-                  onChange={(e) => setResetEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                />
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsResettingPassword(false);
-                    setResetMessage({ type: '', text: '' });
-                    setResetEmail(""); // Clear reset state on close
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                    loading
-                      ? "bg-indigo-400 cursor-not-allowed"
-                      : "bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  }`}
-                >
-                  {loading ? "Sending..." : "Send Reset Email"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      
       {/* Main Two-Column Container for Desktop */}
       <div className="sm:mx-auto sm:w-full sm:max-w-xl lg:max-w-4xl xl:max-w-6xl lg:flex lg:flex-row lg:justify-center lg:gap-12 lg:items-center">
-        
         {/* 1. Left Column: Login Card */}
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md lg:mt-0 lg:mx-0 lg:w-1/2">
-          
           <div className="sm:mx-auto sm:w-full sm:max-w-md">
             <h2 className="text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100 lg:text-left">
-             Login to track your progress 
+              Login to track your progress
             </h2>
           </div>
 
@@ -219,98 +96,18 @@ const LoginPage: React.FC = () => {
               </div>
             )}
 
-            {/* Email/Password Form */}
-            <form className="space-y-6" onSubmit={handleEmailLogin}>
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  Email Address
-                </label>
-                <div className="mt-1">
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onFocus={() => setResetEmail(email)} // Pre-fill reset email if user types here
-                    placeholder="name@example.com"
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  />
-                </div>
-              </div>
+            {/* Google sign-in only — email/password & reset removed to avoid account duplication */}
 
-              <div>
-                <div className="flex justify-between">
-                    <label
-                      htmlFor="password"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >
-                      Password
-                    </label>
-                    <button 
-                      type="button" 
-                      onClick={() => setIsResettingPassword(true)}
-                      className="text-xs font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
-                    >
-                      Forgot password?
-                    </button>
-                </div>
-                <div className="mt-1">
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autoComplete="current-password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                    loading
-                      ? "bg-indigo-400 cursor-not-allowed"
-                      : "bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  }`}
-                >
-                  {loading ? "Logging In..." : "Login to Account"}
-                </button>
-              </div>
-            </form>
-
-            {/* Separator and Google Login */}
+            {/* Google sign-in above the separator */}
             <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300 dark:border-gray-600" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-6">
+              <div className="space-y-3">
                 <button
                   onClick={handleGoogleSignIn}
                   disabled={loading}
                   className={`w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium ${
                     loading
-                      ? "bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed"
-                      : "bg-white dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   }`}
                 >
                   <svg
@@ -339,20 +136,46 @@ const LoginPage: React.FC = () => {
                   {loading ? "Processing..." : "Sign in with Google"}
                 </button>
               </div>
+
+            {/* Separator */}
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {/* Registration Link */}
-            <div className="mt-6 text-center text-sm">
-              <p className="text-gray-600 dark:text-gray-400">
-                Don't have an account?{" "}
-                <Link
-                  to="/register"
-                  className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
-                >
-                  Register here
-                </Link>
-              </p>
+            {/* GitHub sign-in below the separator */}
+            <div className="mt-6 space-y-3">
+              <button
+                onClick={handleGithubSignIn}
+                disabled={loading}
+                className={`w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium ${
+                  loading
+                    ? " text-gray-400 cursor-not-allowed"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                }`}
+              >
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 0C5.372 0 0 5.373 0 12c0 5.303 3.438 9.8 8.207 11.387.6.113.793-.26.793-.577 0-.285-.01-1.04-.016-2.04-3.338.726-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.089-.745.083-.73.083-.73 1.205.085 1.84 1.237 1.84 1.237 1.07 1.835 2.809 1.305 3.492.998.108-.775.418-1.305.762-1.605-2.665-.305-5.467-1.332-5.467-5.93 0-1.31.469-2.38 1.236-3.22-.124-.303-.536-1.523.117-3.176 0 0 1.008-.322 3.301 1.23a11.52 11.52 0 013.003-.403c1.018.004 2.044.138 3.003.403 2.291-1.552 3.297-1.23 3.297-1.23.655 1.653.243 2.873.119 3.176.77.84 1.235 1.91 1.235 3.22 0 4.61-2.807 5.624-5.48 5.92.43.372.814 1.102.814 2.222 0 1.606-.015 2.901-.015 3.293 0 .319.192.694.8.576C20.565 21.796 24 17.299 24 12c0-6.627-5.373-12-12-12z" />
+                  </svg>
+                  {loading ? "Processing..." : "Sign in with GitHub"}
+                </button>
+              </div>
             </div>
+
+            {/* No registration — sign in with Google only */}
           </div>
         </div>
 
@@ -367,15 +190,16 @@ const LoginPage: React.FC = () => {
               {/* NOTE: If running this in a different environment, you might need to adjust the image path */}
               <img
                 className="w-full h-auto"
-                src="https://placehold.co/800x600/1e293b/f1f5f9?text=Login+Illustration"
+                src="/assets/login-image.jpeg"
                 alt="Login Illustration"
               />
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </div> 
   );
+  
 };
 
 export default LoginPage;

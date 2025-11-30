@@ -2,7 +2,7 @@ const admin = require('../config/firebaseAdmin');
 const User = require('../models/User');
 const Profile = require('../models/Profile');
 
-exports.handleFirebaseLogin = async (req, res, next) => {
+exports.handleGoogleSignIn = async (req, res, next) => {
   const { token } = req.body;
 
   if (!token) {
@@ -11,14 +11,37 @@ exports.handleFirebaseLogin = async (req, res, next) => {
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
-    const { uid, email, name, picture, email_verified } = decodedToken;
+    // decodedToken will include which provider was used to sign in under decodedToken.firebase.sign_in_provider
+    const { uid, email, name, picture, email_verified, firebase } = decodedToken;
+    const provider = firebase && firebase.sign_in_provider ? firebase.sign_in_provider : null;
 
-    if (!email_verified) {
+    // For security we require an email. For most providers we require email verification.
+    if (!email) {
+      return res.status(401).json({ success: false, message: 'Email not provided by provider' });
+    }
+
+    // GitHub sometimes does not set email_verified in the token payload (depending on account settings).
+    // Accept GitHub provider tokens even when email_verified is false, but for other providers keep the check.
+    if (provider !== 'github.com' && !email_verified) {
       return res.status(401).json({ success: false, message: 'Email not verified' });
     }
 
-    let user = await User.findOne({ uid });
+    let user = await User.findOne({ uid }).populate('profile');
 
+    // If user not found by uid, try to find by email (helpful if users somehow had existing email-only accounts)
+    if (!user) {
+      const byEmail = await User.findOne({ email });
+      if (byEmail) {
+        // link accounts by updating uid and other public fields
+        byEmail.uid = uid;
+        byEmail.name = name || byEmail.name;
+        byEmail.photoURL = picture || byEmail.photoURL;
+        await byEmail.save();
+        user = await User.findById(byEmail._id).populate('profile');
+      }
+    }
+
+    // Create a new user + profile if still not found
     if (!user) {
       user = new User({
         uid,
@@ -35,6 +58,20 @@ exports.handleFirebaseLogin = async (req, res, next) => {
 
       user.profile = profile._id;
       await user.save();
+      // populate profile for response
+      await user.populate('profile');
+    } else {
+      // If user exists, keep their record up-to-date with latest Google profile info
+      let changed = false;
+      if (name && user.name !== name) {
+        user.name = name;
+        changed = true;
+      }
+      if (picture && user.photoURL !== picture) {
+        user.photoURL = picture;
+        changed = true;
+      }
+      if (changed) await user.save();
     }
 
     // Set cookie
@@ -57,69 +94,7 @@ exports.handleFirebaseLogin = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.error('Error in handleFirebaseLogin:', error);
-    next(error);
-  }
-};
-
-exports.handleFirebaseRegister = async (req, res, next) => {
-  const { token, username } = req.body;
-
-  if (!token || !username) {
-    return res.status(401).json({ success: false, message: 'Token or username not provided' });
-  }
-
-  try {
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    const { uid, email, picture, email_verified } = decodedToken;
-
-    if (!email_verified) {
-      return res.status(401).json({ success: false, message: 'Email not verified' });
-    }
-
-    let user = await User.findOne({ uid });
-
-    if (user) {
-      return res.status(400).json({ success: false, message: 'User already exists' });
-    }
-
-    user = new User({
-      uid,
-      email,
-      name: username,
-      photoURL: picture,
-    });
-
-    const profile = new Profile({
-      user: user._id,
-    });
-
-    await profile.save();
-
-    user.profile = profile._id;
-    await user.save();
-
-    // Set cookie
-    const options = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
-      maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
-    };
-
-    res.cookie('token', token, options);
-
-    res.status(201).json({
-      success: true,
-      data: {
-        uid: user.uid,
-        email: user.email,
-        name: user.name,
-        photoURL: user.photoURL,
-        profile: user.profile,
-      },
-    });
-  } catch (error) {
-    console.error('Error in handleFirebaseRegister:', error);
+    console.error('Error in handleGoogleSignIn:', error);
     next(error);
   }
 };
@@ -134,4 +109,35 @@ exports.logout = (req, res) => {
 
 exports.getMe = (req, res) => {
   res.status(200).json({ success: true, data: req.user });
+};
+
+// PATCH /api/users/me
+// Update current user's profile (name, photoURL). Protected route.
+exports.updateMe = async (req, res, next) => {
+  try {
+    const { name, photoURL } = req.body;
+
+    // req.user is populated by protect middleware
+    const user = req.user;
+    let changed = false;
+
+    if (typeof name === 'string' && name.trim() !== '' && user.name !== name) {
+      user.name = name.trim();
+      changed = true;
+    }
+
+    if (typeof photoURL === 'string' && photoURL.trim() !== '' && user.photoURL !== photoURL) {
+      user.photoURL = photoURL.trim();
+      changed = true;
+    }
+
+    if (changed) await user.save();
+
+    // Return the updated user populated with profile
+    const updated = await User.findById(user._id).populate('profile');
+
+    res.status(200).json({ success: true, data: updated });
+  } catch (error) {
+    next(error);
+  }
 };

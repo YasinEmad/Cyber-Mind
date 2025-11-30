@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import axios from '@/api/axios';
 import PageWrapper from '@/components/PageWrapper';
 import { motion } from 'framer-motion';
 import { Edit, LogOut, BarChart, CheckSquare, Trophy, Puzzle, Flag } from 'lucide-react'; // <-- Import new icons
-import { clearUser, selectUser } from '../redux/slices/userSlice';
+import { clearUser, selectUser, setUser } from '../redux/slices/userSlice';
 
 // StatCard component remains the same
 const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string; color: string }> = ({ icon, label, value, color }) => (
@@ -42,6 +42,36 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  // Edit modal state
+  const [isEditing, setIsEditing] = useState(false);
+  const [formName, setFormName] = useState(user?.name || '');
+  const [formPhoto, setFormPhoto] = useState(user?.photoURL || '');
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState('');
+
+  const openEditor = () => {
+    setFormName(user?.name || '');
+    setFormPhoto(user?.photoURL || '');
+    setEditError('');
+    setIsEditing(true);
+  };
+
+  const submitEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditLoading(true);
+    setEditError('');
+    try {
+      const { data } = await axios.patch('/users/me', { name: formName, photoURL: formPhoto });
+      // Update redux and local state
+      dispatch(setUser(data.data));
+      setIsEditing(false);
+    } catch (err: any) {
+      setEditError(err?.response?.data?.message || err.message || 'Failed updating profile');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   return (
     <PageWrapper>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -55,13 +85,13 @@ const ProfilePage: React.FC = () => {
           <div className="relative mb-4">
             <img src={user?.photoURL || "https://picsum.photos/id/239/200/200"} alt="User Avatar" className="w-32 h-32 rounded-full mx-auto border-4 border-cyan-400 shadow-lg"/>
             <div className="absolute bottom-1 right-1 bg-slate-900 rounded-full p-1">
-                <Edit className="w-5 h-5 text-slate-300 hover:text-cyan-400 cursor-pointer"/>
+              <Edit onClick={openEditor} className="w-5 h-5 text-slate-300 hover:text-cyan-400 cursor-pointer"/>
             </div>
           </div>
           <h1 className="text-2xl font-bold text-white">{user?.name || 'User'}</h1>
           <p className="text-slate-400">{user?.email}</p>
           <div className="mt-6 flex space-x-2">
-            <button className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
+            <button onClick={openEditor} className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
               <Edit className="w-4 h-4 mr-2"/> Edit
             </button>
             <button 
@@ -72,6 +102,38 @@ const ProfilePage: React.FC = () => {
             </button>
           </div>
         </motion.div>
+
+        {/* Edit modal */}
+        {isEditing && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 w-11/12 max-w-lg">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Edit Profile</h3>
+              {editError && <div className="mb-3 text-sm text-red-600">{editError}</div>}
+              <form onSubmit={submitEdit} className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Display name</label>
+                  <input value={formName} onChange={(e) => setFormName(e.target.value)} className="w-full p-2 rounded-md border dark:bg-slate-700" />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Avatar URL</label>
+                  <input value={formPhoto} onChange={(e) => setFormPhoto(e.target.value)} className="w-full p-2 rounded-md border dark:bg-slate-700" />
+                  {formPhoto && (
+                    <div className="mt-3">
+                      <p className="text-xs text-gray-500 mb-2">Preview</p>
+                      <img src={formPhoto} alt="preview" className="w-24 h-24 rounded-full border" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 border rounded-md">Cancel</button>
+                  <button type="submit" disabled={editLoading} className="px-4 py-2 bg-cyan-600 text-white rounded-md disabled:opacity-60">{editLoading ? 'Saving...' : 'Save'}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* Stats and Challenges */}
         <motion.div 
