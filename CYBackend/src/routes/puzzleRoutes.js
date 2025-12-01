@@ -8,6 +8,7 @@ const {
   deletePuzzle,
   submitAnswer
 } = require('../controllers/puzzleController');
+const { optionalAuth } = require('../middlewares/optionalAuth');
 
 // Chain GET and POST for the base route '/'
 router.route('/')
@@ -20,6 +21,8 @@ router.route('/:id')
   .put(updatePuzzle)
   .delete(deletePuzzle);
 
-router.route('/:id/submit').post(submitAnswer);
+// Allow optional authentication on puzzle submit so logged-in users
+// will be recognized and awarded points, while guests can still try puzzles.
+router.route('/:id/submit').post(optionalAuth, submitAnswer);
 
 module.exports = router;

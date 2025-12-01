@@ -17,6 +17,7 @@ import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/redux/store';
 import { fetchPuzzleById } from '@/redux/slices/puzzleSlice';
+import { setUser } from '@/redux/slices/userSlice';
 import axios from '@/api/axios';
 
 // --- Page Component ---
@@ -31,6 +32,7 @@ const SolvePuzzlePage: React.FC = () => {
   const [revealedHintsCount, setRevealedHintsCount] = useState(0);
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState<'idle' | 'correct' | 'incorrect'>('idle');
+  const [submissionMessage, setSubmissionMessage] = useState<string | null>(null);
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number }>>([]);
 
   // --- Title Scramble Effect ---
@@ -137,15 +139,27 @@ const SolvePuzzlePage: React.FC = () => {
         }));
         setParticles(newParticles);
         setTimeout(() => setParticles([]), 3000);
+          // The backend will award points on the first correct attempt and return
+          // an `awardedPoints` flag and the updated `user` object when applicable.
+          // Use the returned user to refresh Redux state instead of calling
+          // /users/me/add-points from the client (that would double-award points).
+          if (response?.data?.awardedPoints && response.data.user) {
+            dispatch(setUser(response.data.user));
+          }
+          // show server provided message if available
+          setSubmissionMessage(response?.data?.message || null);
       } else {
         // 3. Handle incorrect answers that still returned 200 OK
         setFeedback('incorrect');
+        // Use the server response message for incorrect-but-200 responses
+        setSubmissionMessage(response?.data?.message ?? null);
         setTimeout(() => setFeedback('idle'), 2000);
       }
-    } catch (error) {
+    } catch (error: any) {
       // 4. Catches actual network errors or 4xx/5xx server responses
       console.error('Submission error:', error);
       setFeedback('incorrect');
+      setSubmissionMessage(error?.response?.data?.message ?? null);
       setTimeout(() => setFeedback('idle'), 2000);
     }
   };
@@ -343,12 +357,12 @@ const SolvePuzzlePage: React.FC = () => {
                   {feedback === 'correct' ? (
                     <>
                       <CheckCircle size={20} />
-                      <span>Correct! Puzzle solved successfully.</span>
+                      <span>{submissionMessage ?? 'Correct! Puzzle solved successfully.'}</span>
                     </>
                   ) : (
                     <>
                       <AlertCircle size={20} />
-                      <span>Incorrect. Please try again.</span>
+                      <span>{submissionMessage ?? 'Incorrect. Please try again.'}</span>
                     </>
                   )}
                 </motion.div>

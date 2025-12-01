@@ -21,7 +21,12 @@ export interface LeaderboardUser {
 export interface Puzzle {
   _id: string;
   title: string;
+  tag?: string;
   category: string;
   description: string;
+  level?: number;
+  hints?: string[];
+  active?: boolean;
+  scenario?: string;
 }
 

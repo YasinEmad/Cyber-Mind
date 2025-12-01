@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { handleGoogleSignIn, logout, getMe, updateMe } = require('../controllers/userController');
+const { handleGoogleSignIn, logout, getMe, updateMe, addPoints } = require('../controllers/userController');
 const { protect } = require('../middlewares/authUser');
 
 // @route   POST /api/users/auth/google
@@ -19,5 +19,8 @@ router.get('/logout', logout);
 router.get('/me', protect, getMe);
 // Update profile
 router.patch('/me', protect, updateMe);
+
+// Award points to current user (protected)
+router.post('/me/add-points', protect, addPoints);
 
 module.exports = router;

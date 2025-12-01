@@ -30,6 +30,12 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Profile',
   },
+  // store solved puzzle references by Puzzle _id (ObjectId) to ensure uniqueness and avoid
+  // collisions if tags change or duplicates exist. Using ObjectId makes checks unambiguous.
+  solvedPuzzles: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Puzzle'
+  }],
 });
 
 module.exports = mongoose.model('User', UserSchema);

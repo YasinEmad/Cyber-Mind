@@ -157,7 +157,10 @@ export const PuzzlesViewAdmin = () => {
               </div>
 
               <h3 className="text-xl font-bold text-white mb-2">{puzzle.title}</h3>
-              <p className="text-gray-400 mb-2 text-sm uppercase tracking-wide font-semibold">{puzzle.category}</p>
+              <div className="flex items-center gap-2 mb-2">
+                <p className="text-xs text-blue-300 bg-blue-900/20 px-2 py-1 rounded-full font-semibold">{puzzle.tag}</p>
+                <p className="text-gray-400 text-sm uppercase tracking-wide font-semibold">{puzzle.category}</p>
+              </div>
               <p className="text-gray-400 mb-6 flex-grow line-clamp-3">
                 {puzzle.description}
               </p>

@@ -54,7 +54,7 @@ function createToken(user) {
   const [activeTab, setActiveTab] = useState<'instructions' | 'testcases' | 'output' | 'security'>('instructions');
   const [testResults, setTestResults] = useState<Array<{ passed: boolean; message: string; severity?: 'high' | 'medium' | 'low' }>>([]);
   const [isRunning, setIsRunning] = useState(false);
-  const [vulnerabilities, setVulnerabilities] = useState<Array<{ type: string; severity: 'high' | 'medium' | 'low'; description: string; fix: string }>>([
+  const [vulnerabilities] = useState<Array<{ type: string; severity: 'high' | 'medium' | 'low'; description: string; fix: string }>>([
     {
       type: "SQL Injection",
       severity: "high",

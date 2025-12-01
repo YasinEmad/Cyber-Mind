@@ -12,10 +12,18 @@ connectDB();
 const app = express();
 
 const cookieParser = require('cookie-parser');
+const cors = require('cors');
 
 // Body parser
 app.use(express.json());
 app.use(cookieParser());
+
+// Configure CORS so that the frontend can call the backend directly during development.
+// Allow credentials (cookies) and allow the client origin from environment or default to vite's dev server.
+app.use(cors({
+	origin: process.env.CLIENT_URL || 'http://localhost:5173',
+	credentials: true,
+}));
 
 // Mount routers
 const challengeRoutes = require('./routes/challengeRoutes');

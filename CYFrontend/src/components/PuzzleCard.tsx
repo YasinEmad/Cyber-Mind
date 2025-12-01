@@ -21,7 +21,7 @@ const PuzzleCard: React.FC<PuzzleCardProps> = ({ puzzle, index }) => {
       setDisplayedTitle(
         puzzle.title
           .split('')
-          .map((letter, index) => {
+          .map((_, index) => {
             if (index < iteration) return puzzle.title[index]
             return letters[Math.floor(Math.random() * letters.length)]
           })

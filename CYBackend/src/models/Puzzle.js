@@ -29,6 +29,12 @@ const puzzleSchema = new mongoose.Schema({
     required: [true, 'Scenario is required'],
     trim: true
   },
+  tag: {
+    type: String,
+    required: [true, 'Tag is required'],
+    unique: true,
+    trim: true
+  },
   // --- New attribute added below ---
   answer: {
     type: String,

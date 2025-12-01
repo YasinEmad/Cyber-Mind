@@ -15,7 +15,11 @@ const app = express();
 connectDB();
 
 // 3. Global Middleware
-app.use(cors()); // Enable Cross-Origin Resource Sharing
+app.use(cors({
+  origin: 'http://localhost:5173', // فرونت اند
+  credentials: true               // يسمح بإرسال الكوكيز
+}));
+
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 app.use(cookieParser()); // Parse cookies

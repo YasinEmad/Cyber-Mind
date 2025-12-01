@@ -141,3 +141,57 @@ exports.updateMe = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Award points to current user (e.g., after solving a puzzle)
+// @route   POST /api/users/me/add-points
+// @access  Private
+exports.addPoints = async (req, res, next) => {
+  try {
+    const { points = 10 } = req.body; // default to 10 if not provided
+
+    // req.user is populated by protect middleware
+    const user = await User.findById(req.user._id).populate('profile');
+
+    // Ensure the user has a profile object. If missing, create _and_ link one
+    // so awarding points still works for older users or accounts created without
+    // an associated Profile record.
+    let profile = null;
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (!user.profile) {
+      // create a new profile and attach it to the user
+      profile = new Profile({ user: user._id });
+      await profile.save();
+      user.profile = profile._id;
+      await user.save();
+      // repopulate user.profile for the response below
+      await user.populate('profile');
+    } else {
+      profile = await Profile.findById(user.profile._id);
+      if (!profile) {
+        // Rare case: user.profile referenced an id that doesn't exist — recreate
+        profile = new Profile({ user: user._id });
+        await profile.save();
+        user.profile = profile._id;
+        await user.save();
+        await user.populate('profile');
+      }
+    }
+
+    // Update aggregate score and increment puzzlesDone as a simple bookkeeping step
+    profile.totalScore = (profile.totalScore || 0) + Number(points);
+    profile.puzzlesDone = (profile.puzzlesDone || 0) + 1;
+
+    await profile.save();
+
+    // Return the updated user object populated with the new profile values
+    const updated = await User.findById(user._id).populate('profile');
+
+    return res.status(200).json({ success: true, data: updated });
+  } catch (error) {
+    next(error);
+  }
+};

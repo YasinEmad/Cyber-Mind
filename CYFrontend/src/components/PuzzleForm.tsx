@@ -10,6 +10,7 @@ interface PuzzleFormProps {
 export const PuzzleForm: React.FC<PuzzleFormProps> = ({ puzzle, onSave, onCancel }) => {
   const [formData, setFormData] = useState<Omit<Puzzle, '_id' | 'createdAt' | 'updatedAt'>>({
     title: '',
+    tag: '',
     description: '',
     level: 1,
     hints: [],
@@ -21,8 +22,9 @@ export const PuzzleForm: React.FC<PuzzleFormProps> = ({ puzzle, onSave, onCancel
 
   useEffect(() => {
     if (puzzle) {
-      setFormData({
+        setFormData({
         title: puzzle.title,
+          tag: puzzle.tag || '',
         description: puzzle.description,
         level: puzzle.level,
         hints: puzzle.hints,
@@ -74,6 +76,18 @@ export const PuzzleForm: React.FC<PuzzleFormProps> = ({ puzzle, onSave, onCancel
       <div className="bg-gray-800 rounded-lg p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold text-white mb-6">{puzzle ? 'Edit Puzzle' : 'Add New Puzzle'}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="tag" className="block text-sm font-medium text-gray-300">Tag</label>
+            <input
+              type="text"
+              name="tag"
+              id="tag"
+              value={formData.tag}
+              onChange={handleChange}
+              className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+          </div>
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-gray-300">Title</label>
             <input
