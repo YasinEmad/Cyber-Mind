@@ -75,6 +75,18 @@ exports.handleGoogleSignIn = async (req, res, next) => {
     }
 
     // Set cookie
+    // Ensure the user has a profile (covers cases where an existing user
+    // didn't have an associated Profile record). This keeps front-end checks
+    // simple and avoids null reference errors elsewhere.
+    if (!user.profile) {
+      const profile = new Profile({ user: user._id });
+      await profile.save();
+      user.profile = profile._id;
+      await user.save();
+      await user.populate('profile');
+    }
+
+    // Set cookie
     const options = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production

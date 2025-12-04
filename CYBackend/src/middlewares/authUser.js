@@ -1,5 +1,6 @@
 const admin = require('../config/firebaseAdmin');
 const User = require('../models/User');
+const Profile = require('../models/Profile');
 
 const protect = async (req, res, next) => {
   let token;
@@ -20,6 +21,17 @@ const protect = async (req, res, next) => {
 
     if (!user) {
       return res.status(401).json({ success: false, message: 'Not authorized, user not found' });
+    }
+
+    // If a user exists but has no Profile document (edge cases, older users,
+    // or partial imports), create one and attach it so downstream handlers
+    // can safely assume `req.user.profile` exists.
+    if (!user.profile) {
+      const profile = new Profile({ user: user._id });
+      await profile.save();
+      user.profile = profile._id;
+      await user.save();
+      await user.populate('profile');
     }
 
     req.user = user;

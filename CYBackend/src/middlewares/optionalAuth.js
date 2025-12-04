@@ -1,5 +1,6 @@
 const admin = require('../config/firebaseAdmin');
 const User = require('../models/User');
+const Profile = require('../models/Profile');
 
 /**
  * Optional auth middleware — tries to authenticate the request if a token
@@ -30,6 +31,28 @@ const optionalAuth = async (req, res, next) => {
     // findOne mock returns a plain object (tests), just keep it.
     if (user && typeof user.populate === 'function') {
       await user.populate('profile');
+
+      // If the user exists but doesn't have an associated Profile document
+      // (edge cases or older accounts), create one and link it so
+      // downstream handlers can safely use `req.user.profile`.
+      if (!user.profile) {
+        const profile = new Profile({ user: user._id });
+        await profile.save();
+        user.profile = profile._id;
+        await user.save();
+        await user.populate('profile');
+      } else {
+        // If user.profile is an id but the Profile document is missing,
+        // recreate it.
+        const existing = await Profile.findById(user.profile._id || user.profile);
+        if (!existing) {
+          const profile = new Profile({ user: user._id });
+          await profile.save();
+          user.profile = profile._id;
+          await user.save();
+          await user.populate('profile');
+        }
+      }
     }
 
     req.user = user || null;

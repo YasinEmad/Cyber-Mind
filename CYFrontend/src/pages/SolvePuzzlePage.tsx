@@ -143,8 +143,18 @@ const SolvePuzzlePage: React.FC = () => {
           // an `awardedPoints` flag and the updated `user` object when applicable.
           // Use the returned user to refresh Redux state instead of calling
           // /users/me/add-points from the client (that would double-award points).
-          if (response?.data?.awardedPoints && response.data.user) {
-            dispatch(setUser(response.data.user));
+          if (response?.data?.awardedPoints) {
+            try {
+              // Refresh the canonical user object from the server so that
+              // the profile (totalScore, puzzlesDone, etc.) is populated
+              // and in sync with backend changes.
+              const me = await axios.get('/users/me');
+              if (me?.data?.data) dispatch(setUser(me.data.data));
+            } catch (err) {
+              // Fallback: if /users/me fails, use the returned user object
+              // from the submit response (if present) so UI still updates.
+              if (response.data.user) dispatch(setUser(response.data.user));
+            }
           }
           // show server provided message if available
           setSubmissionMessage(response?.data?.message || null);
