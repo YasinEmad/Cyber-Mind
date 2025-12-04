@@ -153,7 +153,8 @@ exports.submitAnswer = async (req, res) => {
         // clients can refresh their local state without hitting a second endpoint.
         await user.save();
         try {
-          await user.populate('profile');
+          // IMPORTANT: reassign the populated user back to the variable
+          user = await User.findById(user._id).populate('profile');
         } catch (popErr) {
           // populate isn't critical in tests / some runtime scenarios
         }
