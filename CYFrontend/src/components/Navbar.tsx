@@ -1,18 +1,9 @@
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { Gamepad2, Menu, X, Home, Info, Swords, Trophy, Star, User, BrainCircuit, ShieldCheck } from 'lucide-react';
-
-const navLinks = [
-  { name: 'Home', path: '/', icon: Home },
-  { name: 'About', path: '/about', icon: Info },
-  { name: 'Game', path: '/game', icon: Swords },
-  { name: 'Puzzles', path: '/puzzles', icon: BrainCircuit },
-  { name: 'Challenges', path: '/challenges', icon: Star },
-  { name: 'Leaderboard', path: '/leaderboard', icon: Trophy },
-  { name: 'Profile', path: '/profile', icon: User },
-  { name: 'Admin', path: '/admin', icon: ShieldCheck },
-];
+import { selectUser, selectIsAdmin } from '@/redux/slices/userSlice';
 
 const NavLinkItem: React.FC<{ to: string; children: React.ReactNode; onClick?: () => void }> = ({ to, children, onClick }) => {
   return (
@@ -34,6 +25,19 @@ const NavLinkItem: React.FC<{ to: string; children: React.ReactNode; onClick?: (
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const user = useSelector(selectUser);
+  const isAdmin = useSelector(selectIsAdmin);
+
+  const navLinks = [
+    { name: 'Home', path: '/', icon: Home },
+    { name: 'About', path: '/about', icon: Info },
+    { name: 'Game', path: '/game', icon: Swords },
+    { name: 'Puzzles', path: '/puzzles', icon: BrainCircuit },
+    { name: 'Challenges', path: '/challenges', icon: Star },
+    { name: 'Leaderboard', path: '/leaderboard', icon: Trophy },
+    { name: 'Profile', path: '/profile', icon: User },
+    ...(isAdmin ? [{ name: 'Admin', path: '/admin', icon: ShieldCheck }] : []),
+  ];
 
   return (
     <nav className="fixed top-0 left-0 right-0 bg-slate-900/80 backdrop-blur-lg shadow-md z-50">
@@ -58,11 +62,11 @@ export default function Navbar() {
           <div className="hidden md:block">
             <div className="ml-4 flex items-center md:ml-6">
                 <div className="relative group">
-                    <img className="h-10 w-10 rounded-full border-2 border-slate-600 group-hover:border-cyan-400 transition-all" src="https://picsum.photos/id/237/100/100" alt="User Avatar"/>
+                    <img className="h-10 w-10 rounded-full border-2 border-slate-600 group-hover:border-cyan-400 transition-all" src={user?.photoURL || "https://picsum.photos/id/239/200/200"} alt="User Avatar"/>
                     <div className="absolute top-0 right-0 -mt-1 -mr-1 h-3 w-3 bg-green-400 rounded-full border-2 border-slate-900"></div>
                      <div className="absolute top-full right-0 mt-2 w-48 bg-slate-800 rounded-md shadow-lg py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 invisible group-hover:visible">
-                        <a href="#profile" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700">Your Profile</a>
-                        <a href="#settings" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700">Settings</a>
+                        <NavLink to="/profile" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700">Your Profile</NavLink>
+                        <NavLink to="/profile" className="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700">Settings</NavLink>
                         <a href="#logout" className="block px-4 py-2 text-sm text-red-400 hover:bg-slate-700">Sign out</a>
                     </div>
                 </div>
@@ -94,11 +98,11 @@ export default function Navbar() {
           <div className="pt-4 pb-3 border-t border-slate-700">
             <div className="flex items-center px-5">
               <div className="flex-shrink-0">
-                <img className="h-10 w-10 rounded-full" src="https://picsum.photos/id/237/100/100" alt="" />
+                <img className="h-10 w-10 rounded-full" src={user?.photoURL || "https://picsum.photos/id/239/200/200"} alt="" />
               </div>
               <div className="ml-3">
-                <div className="text-base font-medium leading-none text-white">Tom Cook</div>
-                <div className="text-sm font-medium leading-none text-slate-400">tom@example.com</div>
+                <div className="text-base font-medium leading-none text-white">{user?.name || 'User'}</div>
+                <div className="text-sm font-medium leading-none text-slate-400">{user?.email || 'No email'}</div>
               </div>
             </div>
           </div>

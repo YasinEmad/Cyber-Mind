@@ -15,6 +15,7 @@ interface User {
   email: string;
   name: string;
   photoURL: string;
+  role?: string;
   profile: Profile;
 }
 
@@ -55,5 +56,6 @@ export const { setUser, clearUser, setLoading } = userSlice.actions;
 export const selectUser = (state: RootState) => state.user.user;
 export const selectIsAuthenticated = (state: RootState) => state.user.isAuthenticated;
 export const selectLoading = (state: RootState) => state.user.loading;
+export const selectIsAdmin = (state: RootState) => state.user.user?.role === 'admin';
 
 export default userSlice.reducer;

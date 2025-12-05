@@ -14,6 +14,7 @@ import PlayLevelPage from '../pages/PlayLevelPage';
 import MainLayout from '../layouts/MainLayout';
 import LoginPage from '../pages/LoginPage';
 import ProtectedRoute from './ProtectedRoute';
+import AdminRoute from './AdminRoute';
 import AdmainDashboard from '../pages/AdmainDashboard';
 
 export default function AnimatedRoutes() {
@@ -35,6 +36,8 @@ export default function AnimatedRoutes() {
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<ProfilePage />} />
+          </Route>
+          <Route element={<AdminRoute />}>
             <Route path="/admin" element={<AdmainDashboard />} />
           </Route>
         </Route>

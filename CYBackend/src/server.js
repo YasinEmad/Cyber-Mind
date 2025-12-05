@@ -27,6 +27,7 @@ app.use(cookieParser()); // Parse cookies
 // 4. Routes
 app.use('/api/puzzles', require('./routes/puzzleRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 // 5. Error Handling Middleware
 // TODO: Add your error handling middleware here
