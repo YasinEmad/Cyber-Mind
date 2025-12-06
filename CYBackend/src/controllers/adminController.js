@@ -1,7 +1,7 @@
 const User = require('../models/User');
 
 // Super admin email can be configured via env var, fallback to current hardcoded value
-const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'yasin7676@gmail.com';
+const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'yemad7676@gmail.com';
 
 /**
  * @desc    Get all users (only admins can access)
