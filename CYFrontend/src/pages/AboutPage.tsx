@@ -1,4 +1,3 @@
-
 import React from 'react';
 import PageWrapper from '@/components/PageWrapper';
 import { motion } from 'framer-motion';
@@ -7,20 +6,19 @@ import { Cpu, Target, Award, PlayCircle } from 'lucide-react';
 const FeatureCard: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode; delay: number }> = ({ icon, title, children, delay }) => {
   return (
     <motion.div
-      className="bg-slate-800/50 backdrop-blur-lg border border-slate-700 rounded-2xl p-6 text-center"
+      className="bg-[#0A0A0A]/50 backdrop-blur-lg border border-[#374151] rounded-2xl p-6 text-center"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: delay }}
     >
-      <div className="inline-block bg-cyan-500/20 text-cyan-400 p-4 rounded-full mb-4">
+      <div className="inline-block bg-[#b91c1c]/20 text-[#ef4444] p-4 rounded-full mb-4">
         {icon}
       </div>
       <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-      <p className="text-slate-400">{children}</p>
+      <p className="text-gray-300">{children}</p>
     </motion.div>
   );
 };
-
 
 const AboutPage: React.FC = () => {
   return (
@@ -35,7 +33,7 @@ const AboutPage: React.FC = () => {
           About Cyber Mind
         </motion.h1>
         <motion.p 
-          className="text-slate-300 mt-4 max-w-3xl mx-auto"
+          className="text-gray-300 mt-4 max-w-3xl mx-auto"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
@@ -52,8 +50,8 @@ const AboutPage: React.FC = () => {
         transition={{ duration: 0.5, delay: 0.4 }}
       >
         <h2 className="text-2xl font-bold text-white text-center mb-6">See It In Action</h2>
-        <div className="aspect-[16/9] w-full bg-slate-900/50 border-2 border-slate-700 rounded-2xl flex items-center justify-center cursor-pointer group hover:border-cyan-400 transition-all duration-300 shadow-2xl shadow-cyan-900/20">
-            <PlayCircle className="w-20 h-20 text-slate-500 group-hover:text-cyan-400 group-hover:scale-110 transition-all duration-300" />
+        <div className="aspect-[16/9] w-full bg-[#0A0A0A]/50 border-2 border-[#374151] rounded-2xl flex items-center justify-center cursor-pointer group hover:border-[#ef4444] transition-all duration-300 shadow-2xl shadow-[#b91c1c]/20">
+            <PlayCircle className="w-20 h-20 text-gray-500 group-hover:text-[#ef4444] group-hover:scale-110 transition-all duration-300" />
         </div>
       </motion.div>
 
