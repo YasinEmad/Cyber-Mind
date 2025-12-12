@@ -7,3 +7,7 @@
 .animate-blink {
   animation: blink 1s step-end infinite;
 }
+body {
+    @apply bg-[#0A0A0A] text-white; /* dark background + default text color */
+}
+
