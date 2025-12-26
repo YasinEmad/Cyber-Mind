@@ -251,9 +251,11 @@ const HomePage: React.FC = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <button className="px-8 py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-full transition-all shadow-lg flex items-center gap-2 mx-auto lg:mx-0">
-                  <Zap className="w-5 h-5 fill-current" /> Start Journey
-                </button>
+                <Link to="/game">
+                  <button className="px-8 py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-full transition-all shadow-lg flex items-center gap-2 mx-auto lg:mx-0">
+                    <Zap className="w-5 h-5 fill-current" /> Start Journey
+                  </button>
+                </Link>
               </motion.div>
             </motion.div>
 

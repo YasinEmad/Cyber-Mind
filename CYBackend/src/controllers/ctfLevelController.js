@@ -204,6 +204,16 @@ exports.getCTFLevelById = async (req, res, next) => {
 // Create a new CTF level
 exports.createCTFLevel = async (req, res, next) => {
   try {
+    // ✓ SECURITY: Validate admin role (redundant check, but good practice)
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required to create CTF levels'
+      });
+    }
+
+    console.log(`[CTF_ADMIN] Admin ${req.user.email} creating new CTF level`);
+
     const {
       level,
       title,
@@ -300,6 +310,16 @@ exports.createCTFLevel = async (req, res, next) => {
 // Update a CTF level
 exports.updateCTFLevel = async (req, res, next) => {
   try {
+    // ✓ SECURITY: Validate admin role
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required to update CTF levels'
+      });
+    }
+
+    console.log(`[CTF_ADMIN] Admin ${req.user.email} updating CTF level`);
+
     const { id } = req.params;
     const updateData = req.body;
 
@@ -355,6 +375,16 @@ exports.updateCTFLevel = async (req, res, next) => {
 // Delete a CTF level
 exports.deleteCTFLevel = async (req, res, next) => {
   try {
+    // ✓ SECURITY: Validate admin role
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required to delete CTF levels'
+      });
+    }
+
+    console.log(`[CTF_ADMIN] Admin ${req.user.email} deleting CTF level`);
+
     const { id } = req.params;
     const level = await CTFLevel.findByPk(id);
 
@@ -379,6 +409,16 @@ exports.deleteCTFLevel = async (req, res, next) => {
 // Toggle active status
 exports.toggleCTFLevelStatus = async (req, res, next) => {
   try {
+    // ✓ SECURITY: Validate admin role
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required to toggle CTF level status'
+      });
+    }
+
+    console.log(`[CTF_ADMIN] Admin ${req.user.email} toggling CTF level status`);
+
     const { id } = req.params;
     const level = await CTFLevel.findByPk(id);
 

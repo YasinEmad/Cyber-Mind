@@ -16,14 +16,14 @@ const { optionalAuth, authAdmin } = require('../middlewares/auth');
 // العمليات على المسار الرئيسي /api/puzzles
 router.route('/')
   .get(getPuzzles)
-  .post(createPuzzle)
+  .post(authAdmin, createPuzzle)
   .delete(authAdmin, deleteAllPuzzles);
 
 // العمليات على لغز محدد /api/puzzles/:id
 router.route('/:id')
   .get(getPuzzleById)
-  .patch(updatePuzzle)
-  .delete(deletePuzzle);
+  .patch(authAdmin, updatePuzzle)
+  .delete(authAdmin, deletePuzzle);
 
 // تصحيح الإجابة
 // optionalAuth دلوقتى بيجي من ملف auth.js المشترك

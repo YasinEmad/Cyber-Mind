@@ -14,6 +14,20 @@ const calculatePoints = (difficulty) => {
 // Execute a command for a given level (path-aware)
 exports.executeCTFCommand = async (req, res, next) => {
   try {
+    // ✓ SECURITY: Validate user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ 
+        success: false, 
+        output: 'Authentication required to execute commands' 
+      });
+    }
+
+    const userId = req.user.id;
+    const userEmail = req.user.email || 'unknown';
+    
+    // Log execution for audit trail
+    console.log(`[CTF_EXECUTION] User ${userEmail} (ID: ${userId}) executing CTF command`);
+
     const { level, command, currentPath, sessionState } = req.body;
     if (level === undefined || !command) {
       return res.status(400).json({ success: false, output: 'Missing level or command' });

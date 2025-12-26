@@ -32,6 +32,16 @@ exports.getPuzzleById = async (req, res, next) => {
 // @desc    Create a new puzzle
 exports.createPuzzle = async (req, res, next) => {
   try {
+    // ✓ SECURITY: Validate admin role
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required to create puzzles'
+      });
+    }
+
+    console.log(`[PUZZLE_ADMIN] Admin ${req.user.email} creating new puzzle`);
+
     if (req.body.level) req.body.level = Number(req.body.level);
 
     // Generate tags automatically
@@ -47,6 +57,16 @@ exports.createPuzzle = async (req, res, next) => {
 // @desc    Update a puzzle
 exports.updatePuzzle = async (req, res, next) => {
   try {
+    // ✓ SECURITY: Validate admin role
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required to update puzzles'
+      });
+    }
+
+    console.log(`[PUZZLE_ADMIN] Admin ${req.user.email} updating puzzle`);
+
     const { id } = req.params;
     
     // Validate ID
@@ -75,6 +95,16 @@ exports.updatePuzzle = async (req, res, next) => {
 // @desc    Delete a puzzle
 exports.deletePuzzle = async (req, res, next) => {
   try {
+    // ✓ SECURITY: Validate admin role
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required to delete puzzles'
+      });
+    }
+
+    console.log(`[PUZZLE_ADMIN] Admin ${req.user.email} deleting puzzle`);
+
     const { id } = req.params;
     
     // Validate ID
