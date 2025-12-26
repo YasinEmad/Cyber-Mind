@@ -1,0 +1,6 @@
+
+{
+  "name": "Cyber Mind",
+  "description": "A modern gaming platform UI to explore games, solve puzzles, take on challenges, and compete on the leaderboard. This is a static UI demonstration built with React, TypeScript, and Tailwind CSS.",
+  "requestFramePermissions": []
+}
