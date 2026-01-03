@@ -4,16 +4,22 @@ import { Challenge, ChallengeDifficulty } from '@/types';
 import ChallengeCard from '@/components/ChallengeCard';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const challenges: Challenge[] = [
-  { id: 1, title: 'Speed Runner', difficulty: ChallengeDifficulty.Easy },
-  { id: 2, title: 'Puzzle Master', difficulty: ChallengeDifficulty.Medium },
-  { id: 3, title: 'Logic Legend', difficulty: ChallengeDifficulty.Hard },
-  { id: 4, title: 'Quick Reflexes', difficulty: ChallengeDifficulty.Easy },
-  { id: 5, title: 'Strategy King', difficulty: ChallengeDifficulty.Hard },
-  { id: 6, title: 'Memory Maze', difficulty: ChallengeDifficulty.Medium },
-  { id: 7, title: 'Trivia Titan', difficulty: ChallengeDifficulty.Easy },
-  { id: 8, title: 'Endurance Trial', difficulty: ChallengeDifficulty.Hard },
-];
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '@/redux/store';
+import { fetchChallenges } from '@/redux/slices/challengeSlice';
+
+const challenges: Challenge[] = []; // will be replaced by store data below
+
+function mapToCard(ch: any): Challenge {
+  const lvl = ch.level || ch.difficulty || 'easy';
+  const difficulty = lvl.toLowerCase() === 'medium' ? ChallengeDifficulty.Medium : (lvl.toLowerCase() === 'hard' ? ChallengeDifficulty.Hard : ChallengeDifficulty.Easy);
+  return {
+    id: ch._id || ch.id,
+    title: ch.title,
+    description: ch.description,
+    difficulty,
+  };
+}
 
 const motivationalQuotes = [
   "EXCELLENCE IS NOT AN ACT, BUT A HABIT.",
@@ -92,6 +98,16 @@ const AnimatedBackground: React.FC = () => {
 };
 
 const ChallengePage: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const storeChallenges = useSelector((state: RootState) => state.challenges.challenges);
+  const status = useSelector((state: RootState) => state.challenges.status);
+
+  useEffect(() => {
+    if (status === 'idle') dispatch(fetchChallenges());
+  }, [dispatch]);
+
+  const cards = storeChallenges.map(mapToCard);
+
   return (
     <PageWrapper>
       <div className="relative min-h-screen pb-20">
@@ -120,7 +136,7 @@ const ChallengePage: React.FC = () => {
 
           <div className="max-w-7xl mx-auto px-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {challenges.map((challenge, index) => (
+              {cards.map((challenge, index) => (
                 <ChallengeCard key={challenge.id} challenge={challenge} index={index} />
               ))}
             </div>

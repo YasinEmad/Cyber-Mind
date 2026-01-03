@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '@/redux/store';
+import { fetchChallengeById } from '@/redux/slices/challengeSlice';
 import { motion, AnimatePresence } from 'framer-motion';
 import Editor from '@monaco-editor/react';
 import { 
@@ -16,36 +19,7 @@ const PlayChallengePage: React.FC = () => {
   const { challengeId } = useParams<{ challengeId: string }>();
 
   // --- State Management ---
-  const vulnerableCode = `// Vulnerable Authentication Function
-async function authenticateUser(username, password) {
-  // VULNERABILITY: SQL Injection possible here
-  const query = \`SELECT * FROM users 
-    WHERE username = '\${username}' 
-    AND password = '\${password}'\`;
-  
-  const user = await db.query(query);
-  
-  if (user) {
-    // VULNERABILITY: Weak password storage
-    return { token: createToken(user) };
-  }
-  return null;
-}
-
-// VULNERABILITY: Insecure token creation
-function createToken(user) {
-  return Buffer.from(
-    JSON.stringify({
-      id: user.id,
-      username: user.username,
-      // VULNERABILITY: Sensitive data exposure
-      role: user.role,
-      ssn: user.ssn
-    })
-  ).toString('base64');
-}`;
-
-  const [code, setCode] = useState(vulnerableCode);
+  const [code, setCode] = useState<string>("");
   const [output, setOutput] = useState<string>("");
   const [activeLeftTab, setActiveLeftTab] = useState<'challenge' | 'recommendations' | 'hints'>('challenge');
   const [activeBottomTab, setActiveBottomTab] = useState<'output' | 'tests'>('output');
@@ -53,45 +27,29 @@ function createToken(user) {
   const [isRunning, setIsRunning] = useState(false);
   const [revealedHints, setRevealedHints] = useState<Set<number>>(new Set());
 
-  const hints = [
-    {
-      id: 0,
-      title: "Parameterized Queries",
-      content: "Look at the database query construction. String interpolation allows attackers to inject SQL code. Try using parameterized queries with placeholders (?) instead."
-    },
-    {
-      id: 1,
-      title: "Secure Password Storage",
-      content: "Passwords should never be compared as plain text. Use bcrypt.compare() to securely compare passwords against hashed values stored in the database."
-    },
-    {
-      id: 2,
-      title: "Token Sanitization",
-      content: "Sensitive information like SSN should never be stored in tokens. Remove unnecessary fields from the JWT payload and use proper JWT signing instead of base64 encoding."
-    }
-  ];
+  const [hintsList, setHintsList] = useState<Array<{id:number; title:string; content:string}>>([]);
 
-  // Static Data
-  const vulnerabilities = [
-    {
-      type: "SQL Injection",
-      severity: "high",
-      description: "String interpolation allows attackers to manipulate the query structure.",
-      fix: "Use parameterized queries (e.g., ? or )."
-    },
-    {
-      type: "Password Storage",
-      severity: "high",
-      description: "Plaintext password comparison is catastrophic.",
-      fix: "Use bcrypt.compare() with hashed passwords."
-    },
-    {
-      type: "Sensitive Data",
-      severity: "high",
-      description: "SSN exposed in base64 encoded token.",
-      fix: "Remove sensitive fields and use JWT signing."
+  const dispatch = useDispatch<AppDispatch>();
+  const chFromStore = useSelector((state: RootState) => state.challenges.challenge);
+  const chStatus = useSelector((state: RootState) => state.challenges.status);
+
+  useEffect(() => {
+    if (challengeId) dispatch(fetchChallengeById(challengeId));
+  }, [dispatch, challengeId]);
+
+  useEffect(() => {
+    if (chFromStore) {
+      // apply code and hints from backend if present
+      if (chFromStore.code) setCode(chFromStore.code);
+      if (Array.isArray(chFromStore.hints) && chFromStore.hints.length > 0) {
+        setHintsList(chFromStore.hints.map((h: string, idx: number) => ({ id: idx, title: `Hint ${idx + 1}`, content: h })));
+      } else {
+        setHintsList([]);
+      }
     }
-  ];
+  }, [chFromStore]);
+
+  // static vulnerabilities removed
 
   // --- Handlers ---
   const handleEditorChange = (value: string | undefined) => {
@@ -99,10 +57,10 @@ function createToken(user) {
   };
 
   const handleReset = () => {
-    setCode(vulnerableCode);
+    setCode(chFromStore?.code || "");
     setOutput("");
     setTestResults([]);
-  };
+  }; 
 
   const toggleHint = (hintId: number) => {
     const newHints = new Set(revealedHints);
@@ -189,7 +147,7 @@ function createToken(user) {
             <span className="font-bold text-sm tracking-wide">SEC-CHALLENGE-{challengeId}</span>
           </div>
           <span className="text-gray-600 text-sm">|</span>
-          <span className="text-gray-400 text-sm font-medium">Authentication Bypass Fix</span>
+          <span className="text-gray-400 text-sm font-medium">{chFromStore?.title || ''}</span>
         </div>
 
         <div className="flex items-center gap-3">
@@ -222,6 +180,13 @@ function createToken(user) {
           </button>
         </div>
       </header>
+
+      {/* --- Description banner --- */}
+      {chFromStore && chFromStore.description && (
+        <div className="px-4 py-2 bg-gray-900 border-b border-gray-800 text-sm text-gray-300">
+          {chFromStore.description}
+        </div>
+      )}
 
       {/* --- Main Workspace --- */}
       <div className="flex-1 flex overflow-hidden">
@@ -273,20 +238,12 @@ function createToken(user) {
                   exit={{ opacity: 0, y: -10 }}
                   className="space-y-4"
                 >
-                  <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-4">Detected Challenges</h3>
-                  {vulnerabilities.map((vuln, idx) => (
-                    <div key={idx} className="bg-black border border-gray-800 rounded-lg p-4 hover:border-red-900/50 transition-all duration-300 hover:shadow-lg hover:shadow-red-900/10 group">
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="text-red-500 font-bold text-sm group-hover:text-red-400 transition-colors">{vuln.type}</span>
-                        <span className="text-[10px] font-black bg-gradient-to-r from-red-900/20 to-orange-900/20 text-red-400 px-2 py-0.5 rounded border border-red-900/30">HIGH</span>
-                      </div>
-                      <p className="text-xs text-gray-500 mb-3 leading-relaxed">{vuln.description}</p>
-                      <div className="flex items-center gap-2 text-xs bg-black text-orange-400 p-2 rounded border border-gray-800">
-                        <Zap size={12} className="text-orange-500" />
-                        <span className="font-medium">Fix: {vuln.fix}</span>
-                      </div>
-                    </div>
-                  ))}
+                  <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-2">Challenge Details</h3>
+                  {chFromStore && chFromStore.challengeDetails ? (
+                    <p className="text-xs text-gray-500 mb-4 leading-relaxed">{chFromStore.challengeDetails}</p>
+                  ) : (
+                    <p className="text-xs text-gray-500 mb-4 leading-relaxed">No details provided.</p>
+                  )}
                 </motion.div>
               ) : activeLeftTab === 'recommendations' ? (
                 <motion.div 
@@ -297,41 +254,15 @@ function createToken(user) {
                   className="space-y-4"
                 >
                   <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-4">Security Recommendations</h3>
-                  <div className="bg-black border border-gray-800 rounded-lg p-4 shadow-xl shadow-black/50">
-                    <h4 className="text-red-500 font-bold text-sm flex items-center gap-2 mb-3">
-                      <Zap size={14} className="text-orange-500" /> Critical Best Practices
-                    </h4>
-                    <ul className="space-y-3">
-                      <li className="flex gap-3 p-2 hover:bg-black/50 rounded-lg transition-colors">
-                        <div className="min-w-[8px] h-[8px] rounded-full bg-gradient-to-r from-red-600 to-orange-600 mt-1.5" />
-                        <div>
-                          <p className="font-bold text-sm bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">Use Parameterized Queries</p>
-                          <p className="text-xs text-gray-500 mt-1 leading-relaxed">Replace string interpolation with prepared statements. This prevents SQL injection attacks by treating user input as data, not executable code.</p>
-                        </div>
-                      </li>
-                      <li className="flex gap-3 p-2 hover:bg-black/50 rounded-lg transition-colors">
-                        <div className="min-w-[8px] h-[8px] rounded-full bg-gradient-to-r from-red-600 to-orange-600 mt-1.5" />
-                        <div>
-                          <p className="font-bold text-sm bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">Hash Passwords with bcrypt</p>
-                          <p className="text-xs text-gray-500 mt-1 leading-relaxed">Never store plaintext passwords. Use bcrypt.hash() for storage and bcrypt.compare() for verification. Always use salt rounds ≥ 10.</p>
-                        </div>
-                      </li>
-                      <li className="flex gap-3 p-2 hover:bg-black/50 rounded-lg transition-colors">
-                        <div className="min-w-[8px] h-[8px] rounded-full bg-gradient-to-r from-red-600 to-orange-600 mt-1.5" />
-                        <div>
-                          <p className="font-bold text-sm bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">Clean JWT Tokens</p>
-                          <p className="text-xs text-gray-500 mt-1 leading-relaxed">Remove sensitive data (SSN, passwords, etc.) from JWT payloads. Use jwt.sign() with a secret and only include necessary user identifiers.</p>
-                        </div>
-                      </li>
-                      <li className="flex gap-3 p-2 hover:bg-black/50 rounded-lg transition-colors">
-                        <div className="min-w-[8px] h-[8px] rounded-full bg-gradient-to-r from-red-600 to-orange-600 mt-1.5" />
-                        <div>
-                          <p className="font-bold text-sm bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">Error Handling</p>
-                          <p className="text-xs text-gray-500 mt-1 leading-relaxed">Never expose internal errors to users. Log errors securely server-side without revealing system details or database structure.</p>
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
+                  {chFromStore && chFromStore.recommendation ? (
+                    <div className="bg-black border border-gray-800 rounded-lg p-4 shadow-xl shadow-black/50">
+                      <p className="text-xs text-gray-500 leading-relaxed">{chFromStore.recommendation}</p>
+                    </div>
+                  ) : (
+                    <div className="bg-black border border-gray-800 rounded-lg p-4 shadow-xl shadow-black/50">
+                      <p className="text-xs text-gray-500 leading-relaxed">No recommendations provided for this challenge.</p>
+                    </div>
+                  )}
                 </motion.div>
               ) : (
                 <motion.div 
@@ -342,7 +273,7 @@ function createToken(user) {
                   className="space-y-3"
                 >
                   <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-4">Available Hints</h3>
-                  {hints.map((hint) => (
+                  {hintsList.map((hint) => (
                     <motion.div
                       key={hint.id}
                       className="bg-black border border-gray-800 rounded-lg overflow-hidden hover:border-red-900/50 transition-all duration-300 group hover:shadow-lg hover:shadow-red-900/10"

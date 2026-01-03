@@ -62,7 +62,7 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, index }) => {
           </h3>
           
           <p className="mt-4 text-sm text-gray-300 font-medium leading-relaxed">
-            Complete this challenge to prove your mettle and earn points. High-stakes execution required.
+            {challenge.description || 'Complete this challenge to prove your mettle and earn points. High-stakes execution required.'}
           </p>
         </div>
 
