@@ -4,70 +4,57 @@ const challengeSchema = new mongoose.Schema({
   title: {
     type: String,
     required: [true, 'Title is required'],
-    trim: true
+    trim: true,
   },
   description: {
     type: String,
-    required: [true, 'Description is required'],
-    trim: true
+    trim: true,
   },
-  difficulty: {
+  code: {
     type: String,
-    enum: ['Easy', 'Medium', 'Hard'],
-    required: [true, 'Difficulty level is required']
+    trim: true,
   },
-  category: {
+  level: {
     type: String,
-    required: [true, 'Category is required'],
-    trim: true
+    enum: ['easy', 'medium', 'hard'],
+    required: [true, 'Level is required'],
+    lowercase: true,
   },
-  instructions: {
-    type: String,
-    trim: true
-  },
-  resources: [{
-    type: String,
-    trim: true
-  }],
   hints: [{
-    id: Number,
-    content: String
-  }],
-  vulnerabilities: [{
-    type: { type: String },
-    severity: { type: String },
-    description: { type: String },
-    fix: { type: String }
-  }],
-  recommendations: [{
-    type: String
-  }],
-  testCases: [{
-    input: String,
-    expectedOutput: String
-  }],
-  solution: {
     type: String,
-    select: false // Hides the solution by default from queries
+    trim: true,
+  }],
+  challengeDetails: {
+    type: String,
+    trim: true,
   },
-  active: {
-    type: Boolean,
-    default: true
+  recommendation: {
+    type: String,
+    trim: true,
+  },
+  feedback: {
+    type: String,
+    trim: true,
+  },
+  points: {
+    type: Number,
+    default: 0,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
   }
 }, {
-  timestamps: true, // This automatically adds createdAt and updatedAt fields
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
 
-// Index for better query performance
-challengeSchema.index({ category: 1, difficulty: 1 });
-challengeSchema.index({ active: 1 });
+// Index for performance
+challengeSchema.index({ level: 1, points: -1 });
 
-const Challenge = mongoose.model('Challenge', challengeSchema);
-// Ensure id is exposed as 'id' in JSON
+// Virtual id
 challengeSchema.virtual('id').get(function() {
   return this._id.toHexString();
 });
 
-module.exports = Challenge;
+module.exports = mongoose.model('Challenge', challengeSchema);
