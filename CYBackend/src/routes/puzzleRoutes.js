@@ -8,21 +8,23 @@ const {
   deletePuzzle,
   submitAnswer
 } = require('../controllers/puzzleController');
-const { optionalAuth } = require('../middlewares/optionalAuth');
 
-// Chain GET and POST for the base route '/'
+// التعديل هنا: بنستدعي optionalAuth من ملف auth الجديد
+const { optionalAuth } = require('../middlewares/auth');
+
+// العمليات على المسار الرئيسي /api/puzzles
 router.route('/')
   .get(getPuzzles)
-  .post(createPuzzle);
+  .post(createPuzzle); 
 
-// Chain GET, PUT, and DELETE for the '/:id' route
+// العمليات على لغز محدد /api/puzzles/:id
 router.route('/:id')
   .get(getPuzzleById)
   .put(updatePuzzle)
   .delete(deletePuzzle);
 
-// Allow optional authentication on puzzle submit so logged-in users
-// will be recognized and awarded points, while guests can still try puzzles.
+// تصحيح الإجابة
+// optionalAuth دلوقتى بيجي من ملف auth.js المشترك
 router.route('/:id/submit').post(optionalAuth, submitAnswer);
 
 module.exports = router;

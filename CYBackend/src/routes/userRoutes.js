@@ -1,26 +1,27 @@
 const express = require('express');
 const router = express.Router();
-const { handleGoogleSignIn, logout, getMe, updateMe, addPoints } = require('../controllers/userController');
-const { protect } = require('../middlewares/authUser');
+const { 
+  handleGoogleSignIn, 
+  logout, 
+  getMe, 
+  updateMe, 
+  addPoints 
+} = require('../controllers/userController');
 
-// @route   POST /api/users/auth/google
-// @desc    Authenticate user with Google ID token
-// @access  Public
+// التعديل هنا: غيرنا authUser لـ auth
+const { protect } = require('../middlewares/auth'); 
+
+// مسارات عامة
 router.post('/auth/google', handleGoogleSignIn);
-
-// @route   GET /api/users/logout
-// @desc    Logout user and clear cookie
-// @access  Public
 router.get('/logout', logout);
 
-// @route   GET /api/users/me
-// @desc    Get current user
-// @access  Private
-router.get('/me', protect, getMe);
-// Update profile
-router.patch('/me', protect, updateMe);
+// مسارات محمية (كل اللي جاي تحت محتاج protect)
+router.use(protect); 
 
-// Award points to current user (protected)
-router.post('/me/add-points', protect, addPoints);
+router.route('/me')
+  .get(getMe)
+  .patch(updateMe);
+
+router.post('/me/add-points', addPoints);
 
 module.exports = router;
