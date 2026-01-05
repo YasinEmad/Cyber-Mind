@@ -30,12 +30,24 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Profile',
   },
-  // store solved puzzle references by Puzzle _id (ObjectId) to ensure uniqueness and avoid
-  // collisions if tags change or duplicates exist. Using ObjectId makes checks unambiguous.
   solvedPuzzles: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Puzzle'
   }],
+}, { timestamps: true });
+
+// Middleware: أوتوماتيك أول ما يوزر يتكريت بنعمله بروفايل ونربطه بيه
+UserSchema.pre('save', async function (next) {
+  if (this.isNew && !this.profile) {
+    try {
+      const Profile = mongoose.model('Profile');
+      const profile = await Profile.create({ user: this._id });
+      this.profile = profile._id;
+    } catch (error) {
+      return next(error);
+    }
+  }
+  next();
 });
 
 module.exports = mongoose.model('User', UserSchema);
