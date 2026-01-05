@@ -1,36 +1,41 @@
-// server.js
-
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
-const Puzzle = require('./models/Puzzle'); // 1. لازم تستدعي الموديل هنا
 
 const app = express();
 
+// اتصال قاعدة البيانات
+connectDB();
 
-// 3. تعديل الاتصال بالداتابيز لتشغيل الفانكشن
-connectDB().then(() => {
-    // شغل السطر اللي تحت ده "مرة واحدة" بس وبعدين امسحه أو اعمله كومنت
-});
-
+// --- حل مشكلة الـ CORS نهائياً ---
 app.use(cors({
-  origin: 'http://localhost:5173',
-  credentials: true
+  origin: 'http://localhost:5173', // بورت الفرونت إند بتاعك
+  credentials: true,               // مهم جداً عشان Axios يبعت الكوكيز
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// ده سطر زيادة للأمان عشان المتصفحات اللي بتبعت Pre-flight request
+app.options('*', cors()); 
+// ------------------------------
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// المسارات (تأكد إن الملفات دي موجودة بالأسماء دي)
 app.use('/api/puzzles', require('./routes/puzzleRoutes'));
-app.use('/api/challenges', require('./routes/challengeRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
-app.use('/api/admin', require('./routes/adminRoutes'));
+
+// Error Handler بسيط عشان السيرفر ما يقعش لو حصل غلط
+app.use((err, req, res, next) => {
+  console.error("🔥 Server Error:", err.message);
+  res.status(500).json({ success: false, message: err.message });
+});
 
 const PORT = 8080;
-
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });

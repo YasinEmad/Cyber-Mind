@@ -1,8 +1,12 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+
 const mongoose = require('mongoose');
 const Challenge = require('../models/Challenge');
 const connectDB = require('../config/db');
+
+// Debug: make sure the URI is correct
+console.log('Mongo URI:', process.env.MONGODB_URI);
 
 const challenges = [
   {
@@ -62,13 +66,13 @@ const challenges = [
   }
 ];
 
-const seed = async () => {
+const seedChallenges = async () => {
   try {
     await connectDB();
     await Challenge.deleteMany({});
     console.log('Existing challenges removed');
     await Challenge.insertMany(challenges);
-    console.log('Challenges seeded successfully');
+    console.log('Challenges seeded successfully!');
     mongoose.disconnect();
   } catch (err) {
     console.error('Seeding failed', err);
@@ -77,4 +81,4 @@ const seed = async () => {
   }
 };
 
-seed();
+seedChallenges();
