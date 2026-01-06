@@ -5,20 +5,19 @@ const mongoose = require('mongoose');
 const Challenge = require('../models/Challenge');
 const connectDB = require('../config/db');
 
-// Debug: make sure the URI is correct
-console.log('Mongo URI:', process.env.MONGODB_URI);
-
 const challenges = [
   {
     title: 'SQL Injection: Login Bypass',
     description: 'Find and fix the SQL injection vulnerability in the login function.',
-    code: "const q = `SELECT * FROM users WHERE username = '${username}' AND password = '${password}'`",
+    code: "const q = `SELECT * FROM users WHERE username = '${username}' AND password = '${password}'` line",
     level: 'easy',
     hints: ['Avoid string interpolation in SQL', 'Use parameterized queries'],
-    challengeDetails: 'Exploit the login and propose a fix using parameterized queries.',
-    recommendation: 'Use parameterized queries and proper hashing for passwords.',
-    feedback: '',
+    challengeDetails: 'Propose a fix using parameterized queries.',
+    recommendation: 'Use parameterized queries or ORM methods.',
     points: 100,
+    // الحل: بندور إن اليوزر استخدم علامات الاستفهام '?' أو الـ parameters
+    solution: "(\\?|\\$1|db\\.query\\(.*\\,.*\\b\\[.*\\]\\))", 
+    validationType: 'regex'
   },
   {
     title: 'XSS: Output Encoding',
@@ -26,53 +25,36 @@ const challenges = [
     code: "res.send('<div>' + userInput + '</div>')",
     level: 'medium',
     hints: ['Encode HTML output', 'Use template escaping helpers'],
-    challengeDetails: 'Demonstrate how unsanitized input leads to XSS and fix it.',
-    recommendation: 'Escape or sanitize user content before rendering.',
-    feedback: '',
+    challengeDetails: 'Escape or sanitize user content before rendering.',
+    recommendation: 'Use libraries like DOMPurify or escapeHTML functions.',
     points: 200,
+    // الحل: بندور على كلمات زي escape أو sanitize أو DOMPurify
+solution: ".*(escapeHTML|sanitize|DOMPurify\\.sanitize|encodeURI).*",    validationType: 'regex'
   },
   {
     title: 'Insecure Token',
-    description: 'Sensitive data is included in base64 token. Secure the token generation.',
+    description: 'Sensitive data is included in base64 token. Secure it.',
     code: "return Buffer.from(JSON.stringify(user)).toString('base64')",
     level: 'medium',
-    hints: ['Use JWT with secret', 'Do not include SSN or password in tokens'],
-    challengeDetails: 'Replace insecure encoding with signed JWT and strip sensitive fields.',
-    recommendation: 'Use jwt.sign() and exclude sensitive claims.',
-    feedback: '',
+    hints: ['Use JWT with secret', 'Remove sensitive fields'],
+    challengeDetails: 'Replace encoding with signed JWT.',
+    recommendation: 'Use jwt.sign() with an environment secret.',
     points: 250,
-  },
-  {
-    title: 'Race Condition: File Write',
-    description: 'Concurrent file writes can corrupt data. Add locking or queueing.',
-    code: "fs.writeFileSync('/data/' + id + '.json', payload)",
-    level: 'hard',
-    hints: ['Use atomic file ops', 'Use advisory locks or database transactions'],
-    challengeDetails: 'Show how concurrent requests can corrupt files and fix using locks.',
-    recommendation: 'Use proper synchronization or transactional storage.',
-    feedback: '',
-    points: 400,
-  },
-  {
-    title: 'Unvalidated Redirect',
-    description: 'Open redirect vulnerability allows phishing. Validate redirect targets.',
-    code: "res.redirect(req.query.next)",
-    level: 'easy',
-    hints: ['Validate redirect against whitelist', 'Avoid open redirects'],
-    challengeDetails: 'Demonstrate open redirect exploitation and implement whitelist.',
-    recommendation: 'Whitelist allowed URLs and use relative redirects only.',
-    feedback: '',
-    points: 80,
+    solution: "jwt\\.sign",
+    validationType: 'regex'
   }
 ];
 
 const seedChallenges = async () => {
   try {
     await connectDB();
+    // بنمسح القديم وننزل الجديد بالحلول
     await Challenge.deleteMany({});
     console.log('Existing challenges removed');
+    
     await Challenge.insertMany(challenges);
-    console.log('Challenges seeded successfully!');
+    console.log('Challenges seeded successfully with solutions!');
+    
     mongoose.disconnect();
   } catch (err) {
     console.error('Seeding failed', err);
