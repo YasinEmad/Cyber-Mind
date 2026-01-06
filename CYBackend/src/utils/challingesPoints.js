@@ -4,6 +4,9 @@ const difficultyToPoints = {
   hard: 70,
 };
 
+// بنعمل Export بنفس الاسم اللي الكنترولر مستنيه (CHALLENGE_POINTS)
+const CHALLENGE_POINTS = difficultyToPoints;
+
 const DEFAULT_POINTS = 20;
 
 const getPointsForDifficulty = (difficulty, opts = {}) => {
@@ -21,6 +24,7 @@ const getPointsForDifficulty = (difficulty, opts = {}) => {
 
 module.exports = {
   difficultyToPoints,
+  CHALLENGE_POINTS, // ضيفنا دي هنا
   getPointsForDifficulty,
   DEFAULT_POINTS,
 };
