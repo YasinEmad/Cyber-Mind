@@ -1,18 +1,20 @@
 const express = require('express');
 const router = express.Router();
-const {
-  createChallenge,
-  getAllChallenges,
-  getChallengeById
+const { 
+  createChallenge, 
+  getAllChallenges, 
+  getChallengeById, 
+  submitAnswer 
 } = require('../controllers/challengeController');
+const { optionalAuth, authAdmin } = require('../middlewares/auth');
 
-// GET /api/challenges
-router.get('/', getAllChallenges);
+router.route('/')
+  .get(getAllChallenges)
+  .post(authAdmin, createChallenge); // الأدمن بس اللي يكريت
 
-// GET /api/challenges/:id
 router.get('/:id', getChallengeById);
 
-// POST /api/challenges
-router.post('/', createChallenge);
+// المسار السحري لتسليم الحل واحتساب النقط
+router.post('/:id/submit', optionalAuth, submitAnswer);
 
 module.exports = router;
