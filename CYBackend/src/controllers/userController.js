@@ -87,17 +87,31 @@ exports.updateMe = async (req, res, next) => {
 
 exports.addPoints = async (req, res, next) => {
   try {
-    const { points, level } = req.body;
+    const { points, level, itemId, itemType } = req.body; // itemId و itemType بقوا مهمين جداً
     
-    // تحديد عدد النقاط
+    // 1. تحديد عدد النقاط
     const awardedAmount = (level !== undefined && level !== null) 
       ? getPointsForLevel(level) 
       : (Number(points) || 10);
 
-    // تحديث النقاط عن طريق الـ Service
-    await userService.addPointsToUser(req.user._id, awardedAmount);
+    // 2. تحديث النقاط عن طريق الـ Service الجديد
+    // itemId: الـ ID بتاع اللغز أو التحدي
+    // itemType: 'puzzle' أو 'challenge'
+    const result = await userService.addPointsToUser(
+      req.user._id, 
+      awardedAmount, 
+      itemId, 
+      itemType || 'puzzle'
+    );
 
-    // جلب بيانات اليوزر كاملة للرد
+    if (!result.awarded) {
+      return res.status(400).json({
+        success: false,
+        message: 'You have already earned points for this item.'
+      });
+    }
+
+    // 3. جلب بيانات اليوزر كاملة بعد التحديث
     const updatedUser = await User.findById(req.user._id).populate('profile');
 
     res.status(200).json({
