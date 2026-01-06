@@ -8,7 +8,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
 import { fetchChallenges } from '@/redux/slices/challengeSlice';
 
-const challenges: Challenge[] = []; // will be replaced by store data below
 
 function mapToCard(ch: any): Challenge {
   const lvl = ch.level || ch.difficulty || 'easy';

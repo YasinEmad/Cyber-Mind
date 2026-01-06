@@ -6,7 +6,7 @@ import {
   Beaker, CheckCircle, AlertTriangle,
   Zap, ChevronRight, XCircle, Lightbulb,
   Maximize2, Minimize2, Info, Award,
-  Clock, Code2, PanelLeftClose, PanelLeft
+  Clock, Code2, PanelLeftClose, PanelLeft, Loader2, Send
 } from 'lucide-react';
 import { usePlayChallenge } from '../lib/usePlayChallenge';
 
@@ -15,15 +15,33 @@ const PlayChallengePage: React.FC = () => {
     challengeId, code, output, activeLeftTab, setActiveLeftTab,
     activeBottomTab, setActiveBottomTab, testResults, isRunning,
     revealedHints, hintsList, chFromStore,
-    handleEditorChange, handleReset, toggleHint, handleRun, handleTest
+    handleEditorChange, handleReset, toggleHint, handleRun, handleTest,
+    isAllTestsPassed, handleSubmit, submitStatus
   } = usePlayChallenge();
 
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = React.useState(false);
   const [isFullScreenEditor, setIsFullScreenEditor] = React.useState(false);
+  const [lastAction, setLastAction] = React.useState<'run' | 'test' | null>(null);
 
   const passedTests = testResults.filter(t => t.passed).length;
   const totalTests = testResults.length;
-  const allTestsPassed = totalTests > 0 && passedTests === totalTests;
+  
+  const wrappedHandleRun = () => {
+    setLastAction('run');
+    handleRun();
+  };
+
+  const wrappedHandleTest = () => {
+    setLastAction('test');
+    handleTest();
+  };
+
+  const LoadingIndicator = ({ text }: { text: string }) => (
+    <div className="flex flex-col items-center justify-center h-full text-white py-12">
+      <Loader2 size={32} className="opacity-50 mb-3 animate-spin" />
+      <p className="text-sm">{text}</p>
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-screen w-screen bg-gradient-to-br from-black to-black text-white font-sans overflow-hidden">
@@ -42,7 +60,7 @@ const PlayChallengePage: React.FC = () => {
           
           {totalTests > 0 && (
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium ${
-              allTestsPassed 
+              isAllTestsPassed 
                 ? 'bg-green-500/10 border-green-500/30 text-green-400' 
                 : 'bg-black/50 border-gray-700/50 text-white'
             }`}>
@@ -53,6 +71,31 @@ const PlayChallengePage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <AnimatePresence>
+            {isAllTestsPassed && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              >
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitStatus === 'loading'}
+                  className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-400 hover:to-teal-400 text-white text-sm font-bold rounded-lg shadow-xl shadow-green-700/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+                  title="Submit your final solution"
+                >
+                  {submitStatus === 'loading' ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Send size={16} />
+                  )}
+                  <span>Submit Solution</span>
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <button 
             onClick={handleReset} 
             className="flex items-center gap-2 px-3 py-2 text-white hover:text-white hover:bg-black rounded-lg transition-all border border-transparent hover:border-gray-600 group"
@@ -65,7 +108,7 @@ const PlayChallengePage: React.FC = () => {
           <div className="h-8 w-px bg-gray-700"></div>
           
           <button 
-            onClick={handleRun} 
+            onClick={wrappedHandleRun} 
             disabled={isRunning}
             className="flex items-center gap-2 px-4 py-2 bg-black hover:bg-gray-700 text-white text-sm font-medium rounded-lg border border-gray-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-black/50"
             title="Execute the code"
@@ -75,7 +118,7 @@ const PlayChallengePage: React.FC = () => {
           </button>
           
           <button 
-            onClick={handleTest} 
+            onClick={wrappedHandleTest} 
             disabled={isRunning}
             className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white text-sm font-bold rounded-lg shadow-xl shadow-red-700/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
             title="Run security tests"
@@ -365,11 +408,11 @@ const PlayChallengePage: React.FC = () => {
                       : 'text-white hover:text-white hover:bg-black'
                   }`}
                 >
-                  <CheckCircle size={14} className={allTestsPassed ? "text-green-400" : "text-white"} />
+                  <CheckCircle size={14} className={isAllTestsPassed ? "text-green-400" : "text-white"} />
                   <span>Test Results</span>
                   {testResults.length > 0 && (
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ml-1 ${
-                      allTestsPassed 
+                      isAllTestsPassed 
                         ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
                         : 'bg-gray-700 text-white'
                     }`}>
@@ -388,9 +431,11 @@ const PlayChallengePage: React.FC = () => {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="text-white whitespace-pre-wrap leading-relaxed"
+                      className="text-white whitespace-pre-wrap leading-relaxed h-full"
                     >
-                      {output || (
+                      {isRunning && lastAction === 'run' ? (
+                        <LoadingIndicator text="Executing code..." />
+                      ) : output || (
                         <div className="flex flex-col items-center justify-center h-full text-white py-12">
                           <Terminal size={32} className="opacity-30 mb-3" />
                           <p className="text-sm">Console output will appear here</p>
@@ -404,9 +449,11 @@ const PlayChallengePage: React.FC = () => {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="space-y-2"
+                      className="space-y-2 h-full"
                     >
-                      {testResults.length === 0 ? (
+                      {isRunning && lastAction === 'test' ? (
+                        <LoadingIndicator text="Running tests..." />
+                      ) : testResults.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-white py-12">
                           <Beaker size={32} className="opacity-30 mb-3 text-white" />
                           <p className="text-sm">No tests run yet</p>
@@ -414,7 +461,7 @@ const PlayChallengePage: React.FC = () => {
                         </div>
                       ) : (
                         <>
-                          {allTestsPassed && (
+                          {isAllTestsPassed && (
                             <motion.div
                               initial={{ scale: 0.9, opacity: 0 }}
                               animate={{ scale: 1, opacity: 1 }}
