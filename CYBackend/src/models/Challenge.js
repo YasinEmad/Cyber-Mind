@@ -36,6 +36,22 @@ const challengeSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+
+  // الحقل اللي هيخزن الإجابة (Regex أو نص)
+  // عملنا select: false عشان الأمان
+  solution: {
+    type: String,
+    required: [true, 'Solution is required for validation'],
+    select: false, 
+  },
+
+  // نوع التقييم (هل بنقارن كود ولا كلمة سر ثابتة؟)
+  validationType: {
+    type: String,
+    enum: ['regex', 'exact'],
+    default: 'regex',
+  },
+
   points: {
     type: Number,
     default: 0,

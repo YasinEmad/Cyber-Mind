@@ -12,19 +12,44 @@ exports.findOrCreateGoogleUser = async (userData) => {
     if (user.uid !== uid) { user.uid = uid; changed = true; }
     if (changed) await user.save();
   } else {
+    // تكريك المستخدم
     user = await User.create({ uid, email, name, photoURL: picture });
+    // تكريك البروفايل فوراً لضمان وجوده
+    await Profile.create({ user: user._id });
     await user.populate('profile');
   }
   return user;
 };
 
 /**
- * وظيفة موحدة لزيادة نقاط المستخدم وتحديث بروفايله
+ * وظيفة احترافية لزيادة النقاط وتحديث عداد الإنجازات
  */
-exports.addPointsToUser = async (userId, amount) => {
-  return await Profile.findOneAndUpdate(
-    { user: userId },
-    { $inc: { totalScore: amount, puzzlesDone: 1 } },
-    { new: true, upsert: true }
+exports.addPointsToUser = async (userId, points, itemId, itemType = 'puzzle') => {
+  // 1. تحديد أسماء الحقول بناءً على نوع العملية
+  const isPuzzle = itemType === 'puzzle';
+  const solvedField = isPuzzle ? 'solvedPuzzles' : 'solvedChallenges';
+  const counterField = isPuzzle ? 'puzzlesDone' : 'challengesDone';
+
+  // 2. تحديث البروفايل في خطوة واحدة (Atomic Update)
+  const updatedProfile = await Profile.findOneAndUpdate(
+    { 
+      user: userId, 
+      [solvedField]: { $ne: itemId } // شرط: ميكونش الـ ID موجود قبل كدة
+    },
+    { 
+      $inc: { 
+        totalScore: points,   // زيادة النقط
+        [counterField]: 1     // زيادة العداد (puzzlesDone أو challengesDone)
+      },
+      $addToSet: { [solvedField]: itemId } // إضافة الـ ID للمصفوفة لمنع التكرار
+    },
+    { new: true }
   );
+
+  if (!updatedProfile) {
+    // لو الشرط (ne$) لم يتحقق، يعني اليوزر حلها قبل كدة
+    return { awarded: false };
+  }
+
+  return { awarded: true, profile: updatedProfile };
 };
