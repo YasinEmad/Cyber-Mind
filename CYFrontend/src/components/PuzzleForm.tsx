@@ -26,7 +26,6 @@ export const PuzzleForm: React.FC<PuzzleFormProps> = ({ puzzle, onSave, onCancel
         title: puzzle.title,
           tag: puzzle.tag || '',
         description: puzzle.description,
-        // Coerce incoming puzzle.level to a Number to keep internal state consistent
         level: typeof puzzle.level === 'undefined' || puzzle.level === null ? 1 : Number(puzzle.level),
         hints: puzzle.hints,
         answer: puzzle.answer || '',
@@ -44,10 +43,8 @@ export const PuzzleForm: React.FC<PuzzleFormProps> = ({ puzzle, onSave, onCancel
       const { checked } = e.target as HTMLInputElement;
       setFormData(prev => ({ ...prev, [name]: checked }));
     } else if (name === 'level') {
-      // Always keep `level` as a number in state; treat empty input as 1 and clamp to allowed range
       let parsed: number = (value === '' ? 1 : Number(value));
       if (!Number.isFinite(parsed) || Number.isNaN(parsed)) parsed = 1;
-      // Ensure integer and within [1,3]
       parsed = Math.trunc(parsed);
       parsed = Math.max(1, Math.min(3, parsed));
       setFormData(prev => ({ ...prev, [name]: parsed as any }));
@@ -73,11 +70,9 @@ export const PuzzleForm: React.FC<PuzzleFormProps> = ({ puzzle, onSave, onCancel
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Ensure number typing before saving and validate
     const computedLevel = Number((formData as any).level);
     const validatedLevel = Number.isInteger(computedLevel) && [1,2,3].includes(computedLevel) ? computedLevel : 1;
     const final = { ...formData, level: validatedLevel } as Omit<Puzzle, '_id' | 'createdAt' | 'updatedAt'>;
-    try { console.debug('PuzzleForm.handleSubmit: final.level:', final.level, 'typeof:', typeof final.level); } catch (e) {}
     if (puzzle) {
       onSave({ ...puzzle, ...final });
     } else {
@@ -86,124 +81,114 @@ export const PuzzleForm: React.FC<PuzzleFormProps> = ({ puzzle, onSave, onCancel
   };
 
   return (
-<div className="fixed inset-0 bg-transparent flex justify-center items-center z-50">
-      <div className="bg-gray-800 rounded-lg p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <h2 className="text-2xl font-bold text-white mb-6">{puzzle ? 'Edit Puzzle' : 'Add New Puzzle'}</h2>
+    // Backdrop updated to a dark blur
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-center z-50">
+      {/* Modal Container: Deeper black and red border */}
+      <div className="bg-black border border-red-900/50 rounded-lg p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-[0_0_25px_rgba(220,38,38,0.15)]">
+        <h2 className="text-2xl font-black text-white mb-6 tracking-tight flex items-center gap-3">
+          <span className="w-1 h-6 bg-red-600"></span>
+          {puzzle ? 'EDIT PUZZLE' : 'ADD NEW PUZZLE'}
+        </h2>
+        
         <form onSubmit={handleSubmit} className="space-y-4">
+          {[
+            { label: 'Tag', name: 'tag', type: 'text' },
+            { label: 'Title', name: 'title', type: 'text' },
+            { label: 'Description', name: 'description', type: 'textarea' },
+            { label: 'Level (1-3)', name: 'level', type: 'number', min: 1, max: 3 },
+            { label: 'Category', name: 'category', type: 'text' },
+            { label: 'Scenario', name: 'scenario', type: 'textarea' },
+            { label: 'Answer', name: 'answer', type: 'text' },
+          ].map((field) => (
+            <div key={field.name}>
+              <label htmlFor={field.name} className="block text-xs font-bold uppercase tracking-widest text-red-500 mb-1">
+                {field.label}
+              </label>
+              {field.type === 'textarea' ? (
+                <textarea
+                  name={field.name}
+                  id={field.name}
+                  value={(formData as any)[field.name]}
+                  onChange={handleChange}
+                  rows={3}
+                  className="mt-1 block w-full bg-zinc-900 border border-red-900/30 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition-all"
+                  required={field.name !== 'scenario'}
+                />
+              ) : (
+                <input
+                  type={field.type}
+                  name={field.name}
+                  id={field.name}
+                  value={(formData as any)[field.name]}
+                  onChange={handleChange}
+                  min={field.min}
+                  max={field.max}
+                  className="mt-1 block w-full bg-zinc-900 border border-red-900/30 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-1 focus:ring-red-600 focus:border-red-600 transition-all"
+                  required={field.name !== 'answer'}
+                />
+              )}
+            </div>
+          ))}
+
+          {/* Hints Section */}
           <div>
-            <label htmlFor="tag" className="block text-sm font-medium text-gray-300">Tag</label>
-            <input
-              type="text"
-              name="tag"
-              id="tag"
-              value={formData.tag}
-              onChange={handleChange}
-              className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-300">Title</label>
-            <input
-              type="text"
-              name="title"
-              id="title"
-              value={formData.title}
-              onChange={handleChange}
-              className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-300">Description</label>
-            <textarea
-              name="description"
-              id="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows={3}
-              className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="level" className="block text-sm font-medium text-gray-300">Level</label>
-            <input
-              type="number"
-              name="level"
-              id="level"
-              value={formData.level}
-              onChange={handleChange}
-              className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              required
-              min="1"
-              max="3"
-              step="1"
-            />
-          </div>
-          <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-300">Category</label>
-            <input
-              type="text"
-              name="category"
-              id="category"
-              value={formData.category}
-              onChange={handleChange}
-              className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="scenario" className="block text-sm font-medium text-gray-300">Scenario</label>
-            <textarea
-              name="scenario"
-              id="scenario"
-              value={formData.scenario}
-              onChange={handleChange}
-              rows={3}
-              className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label htmlFor="answer" className="block text-sm font-medium text-gray-300">Answer</label>
-            <input
-              type="text"
-              name="answer"
-              id="answer"
-              value={formData.answer}
-              onChange={handleChange}
-              className="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300">Hints</label>
+            <label className="block text-xs font-bold uppercase tracking-widest text-red-500 mb-1">Hints</label>
             {formData.hints.map((hint, index) => (
               <div key={index} className="flex items-center space-x-2 mt-2">
                 <input
                   type="text"
                   value={hint}
                   onChange={(e) => handleHintChange(index, e.target.value)}
-                  className="block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full bg-zinc-900 border border-red-900/30 rounded-md py-2 px-3 text-white focus:ring-1 focus:ring-red-600 outline-none"
                 />
-                <button type="button" onClick={() => removeHint(index)} className="text-red-500 hover:text-red-700">Remove</button>
+                <button 
+                  type="button" 
+                  onClick={() => removeHint(index)} 
+                  className="text-red-600 hover:text-red-400 font-bold text-xs uppercase"
+                >
+                  Remove
+                </button>
               </div>
             ))}
-            <button type="button" onClick={addHint} className="mt-2 text-sm text-blue-500 hover:text-blue-700">Add Hint</button>
+            <button 
+              type="button" 
+              onClick={addHint} 
+              className="mt-2 text-xs font-bold uppercase text-red-500 hover:text-red-400 flex items-center gap-1"
+            >
+              + Add Hint
+            </button>
           </div>
-          <div className="flex items-center">
+
+          {/* Active Checkbox */}
+          <div className="flex items-center pt-2">
             <input
               type="checkbox"
               name="active"
               id="active"
               checked={formData.active}
               onChange={handleChange}
-              className="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+              className="h-4 w-4 text-red-600 bg-zinc-900 border-red-900 rounded focus:ring-red-600"
             />
-            <label htmlFor="active" className="ml-2 block text-sm text-gray-300">Active</label>
+            <label htmlFor="active" className="ml-2 block text-sm font-bold text-gray-400 uppercase tracking-tighter">
+              Puzzle Active
+            </label>
           </div>
-          <div className="flex justify-end space-x-4">
-            <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">Cancel</button>
-            <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Save Puzzle</button>
+
+          {/* Actions */}
+          <div className="flex justify-end space-x-4 pt-6 border-t border-red-900/20">
+            <button 
+              type="button" 
+              onClick={onCancel} 
+              className="px-6 py-2 bg-transparent text-gray-400 font-bold uppercase text-xs hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              className="px-6 py-2 bg-red-700 text-white font-black uppercase text-xs rounded-sm hover:bg-red-600 shadow-[0_0_15px_rgba(185,28,28,0.4)] transition-all"
+            >
+              Save Security Puzzle
+            </button>
           </div>
         </form>
       </div>

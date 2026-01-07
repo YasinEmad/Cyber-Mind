@@ -1,4 +1,4 @@
-import  { useState } from 'react';
+import { useState } from 'react';
 import { PuzzlesViewAdmin } from '../components/PuzzlesViewAdmin';
 import ChallengeView from '../components/ChallengeView';
 import GrantAdminSection from '../components/GrantAdminSection';
@@ -9,22 +9,22 @@ import {
   LayoutDashboard, 
   Menu,
   X,
-  Users
+  Users,
+  ShieldAlert
 } from 'lucide-react';
-
-// --- Main App Component ---
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('puzzles');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-gray-900 font-sans text-gray-100 overflow-hidden">
+    // Changed to pure black background
+    <div className="flex h-screen bg-black font-sans text-gray-200 overflow-hidden">
       
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-20 lg:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
@@ -32,15 +32,15 @@ const AdminDashboard = () => {
       {/* Sidebar */}
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-30
-        w-64 bg-gray-900 border-r border-gray-800 transform transition-transform duration-300 ease-in-out
+        w-64 bg-black border-r border-red-900/40 transform transition-transform duration-300 ease-in-out
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        {/* Logo Area */}
-        <div className="h-16 flex items-center px-6 border-b border-gray-800 bg-gray-900">
-          <LayoutDashboard className="text-blue-500 mr-3" size={28} />
-          <h1 className="text-xl font-bold tracking-wider text-white">ADMIN<span className="text-blue-500">DASH</span></h1>
+        {/* Logo Area - Red accents */}
+        <div className="h-16 flex items-center px-6 border-b border-red-900/40 bg-black">
+          <ShieldAlert className="text-red-600 mr-3" size={28} />
+          <h1 className="text-xl font-bold tracking-tighter text-white">ADMIN<span className="text-red-600">CORE</span></h1>
           <button 
-            className="ml-auto lg:hidden text-gray-400"
+            className="ml-auto lg:hidden text-red-500"
             onClick={() => setIsMobileMenuOpen(false)}
           >
             <X size={24} />
@@ -48,7 +48,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="mt-6 flex flex-col gap-1">
+        <nav className="mt-6 flex flex-col gap-1 px-2">
           <SidebarItem 
             icon={Puzzle} 
             label="Puzzles" 
@@ -69,15 +69,15 @@ const AdminDashboard = () => {
           />
         </nav>
 
-        {/* User Profile (Bottom of Sidebar) */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-800">
+        {/* User Profile (Bottom of Sidebar) - Changed to Red theme */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-red-900/30">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center font-bold text-white">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-red-700 to-black border border-red-600 flex items-center justify-center font-bold text-white shadow-[0_0_10px_rgba(220,38,38,0.3)]">
               AD
             </div>
             <div>
               <p className="text-sm font-medium text-white">Admin User</p>
-              <p className="text-xs text-gray-500">Super Admin</p>
+              <p className="text-xs text-red-500 font-mono">Super_User</p>
             </div>
           </div>
         </div>
@@ -86,21 +86,24 @@ const AdminDashboard = () => {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
         
-        {/* Mobile Header */}
-        <div className="lg:hidden h-16 bg-gray-900 border-b border-gray-800 flex items-center px-4 justify-between">
-            <button onClick={() => setIsMobileMenuOpen(true)} className="text-gray-300">
+        {/* Mobile Header - Black and Red */}
+        <div className="lg:hidden h-16 bg-black border-b border-red-900/40 flex items-center px-4 justify-between">
+            <button onClick={() => setIsMobileMenuOpen(true)} className="text-red-500">
                 <Menu size={24} />
             </button>
-            <span className="font-bold text-lg">Admin Dashboard</span>
-            <div className="w-6"></div> {/* Spacer for center alignment */}
+            <span className="font-bold text-lg text-white">Admin Dashboard</span>
+            <div className="w-6"></div>
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-900">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-black">
           <div className="max-w-6xl mx-auto">
-            {activeTab === 'puzzles' && <PuzzlesViewAdmin />}
-            {activeTab === 'challenges' && <ChallengeView />}
-            {activeTab === 'users-admin' && <GrantAdminSection />}
+            {/* Added a subtle glow behind the active view */}
+            <div className="bg-zinc-950/50 rounded-xl border border-red-900/20 shadow-2xl shadow-red-900/5 p-2">
+                {activeTab === 'puzzles' && <PuzzlesViewAdmin />}
+                {activeTab === 'challenges' && <ChallengeView />}
+                {activeTab === 'users-admin' && <GrantAdminSection />}
+            </div>
           </div>
         </div>
       </main>
