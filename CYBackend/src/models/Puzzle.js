@@ -67,18 +67,19 @@ puzzleSchema.index({ active: 1 });
 // Ensure `level` is always stored as a Number and is an integer (1, 2, 3 enforced by enum)
 puzzleSchema.pre('validate', function(next) {
   try {
-    if (this.level !== undefined && this.level !== null) {
-      // coerce strings like "2" to a number
+    // Only coerce/validate level if it's being modified
+    if (this.isModified('level') && this.level !== undefined && this.level !== null) {
       this.level = Number(this.level);
-    }
-    if (!Number.isInteger(this.level)) {
-      return next(new Error('Puzzle.level must be an integer'));
+      if (!Number.isInteger(this.level) || ![1,2,3].includes(this.level)) {
+        return next(new Error('Puzzle.level must be 1, 2, or 3'));
+      }
     }
     return next();
   } catch (err) {
     return next(err);
   }
 });
+
 
 const Puzzle = mongoose.model('Puzzle', puzzleSchema);
 
