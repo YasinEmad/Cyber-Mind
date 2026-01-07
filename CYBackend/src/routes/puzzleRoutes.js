@@ -20,7 +20,7 @@ router.route('/')
 // العمليات على لغز محدد /api/puzzles/:id
 router.route('/:id')
   .get(getPuzzleById)
-  .put(updatePuzzle)
+  .patch(updatePuzzle)
   .delete(deletePuzzle);
 
 // تصحيح الإجابة
