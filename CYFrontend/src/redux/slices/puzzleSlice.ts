@@ -69,15 +69,18 @@ export const updatePuzzle = createAsyncThunk<
   Puzzle,
   { id: string; updatedData: Partial<Puzzle> }
 >('puzzles/update', async ({ id, updatedData }) => {
-  // ensure level is numeric if present
   const payload = { ...updatedData } as any;
+
   if (payload.level !== undefined && payload.level !== null) {
     payload.level = Number(payload.level);
-    try { console.debug('updatePuzzle thunk: level typeof:', typeof payload.level, 'value:', payload.level); } catch (e) {}
+    console.debug('updatePuzzle thunk: level typeof:', typeof payload.level, 'value:', payload.level);
   }
-  const res = await axios.put(`${API_URL}/${id}`, payload)
-  return res.data
-})
+
+  // PATCH بدل PUT
+  const res = await axios.patch(`${API_URL}/${id}`, payload);
+  return res.data;
+});
+
 
 // 5. Delete puzzle
 export const deletePuzzle = createAsyncThunk<string, string>(
