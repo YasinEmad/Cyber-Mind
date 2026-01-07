@@ -42,25 +42,25 @@ exports.createPuzzle = async (req, res, next) => {
 // @desc    Update a puzzle
 exports.updatePuzzle = async (req, res, next) => {
   try {
-    if (req.body.tag) {
-      const other = await Puzzle.findOne({ tag: req.body.tag, _id: { $ne: req.params.id } });
-      if (other) return res.status(400).json({ message: 'Tag already exists' });
-    }
-
-    if (req.body.level) {
-      const coerced = Number(req.body.level);
-      if (![1, 2, 3].includes(coerced)) return res.status(400).json({ message: 'Level must be 1, 2, or 3' });
-      req.body.level = coerced;
-    }
-
-    const puzzle = await Puzzle.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const puzzle = await Puzzle.findById(req.params.id);
     if (!puzzle) return res.status(404).json({ message: 'Puzzle not found' });
 
+    // update only fields sent in req.body
+    Object.keys(req.body).forEach(key => {
+      puzzle[key] = req.body[key];
+    });
+
+    await puzzle.save(); // triggers validation only on modified fields
     res.json(puzzle);
   } catch (err) {
     next(err);
   }
 };
+
+
+
+
+
 
 // @desc    Delete a puzzle
 exports.deletePuzzle = async (req, res, next) => {
