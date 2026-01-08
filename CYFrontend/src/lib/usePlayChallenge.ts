@@ -5,9 +5,14 @@ import { RootState, AppDispatch } from '@/redux/store';
 import { 
   fetchChallengeById, 
   submitChallenge, 
-  resetSubmitStatus 
+  resetSubmitStatus, 
+  SubmitResponse
 } from '@/redux/slices/challengeSlice';
 import { toast } from 'react-hot-toast';
+
+interface SubmissionResult extends SubmitResponse {
+  challengeTitle: string;
+}
 
 export const usePlayChallenge = () => {
   const { challengeId } = useParams<{ challengeId: string }>();
@@ -27,21 +32,22 @@ export const usePlayChallenge = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [revealedHints, setRevealedHints] = useState<Set<number>>(new Set());
   const [hintsList, setHintsList] = useState<Array<{id:number; title:string; content:string}>>([]);
+  const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
 
   // --- Effects ---
   
-  // 1. جلب بيانات التحدي عند فتح الصفحة
+  // 1. Fetch challenge data when the page opens
   useEffect(() => {
     if (challengeId) {
       dispatch(fetchChallengeById(challengeId));
     }
-    // تنظيف حالة التسليم عند مغادرة الصفحة
+    // Clean up submission status on page exit
     return () => {
       dispatch(resetSubmitStatus());
     };
   }, [dispatch, challengeId]);
 
-  // 2. تحديث الكود والتلميحات بمجرد وصول الداتا من السيرفر
+  // 2. Update code and hints once data arrives from the server
   useEffect(() => {
     if (chFromStore) {
       if (chFromStore.code) setCode(chFromStore.code);
@@ -80,6 +86,10 @@ export const usePlayChallenge = () => {
     setRevealedHints(newHints);
   };
 
+  const clearSubmissionResult = () => {
+    setSubmissionResult(null);
+  };
+
   const handleRun = () => {
     setIsRunning(true);
     setActiveBottomTab('output');
@@ -87,7 +97,7 @@ export const usePlayChallenge = () => {
     
     setTimeout(() => {
       try {
-        // محاكاة سريعة للـ Console output
+        // Quick simulation of console output
         setOutput(prev => 
           prev + 
           `\n[LOG] Sandbox execution started...` +
@@ -108,7 +118,7 @@ export const usePlayChallenge = () => {
     
     setTimeout(() => {
       const updatedCode = code.toLowerCase();
-      // محاكاة لعملية التيست (Security Checks)
+      // Simulation of testing process (Security Checks)
       const tests = [
         { 
           check: !updatedCode.includes('${username}') && !updatedCode.includes('${password}'),
@@ -145,7 +155,6 @@ export const usePlayChallenge = () => {
 
   // --- Submit Logic ---
   const handleSubmit = async () => {
-    // 1. التأكد إن اليوزر عمل Run Tests ونجح محلياً الأول
     const localTestsPassed = testResults.length > 0 && testResults.every(t => t.passed);
     
     if (!localTestsPassed) {
@@ -153,24 +162,21 @@ export const usePlayChallenge = () => {
       return;
     }
 
-    if (challengeId) {
-      // 2. إرسال الـ ID والـ Answer (الكود) للباك إند للتحقق النهائي
+    if (challengeId && chFromStore) {
       const resultAction = await dispatch(submitChallenge({ 
         challengeId, 
         answer: code 
       }));
       
       if (submitChallenge.fulfilled.match(resultAction)) {
-        const { awarded, points, message } = resultAction.payload as any;
+        const payload = resultAction.payload as SubmitResponse;
         
-        if (awarded) {
-          toast.success(`🎉 Amazing! +${points} points added to your profile!`);
-        } else {
-          // ده بيحصل لو الكود غلط في الباك إند أو لو اليوزر حل التحدي ده قبل كدة
-toast(message || "Challenge already solved!", {
-  icon: 'ℹ️',
-});        }
-      } else {
+        if (payload.success) { // If the submission is correct
+          setSubmissionResult({ ...payload, challengeTitle: chFromStore.title });
+        } else { // If the submission is incorrect
+          toast.error(payload.message || "Incorrect answer. Please try again.");
+        }
+      } else { // If there was a network error or something else
         toast.error("Network error. Please try again later.");
       }
     }
@@ -195,6 +201,8 @@ toast(message || "Challenge already solved!", {
     chStatus,
     submitStatus,
     isAllTestsPassed,
+    submissionResult,
+    clearSubmissionResult,
     handleEditorChange, 
     handleReset, 
     toggleHint, 
