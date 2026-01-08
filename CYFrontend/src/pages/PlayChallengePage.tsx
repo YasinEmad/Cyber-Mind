@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import { usePlayChallenge } from '../lib/usePlayChallenge';
 import { ChallengeHeader } from '../components/ChallengeHeader';
-import ChallengeSidebar  from '../components/ChallengeSidebar'
+import ChallengeSidebar from '../components/ChallengeSidebar';
+import ChallengeSolvedAlert from '@/components/ChallengeSolvedAlert';
 
 // ... (Rest of the component stays exactly the same)
 
@@ -18,7 +19,8 @@ const PlayChallengePage: React.FC = () => {
     activeBottomTab, setActiveBottomTab, testResults, isRunning,
     revealedHints, hintsList, chFromStore,
     handleEditorChange, handleReset, toggleHint, handleRun, handleTest,
-    isAllTestsPassed, handleSubmit, submitStatus
+    isAllTestsPassed, handleSubmit, submitStatus,
+    submissionResult, clearSubmissionResult
   } = usePlayChallenge();
 
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
@@ -40,6 +42,17 @@ const PlayChallengePage: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen w-screen bg-black text-white font-sans overflow-hidden">
+      <AnimatePresence>
+        {submissionResult && (
+          <ChallengeSolvedAlert
+            challengeTitle={submissionResult.challengeTitle}
+            points={submissionResult.points}
+            onClose={clearSubmissionResult}
+            isSolvedBefore={!submissionResult.awarded}
+          />
+        )}
+      </AnimatePresence>
+
       <ChallengeHeader 
         chFromStore={chFromStore} challengeId={challengeId}
         totalTests={totalTests} isAllTestsPassed={isAllTestsPassed}
