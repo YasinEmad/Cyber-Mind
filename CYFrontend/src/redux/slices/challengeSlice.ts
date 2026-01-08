@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk,  } from '@reduxjs/toolkit'
 import * as challengesApi from '@/api/challenges'
 
 // هنضيف إنترفيس للـ Response اللي جاي من الـ Submit
-interface SubmitResponse {
+export interface SubmitResponse {
   success: boolean
   awarded: boolean
   points: number
