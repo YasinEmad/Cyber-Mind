@@ -6,7 +6,6 @@ import SidebarItem from '../components/SidebarItem';
 import { 
   Puzzle, 
   Trophy, 
-  LayoutDashboard, 
   Menu,
   X,
   Users,
