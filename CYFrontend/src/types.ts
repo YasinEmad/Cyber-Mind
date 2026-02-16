@@ -12,13 +12,6 @@ export interface Challenge {
   difficulty: ChallengeDifficulty;
 }
 
-export interface LeaderboardUser {
-  rank: number;
-  username: string;
-  avatar: string;
-  score: number;
-}
-
 export interface Puzzle {
   _id: string;
   title: string;
