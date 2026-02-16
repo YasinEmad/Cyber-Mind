@@ -4,7 +4,6 @@ import { AnimatePresence } from 'framer-motion';
 import HomePage from '../pages/HomePage';
 import GamePage from '../pages/GamePage';
 import ChallengePage from '../pages/ChallengePage';
-import LeaderboardPage from '../pages/LeaderboardPage';
 import ProfilePage from '../pages/ProfilePage';
 import PuzzlePage from '../pages/PuzzlePage';
 import AboutPage from '../pages/AboutPage';
@@ -32,7 +31,6 @@ export default function AnimatedRoutes() {
           <Route path="/puzzles/:puzzleId" element={<SolvePuzzlePage />} />
           <Route path="/challenges" element={<ChallengePage />} />
           <Route path="/challenges/:challengeId" element={<PlayChallengePage />} />
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<ProfilePage />} />

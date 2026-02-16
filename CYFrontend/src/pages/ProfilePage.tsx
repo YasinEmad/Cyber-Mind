@@ -73,7 +73,6 @@ const ProfilePage: React.FC = () => {
         {/* Navigation Mockup */}
         <nav className="w-full space-y-2 flex-1">
           <NavItem icon={<Activity size={18} />} label="Overview" active />
-          <NavItem icon={<BarChart size={18} />} label="Leaderboards" />
         </nav>
 
         {/* Logout at bottom */}

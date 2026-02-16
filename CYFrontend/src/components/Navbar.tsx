@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Gamepad2, Menu, X, Home, Info, Swords, 
-  Trophy, Star, User, BrainCircuit, ShieldCheck 
+  Star, User, BrainCircuit, ShieldCheck 
 } from 'lucide-react';
 import { selectIsAdmin } from '@/redux/slices/userSlice';
 
@@ -37,7 +37,6 @@ export default function Navbar() {
     { name: 'Game', path: '/game', icon: Swords },
     { name: 'Puzzles', path: '/puzzles', icon: BrainCircuit },
     { name: 'Challenges', path: '/challenges', icon: Star },
-    { name: 'Leaderboard', path: '/leaderboard', icon: Trophy },
     { name: 'Profile', path: '/profile', icon: User },
     ...(isAdmin ? [{ name: 'Admin', path: '/admin', icon: ShieldCheck }] : []),
   ];
