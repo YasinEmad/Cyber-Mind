@@ -3,7 +3,7 @@ const { User, Profile } = require('../models');
 
 // 1. حارس المستخدمين (المسارات الخاصة)
 exports.protect = async (req, res, next) => {
-  let token = req.cookies.token || (req.headers.authorization?.startsWith('Bearer') && req.headers.authorization.split(' ')[1]);
+  let token = req.cookies.token || (req.headers.authorization?.startsWith('Bearer ') && req.headers.authorization.slice(7));
 
   if (!token) return res.status(401).json({ success: false, message: 'Not authorized' });
 
@@ -19,6 +19,13 @@ exports.protect = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
+    // More specific error handling for token issues
+    if (error.message.includes('kid')) {
+      return res.status(401).json({ success: false, message: 'Invalid token. Please log in again.' });
+    }
+    if (error.code === 'auth/id-token-expired') {
+      return res.status(401).json({ success: false, message: 'Token expired. Please log in again.' });
+    }
     next(error);
   }
 };
@@ -37,7 +44,7 @@ exports.authAdmin = async (req, res, next) => {
 
 // 3. الحارس الاختياري (للألغاز)
 exports.optionalAuth = async (req, res, next) => {
-  let token = req.cookies?.token || (req.headers.authorization?.startsWith('Bearer') && req.headers.authorization.split(' ')[1]);
+  let token = req.cookies?.token || (req.headers.authorization?.startsWith('Bearer ') && req.headers.authorization.slice(7));
 
   if (!token) {
     req.user = null;
@@ -53,7 +60,8 @@ exports.optionalAuth = async (req, res, next) => {
     req.user = user || null;
     next();
   } catch (err) {
-    req.user = null; // لو التوكن بايظ بنعتبره ضيف برضه
+    // Invalid token - treat as guest but don't error
+    req.user = null;
     next();
   }
 };

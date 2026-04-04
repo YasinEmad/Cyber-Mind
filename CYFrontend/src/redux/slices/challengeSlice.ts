@@ -43,28 +43,43 @@ const initialState: ChallengeState = {
 // 1. الأكشن بتاع جلب التحديات
 export const fetchChallenges = createAsyncThunk<Challenge[]>(
   'challenges/fetchAll',
-  async () => {
-    const response = await challengesApi.fetchChallenges();
-    // تأكد من الـ API بيبعت { success: true, data: [...] }
-    return (response as any).data || response;
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await challengesApi.fetchChallenges();
+      // تأكد من الـ API بيبعت { success: true, data: [...] }
+      return (response as any).data || response;
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch challenges';
+      return rejectWithValue(errorMsg);
+    }
   }
 )
 
 // 2. الأكشن بتاع جلب تحدي واحد
 export const fetchChallengeById = createAsyncThunk<Challenge, string>(
   'challenges/fetchById',
-  async (id) => {
-    const response = await challengesApi.fetchChallengeById(id);
-    return (response as any).data || response;
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await challengesApi.fetchChallengeById(id);
+      return (response as any).data || response;
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch challenge';
+      return rejectWithValue(errorMsg);
+    }
   }
 )
 
 // 3. الأكشن السحري الجديد: تسليم التحدي واحتساب النقط
 export const submitChallenge = createAsyncThunk<SubmitResponse, { challengeId: string; answer: string }>(
   'challenges/submit',
-  async ({ challengeId, answer }) => {
-    // بنبعت الـ ID والحل في الـ API
-    return await challengesApi.submitChallenge(challengeId, answer)
+  async ({ challengeId, answer }, { rejectWithValue }) => {
+    try {
+      // بنبعت الـ ID والحل في الـ API
+      return await challengesApi.submitChallenge(challengeId, answer)
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to submit challenge';
+      return rejectWithValue(errorMsg);
+    }
   }
 )
 
@@ -89,7 +104,7 @@ const slice = createSlice({
       })
       .addCase(fetchChallenges.rejected, (state, action) => {
         state.status = 'failed'
-        state.error = action.error.message ?? null
+        state.error = ((action.payload as string) || action.error.message) ?? 'Failed to fetch challenges'
       })
 
       // جلب واحد
@@ -100,6 +115,10 @@ const slice = createSlice({
       .addCase(fetchChallengeById.fulfilled, (state, action) => {
         state.status = 'succeeded'
         state.challenge = action.payload
+      })
+      .addCase(fetchChallengeById.rejected, (state, action) => {
+        state.status = 'failed'
+        state.error = ((action.payload as string) || action.error.message) ?? 'Failed to fetch challenge'
       })
 
       // تسيلم التحدي (Submit)
@@ -113,7 +132,7 @@ const slice = createSlice({
       })
       .addCase(submitChallenge.rejected, (state, action) => {
         state.submitStatus = 'failed'
-        state.error = action.error.message ?? null
+        state.error = ((action.payload as string) || action.error.message) ?? 'Failed to submit challenge'
       })
   }
 })

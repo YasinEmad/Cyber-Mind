@@ -4,7 +4,7 @@ import axios from '@/api/axios'
 const API_URL = '/puzzles'
 
 export interface Puzzle {
-  _id: string
+  id: number
   title: string
   description: string
   tag: string
@@ -37,30 +37,50 @@ const initialState: PuzzleState = {
 // 1. Get all puzzles
 export const fetchPuzzles = createAsyncThunk<Puzzle[]>(
   'puzzles/fetchAll',
-  async () => {
-    const res = await axios.get(API_URL)
-    return res.data
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axios.get(API_URL)
+      return res.data
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch puzzles';
+      return rejectWithValue(errorMsg);
+    }
   }
 )
 
 // 2. Get puzzle by id
 export const fetchPuzzleById = createAsyncThunk<Puzzle, string>(
   'puzzles/fetchById',
-  async (id) => {
-    const res = await axios.get(`${API_URL}/${id}`)
-    return res.data
+  async (id, { rejectWithValue }) => {
+    // Validate that ID is provided and not 'undefined'
+    if (!id || id === 'undefined' || (typeof id === 'string' && id.trim() === '')) {
+      return rejectWithValue('Invalid puzzle ID');
+    }
+    
+    try {
+      const res = await axios.get(`${API_URL}/${id}`)
+      return res.data
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch puzzle';
+      return rejectWithValue(errorMsg);
+    }
   }
 )
 
 // 3. Create puzzle
 export const createPuzzle = createAsyncThunk<Puzzle, Omit<Puzzle, '_id'>>(
   'puzzles/create',
-  async (newPuzzle) => {
-    // ensure level is numeric before sending
-    const payload = { ...newPuzzle, level: Number((newPuzzle as any).level) };
-    try { console.debug('createPuzzle thunk: level typeof:', typeof payload.level, 'value:', payload.level); } catch (e) {}
-    const res = await axios.post(API_URL, payload)
-    return res.data
+  async (newPuzzle, { rejectWithValue }) => {
+    try {
+      // ensure level is numeric before sending
+      const payload = { ...newPuzzle, level: Number((newPuzzle as any).level) };
+      try { console.debug('createPuzzle thunk: level typeof:', typeof payload.level, 'value:', payload.level); } catch (e) {}
+      const res = await axios.post(API_URL, payload)
+      return res.data
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to create puzzle';
+      return rejectWithValue(errorMsg);
+    }
   }
 )
 
@@ -68,26 +88,36 @@ export const createPuzzle = createAsyncThunk<Puzzle, Omit<Puzzle, '_id'>>(
 export const updatePuzzle = createAsyncThunk<
   Puzzle,
   { id: string; updatedData: Partial<Puzzle> }
->('puzzles/update', async ({ id, updatedData }) => {
-  const payload = { ...updatedData } as any;
+>('puzzles/update', async ({ id, updatedData }, { rejectWithValue }) => {
+  try {
+    const payload = { ...updatedData } as any;
 
-  if (payload.level !== undefined && payload.level !== null) {
-    payload.level = Number(payload.level);
-    console.debug('updatePuzzle thunk: level typeof:', typeof payload.level, 'value:', payload.level);
+    if (payload.level !== undefined && payload.level !== null) {
+      payload.level = Number(payload.level);
+      console.debug('updatePuzzle thunk: level typeof:', typeof payload.level, 'value:', payload.level);
+    }
+
+    // PATCH بدل PUT
+    const res = await axios.patch(`${API_URL}/${id}`, payload);
+    return res.data;
+  } catch (error: any) {
+    const errorMsg = error.response?.data?.message || error.message || 'Failed to update puzzle';
+    return rejectWithValue(errorMsg);
   }
-
-  // PATCH بدل PUT
-  const res = await axios.patch(`${API_URL}/${id}`, payload);
-  return res.data;
 });
 
 
 // 5. Delete puzzle
-export const deletePuzzle = createAsyncThunk<string, string>(
+export const deletePuzzle = createAsyncThunk<number, number>(
   'puzzles/delete',
-  async (id) => {
-    await axios.delete(`${API_URL}/${id}`)
-    return id
+  async (id, { rejectWithValue }) => {
+    try {
+      await axios.delete(`${API_URL}/${id}`)
+      return id
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to delete puzzle';
+      return rejectWithValue(errorMsg);
+    }
   }
 )
 
@@ -107,7 +137,7 @@ const puzzleSlice = createSlice({
       })
       .addCase(fetchPuzzles.rejected, (state, action) => {
         state.status = 'failed'
-        state.error = action.error.message ?? null
+        state.error = ((action.payload as string) || action.error.message) ?? 'Failed to fetch puzzles'
       })
 
       // --- MODIFIED: Added pending/rejected for single puzzle fetch ---
@@ -121,7 +151,7 @@ const puzzleSlice = createSlice({
       })
       .addCase(fetchPuzzleById.rejected, (state, action) => {
         state.status = 'failed'
-        state.error = action.error.message ?? null
+        state.error = ((action.payload as string) || action.error.message) ?? 'Failed to fetch puzzle'
       })
       // -----------------------------------------------------------
 
@@ -134,7 +164,7 @@ const puzzleSlice = createSlice({
       })
       .addCase(createPuzzle.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message ?? null;
+        state.error = ((action.payload as string) || action.error.message) ?? 'Failed to create puzzle';
       })
 
       .addCase(updatePuzzle.pending, (state) => {
@@ -142,26 +172,26 @@ const puzzleSlice = createSlice({
       })
       .addCase(updatePuzzle.fulfilled, (state, action: PayloadAction<Puzzle>) => {
         state.status = 'succeeded';
-        const index = state.puzzles.findIndex(p => p._id === action.payload._id);
+        const index = state.puzzles.findIndex(p => p.id === action.payload.id);
         if (index !== -1) {
           state.puzzles[index] = action.payload;
         }
       })
       .addCase(updatePuzzle.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message ?? null;
+        state.error = ((action.payload as string) || action.error.message) ?? 'Failed to update puzzle';
       })
 
       .addCase(deletePuzzle.pending, (state) => {
         state.status = 'loading';
       })
-      .addCase(deletePuzzle.fulfilled, (state, action: PayloadAction<string>) => {
+      .addCase(deletePuzzle.fulfilled, (state, action: PayloadAction<number>) => {
         state.status = 'succeeded';
-        state.puzzles = state.puzzles.filter(p => p._id !== action.payload);
+        state.puzzles = state.puzzles.filter(p => p.id !== action.payload);
       })
       .addCase(deletePuzzle.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message ?? null;
+        state.error = ((action.payload as string) || action.error.message) ?? 'Failed to delete puzzle';
       });
   },
 })
