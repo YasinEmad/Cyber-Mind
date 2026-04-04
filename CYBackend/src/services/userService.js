@@ -1,9 +1,14 @@
-const User = require('../models/User');
-const Profile = require('../models/Profile');
+const { User, Profile } = require('../models');
+const { Op } = require('sequelize');
 
 exports.findOrCreateGoogleUser = async (userData) => {
   const { uid, email, name, picture } = userData;
-  let user = await User.findOne({ $or: [{ uid }, { email }] }).populate('profile');
+  let user = await User.findOne({
+    where: {
+      [Op.or]: [{ uid }, { email }]
+    },
+    include: [{ model: Profile, as: 'profile' }]
+  });
 
   if (user) {
     let changed = false;
@@ -12,11 +17,12 @@ exports.findOrCreateGoogleUser = async (userData) => {
     if (user.uid !== uid) { user.uid = uid; changed = true; }
     if (changed) await user.save();
   } else {
-    // تكريك المستخدم
+    // Create user
     user = await User.create({ uid, email, name, photoURL: picture });
-    // تكريك البروفايل فوراً لضمان وجوده
-    await Profile.create({ user: user._id });
-    await user.populate('profile');
+    // Create profile
+    await Profile.create({ userId: user.id });
+    // Reload with profile
+    user = await User.findByPk(user.id, { include: [{ model: Profile, as: 'profile' }] });
   }
   return user;
 };
@@ -31,25 +37,19 @@ exports.addPointsToUser = async (userId, points, itemId, itemType = 'puzzle') =>
   const counterField = isPuzzle ? 'puzzlesDone' : 'challengesDone';
 
   // 2. تحديث البروفايل في خطوة واحدة (Atomic Update)
-  const updatedProfile = await Profile.findOneAndUpdate(
-    { 
-      user: userId, 
-      [solvedField]: { $ne: itemId } // شرط: ميكونش الـ ID موجود قبل كدة
-    },
-    { 
-      $inc: { 
-        totalScore: points,   // زيادة النقط
-        [counterField]: 1     // زيادة العداد (puzzlesDone أو challengesDone)
-      },
-      $addToSet: { [solvedField]: itemId } // إضافة الـ ID للمصفوفة لمنع التكرار
-    },
-    { new: true }
-  );
+  const profile = await Profile.findOne({ where: { userId } });
+  if (!profile) throw new Error('Profile not found');
 
-  if (!updatedProfile) {
-    // لو الشرط (ne$) لم يتحقق، يعني اليوزر حلها قبل كدة
+  // Check if already solved
+  if (profile[solvedField].includes(itemId)) {
     return { awarded: false };
   }
 
-  return { awarded: true, profile: updatedProfile };
+  // Update
+  profile.totalScore += points;
+  profile[counterField] += 1;
+  profile[solvedField] = [...profile[solvedField], itemId];
+  await profile.save();
+
+  return { awarded: true, profile };
 };

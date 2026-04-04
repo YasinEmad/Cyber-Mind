@@ -1,45 +1,66 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const ProfileSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
+const Profile = sequelize.define('Profile', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id',
+    },
   },
   rating: {
-    type: Number,
-    default: 0,
+    type: DataTypes.FLOAT,
+    defaultValue: 0,
   },
-  // الألغاز اللي اتحلت (عشان نمنع التكرار)
-  solvedPuzzles: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Puzzle'
-  }],
-  // التحديات اللي اتحلت (عشان نمنع التكرار)
-  solvedChallenges: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Challenge'
-  }],
+  solvedPuzzles: {
+    type: DataTypes.ARRAY(DataTypes.INTEGER),
+    defaultValue: [],
+  },
+  solvedChallenges: {
+    type: DataTypes.ARRAY(DataTypes.INTEGER),
+    defaultValue: [],
+  },
   puzzlesDone: {
-    type: Number,
-    default: 0,
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
   },
   challengesDone: {
-    type: Number,
-    default: 0,
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
   },
   flags: {
-    type: Number,
-    default: 0,
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
   },
   totalScore: {
-    type: Number,
-    default: 0,
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
   },
   globalRank: {
-    type: Number,
-    default: 0,
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
   },
-}, { timestamps: true }); // ضيف دي عشان تعرف البروفايل اتعمل امتى
+  createdAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+  updatedAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+}, {
+  tableName: 'profiles',
+  timestamps: true,
+});
 
-module.exports = mongoose.model('Profile', ProfileSchema);
+// Relationships
+// Profile.belongsTo(User, { foreignKey: 'userId' });
+
+module.exports = Profile;

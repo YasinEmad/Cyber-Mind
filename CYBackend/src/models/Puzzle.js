@@ -1,86 +1,80 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const puzzleSchema = new mongoose.Schema({
+const Puzzle = sequelize.define('Puzzle', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
   title: {
-    type: String,
-    required: [true, 'Title is required'],
-    trim: true
+    type: DataTypes.STRING,
+    allowNull: false,
   },
   description: {
-    type: String,
-    required: [true, 'Description is required'],
-    trim: true
+    type: DataTypes.TEXT,
+    allowNull: false,
   },
-  // --- UPDATED LEVEL FIELD ---
   level: {
-    type: Number,
-    required: [true, 'Level is required'],
-    enum: {
-      values: [1, 2, 3],
-      message: 'Level must be 1, 2, or 3'
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    validate: {
+      isIn: [[1, 2, 3]],
     },
   },
-  // ---------------------------
-  hints: [{
-    type: String,
-    trim: true
-  }],
+  hints: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: [],
+  },
   animation_url: {
-    type: String,
-    trim: true
+    type: DataTypes.STRING,
   },
   scenario: {
-    type: String,
-    required: [true, 'Scenario is required'],
-    trim: true
+    type: DataTypes.TEXT,
+    allowNull: false,
   },
   tag: {
-    type: String,
-    required: [true, 'Tag is required'],
+    type: DataTypes.STRING,
+    allowNull: false,
     unique: true,
-    trim: true
   },
   answer: {
-    type: String,
-    required: [true, 'Answer is required'],
-    trim: true,
-    select: false 
+    type: DataTypes.STRING,
+    allowNull: false,
   },
   category: {
-    type: String,
-    required: [true, 'Category is required'],
-    trim: true
+    type: DataTypes.STRING,
+    allowNull: false,
   },
   active: {
-    type: Boolean,
-    default: true
-  }
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+  },
+  createdAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+  updatedAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
 }, {
+  tableName: 'puzzles',
   timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  indexes: [
+    { fields: ['category', 'level'] },
+    { fields: ['active'] },
+  ],
 });
 
-puzzleSchema.index({ category: 1, level: 1 });
-puzzleSchema.index({ active: 1 });
-
-// Ensure `level` is always stored as a Number and is an integer (1, 2, 3 enforced by enum)
-puzzleSchema.pre('validate', function(next) {
-  try {
-    // Only coerce/validate level if it's being modified
-    if (this.isModified('level') && this.level !== undefined && this.level !== null) {
-      this.level = Number(this.level);
-      if (!Number.isInteger(this.level) || ![1,2,3].includes(this.level)) {
-        return next(new Error('Puzzle.level must be 1, 2, or 3'));
-      }
+// Validation hook
+Puzzle.beforeValidate((puzzle) => {
+  if (puzzle.level !== undefined && puzzle.level !== null) {
+    puzzle.level = Number(puzzle.level);
+    if (!Number.isInteger(puzzle.level) || ![1, 2, 3].includes(puzzle.level)) {
+      throw new Error('Puzzle.level must be 1, 2, or 3');
     }
-    return next();
-  } catch (err) {
-    return next(err);
   }
 });
-
-
-const Puzzle = mongoose.model('Puzzle', puzzleSchema);
 
 module.exports = Puzzle;

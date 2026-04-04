@@ -1,53 +1,54 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const UserSchema = new mongoose.Schema({
+const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
   uid: {
-    type: String,
-    required: true,
+    type: DataTypes.STRING,
+    allowNull: false,
     unique: true,
   },
   email: {
-    type: String,
-    required: true,
+    type: DataTypes.STRING,
+    allowNull: false,
     unique: true,
   },
   name: {
-    type: String,
+    type: DataTypes.STRING,
   },
   photoURL: {
-    type: String,
+    type: DataTypes.STRING,
   },
   role: {
-    type: String,
-    enum: ['user', 'admin'],
-    default: 'user',
+    type: DataTypes.ENUM('user', 'admin'),
+    defaultValue: 'user',
+  },
+  solvedPuzzles: {
+    type: DataTypes.ARRAY(DataTypes.INTEGER),
+    defaultValue: [],
+  },
+  solvedChallenges: {
+    type: DataTypes.ARRAY(DataTypes.INTEGER),
+    defaultValue: [],
   },
   createdAt: {
-    type: Date,
-    default: Date.now,
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
   },
-  profile: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Profile',
+  updatedAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
   },
-  solvedPuzzles: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Puzzle'
-  }],
-}, { timestamps: true });
-
-// Middleware: أوتوماتيك أول ما يوزر يتكريت بنعمله بروفايل ونربطه بيه
-UserSchema.pre('save', async function (next) {
-  if (this.isNew && !this.profile) {
-    try {
-      const Profile = mongoose.model('Profile');
-      const profile = await Profile.create({ user: this._id });
-      this.profile = profile._id;
-    } catch (error) {
-      return next(error);
-    }
-  }
-  next();
+}, {
+  tableName: 'users',
+  timestamps: true,
 });
 
-module.exports = mongoose.model('User', UserSchema);
+// Relationships will be defined after all models are loaded
+// User.hasOne(Profile, { foreignKey: 'userId' });
+
+module.exports = User;

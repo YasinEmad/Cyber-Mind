@@ -1,9 +1,8 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
-console.log(process.env.MONGODB_URI);
-const mongoose = require('mongoose');
-const Puzzle = require('../models/Puzzle');
-const connectDB = require('../config/db');
+const { sequelize } = require('../config/db');
+const { Puzzle } = require('../models');
+const { connectDB } = require('../config/db');
 const puzzles = [
   { title: "Puzzle 1", description: "Solve the math riddle", level: 1, scenario: "Math challenge", tag: "puzzle1", answer: "1", category: "Math" },
   { title: "Puzzle 2", description: "Find the hidden word", level: 1, scenario: "Word search", tag: "puzzle2", answer: "1", category: "Word" },
@@ -41,14 +40,14 @@ puzzles.forEach(p => {
 const seedPuzzles = async () => {
   try {
     await connectDB();
-    await Puzzle.deleteMany({});
+    await Puzzle.destroy({ truncate: true });
     console.log('Puzzles deleted.');
-    await Puzzle.insertMany(puzzles);
+    await Puzzle.bulkCreate(puzzles);
     console.log('Puzzles seeded successfully!');
-    mongoose.disconnect();
+    await sequelize.close();
   } catch (error) {
     console.error('Error seeding puzzles:', error);
-    mongoose.disconnect();
+    await sequelize.close();
     process.exit(1); // Exit process with failure
   }
 };

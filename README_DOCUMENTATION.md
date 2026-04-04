@@ -46,7 +46,7 @@
 ```bash
 cd CYBackend
 npm install
-# Create .env with MONGODB_URI, FIREBASE credentials
+# Create .env with DATABASE_URL (PostgreSQL), FIREBASE credentials
 npm run dev
 # Server runs on http://localhost:8080
 ```

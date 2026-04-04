@@ -1,10 +1,10 @@
-const Puzzle = require('../models/Puzzle');
+const { Puzzle } = require('../models');
 const puzzleService = require('../services/puzzleService');
 
 // @desc    Get all puzzles
 exports.getPuzzles = async (req, res, next) => {
   try {
-    const puzzles = await Puzzle.find();
+    const puzzles = await Puzzle.findAll();
     res.json(puzzles);
   } catch (err) {
     next(err);
@@ -14,7 +14,7 @@ exports.getPuzzles = async (req, res, next) => {
 // @desc    Get a single puzzle
 exports.getPuzzleById = async (req, res, next) => {
   try {
-    const puzzle = await Puzzle.findById(req.params.id);
+    const puzzle = await Puzzle.findByPk(req.params.id);
     if (!puzzle) return res.status(404).json({ message: 'Puzzle not found' });
     res.json(puzzle);
   } catch (err) {
@@ -26,7 +26,7 @@ exports.getPuzzleById = async (req, res, next) => {
 exports.createPuzzle = async (req, res, next) => {
   try {
     if (req.body.tag) {
-      const existing = await Puzzle.findOne({ tag: req.body.tag });
+      const existing = await Puzzle.findOne({ where: { tag: req.body.tag } });
       if (existing) return res.status(400).json({ message: 'Tag already exists' });
     }
 
@@ -42,7 +42,7 @@ exports.createPuzzle = async (req, res, next) => {
 // @desc    Update a puzzle
 exports.updatePuzzle = async (req, res, next) => {
   try {
-    const puzzle = await Puzzle.findById(req.params.id);
+    const puzzle = await Puzzle.findByPk(req.params.id);
     if (!puzzle) return res.status(404).json({ message: 'Puzzle not found' });
 
     // update only fields sent in req.body
@@ -50,23 +50,18 @@ exports.updatePuzzle = async (req, res, next) => {
       puzzle[key] = req.body[key];
     });
 
-    await puzzle.save(); // triggers validation only on modified fields
+    await puzzle.save(); // triggers validation
     res.json(puzzle);
   } catch (err) {
     next(err);
   }
 };
 
-
-
-
-
-
 // @desc    Delete a puzzle
 exports.deletePuzzle = async (req, res, next) => {
   try {
-    const puzzle = await Puzzle.findByIdAndDelete(req.params.id);
-    if (!puzzle) return res.status(404).json({ message: 'Puzzle not found' });
+    const deleted = await Puzzle.destroy({ where: { id: req.params.id } });
+    if (!deleted) return res.status(404).json({ message: 'Puzzle not found' });
     res.json({ message: 'Puzzle removed' });
   } catch (err) {
     next(err);

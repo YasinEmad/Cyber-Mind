@@ -1,5 +1,5 @@
 const admin = require('../config/firebaseAdmin');
-const User = require('../models/User');
+const { User, Profile } = require('../models');
 
 // 1. حارس المستخدمين (المسارات الخاصة)
 exports.protect = async (req, res, next) => {
@@ -9,7 +9,10 @@ exports.protect = async (req, res, next) => {
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
-    const user = await User.findOne({ uid: decodedToken.uid }).populate('profile');
+    const user = await User.findOne({
+      where: { uid: decodedToken.uid },
+      include: [{ model: Profile, as: 'profile' }]
+    });
 
     if (!user) return res.status(401).json({ success: false, message: 'User not found' });
 
@@ -43,7 +46,10 @@ exports.optionalAuth = async (req, res, next) => {
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
-    const user = await User.findOne({ uid: decodedToken.uid }).populate('profile');
+    const user = await User.findOne({
+      where: { uid: decodedToken.uid },
+      include: [{ model: Profile, as: 'profile' }]
+    });
     req.user = user || null;
     next();
   } catch (err) {

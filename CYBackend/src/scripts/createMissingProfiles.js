@@ -1,39 +1,25 @@
 require('dotenv').config();
-const connectDB = require('../config/db');
-const User = require('../models/User');
-const Profile = require('../models/Profile');
+const { connectDB } = require('../config/db');
+const { User, Profile } = require('../models');
 
 const run = async () => {
   await connectDB();
 
   console.log('Scanning users to create missing profiles...');
 
-  const users = await User.find();
+  const users = await User.findAll();
   let created = 0;
 
   for (const user of users) {
     try {
-      let need = false;
-
-      if (!user.profile) {
-        need = true;
-      } else {
-        // If profile is an ObjectId or populated doc, check existence
-        const profileId = user.profile._id ? user.profile._id : user.profile;
-        const exists = await Profile.findById(profileId);
-        if (!exists) need = true;
-      }
-
-      if (need) {
-        const profile = new Profile({ user: user._id });
-        await profile.save();
-        user.profile = profile._id;
-        await user.save();
+      const existingProfile = await Profile.findOne({ where: { userId: user.id } });
+      if (!existingProfile) {
+        await Profile.create({ userId: user.id });
         created++;
-        console.log(`Created profile for user ${user._id} (${user.email || 'no-email'})`);
+        console.log(`Created profile for user ${user.id} (${user.email || 'no-email'})`);
       }
     } catch (err) {
-      console.error(`Failed for user ${user._id}:`, err.message);
+      console.error(`Failed for user ${user.id}:`, err.message);
     }
   }
 

@@ -1,4 +1,4 @@
-const Challenge = require('../models/Challenge');
+const { Challenge } = require('../models');
 const challengeService = require('../services/challengeService');
 // التعديل هنا: بننادي على الفانكشن اللي هنستخدمها تحت
 const { getPointsForDifficulty } = require('../utils/challingesPoints');
@@ -6,7 +6,7 @@ const { getPointsForDifficulty } = require('../utils/challingesPoints');
 // 1. عرض كل التحديات
 exports.getAllChallenges = async (req, res, next) => {
   try {
-    const challenges = await Challenge.find({}).sort({ createdAt: -1 });
+    const challenges = await Challenge.findAll({ order: [['createdAt', 'DESC']] });
     res.status(200).json({ success: true, data: challenges });
   } catch (error) { next(error); }
 };
@@ -14,7 +14,7 @@ exports.getAllChallenges = async (req, res, next) => {
 // 2. عرض تحدي واحد بالـ ID
 exports.getChallengeById = async (req, res, next) => {
   try {
-    const challenge = await Challenge.findById(req.params.id);
+    const challenge = await Challenge.findByPk(req.params.id);
     if (!challenge) return res.status(404).json({ success: false, message: 'Challenge not found' });
     res.status(200).json({ success: true, data: challenge });
   } catch (error) { next(error); }
@@ -26,8 +26,7 @@ exports.createChallenge = async (req, res, next) => {
     // كدة الفانكشن دي هتشتغل صح لأننا عملنا لها require فوق
     const points = getPointsForDifficulty(req.body.level);
     
-    const challenge = new Challenge({ ...req.body, points });
-    await challenge.save();
+    const challenge = await Challenge.create({ ...req.body, points });
     
     res.status(201).json({ success: true, data: challenge });
   } catch (error) { next(error); }
