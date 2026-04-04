@@ -221,8 +221,8 @@ const PuzzlePage: React.FC = () => {
                 >
                   {filteredPuzzles.map((puzzle, index) => (
                     <Link 
-                      to={`/puzzles/${puzzle._id}`} 
-                      key={puzzle._id}
+                      to={`/puzzles/${puzzle.id}`} 
+                      key={puzzle.id}
                       className="group relative"
                     >
                       {/* Hover Glow Effect */}

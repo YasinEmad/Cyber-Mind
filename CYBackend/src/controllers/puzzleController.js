@@ -14,7 +14,14 @@ exports.getPuzzles = async (req, res, next) => {
 // @desc    Get a single puzzle
 exports.getPuzzleById = async (req, res, next) => {
   try {
-    const puzzle = await Puzzle.findByPk(req.params.id);
+    const { id } = req.params;
+    
+    // Validate that ID is provided and is a valid integer
+    if (!id || id === 'undefined' || isNaN(id)) {
+      return res.status(400).json({ message: 'Invalid puzzle ID provided' });
+    }
+    
+    const puzzle = await Puzzle.findByPk(parseInt(id, 10));
     if (!puzzle) return res.status(404).json({ message: 'Puzzle not found' });
     res.json(puzzle);
   } catch (err) {
@@ -42,7 +49,14 @@ exports.createPuzzle = async (req, res, next) => {
 // @desc    Update a puzzle
 exports.updatePuzzle = async (req, res, next) => {
   try {
-    const puzzle = await Puzzle.findByPk(req.params.id);
+    const { id } = req.params;
+    
+    // Validate ID
+    if (!id || id === 'undefined' || isNaN(id)) {
+      return res.status(400).json({ message: 'Invalid puzzle ID provided' });
+    }
+
+    const puzzle = await Puzzle.findByPk(parseInt(id, 10));
     if (!puzzle) return res.status(404).json({ message: 'Puzzle not found' });
 
     // update only fields sent in req.body
@@ -60,7 +74,14 @@ exports.updatePuzzle = async (req, res, next) => {
 // @desc    Delete a puzzle
 exports.deletePuzzle = async (req, res, next) => {
   try {
-    const deleted = await Puzzle.destroy({ where: { id: req.params.id } });
+    const { id } = req.params;
+    
+    // Validate ID
+    if (!id || id === 'undefined' || isNaN(id)) {
+      return res.status(400).json({ message: 'Invalid puzzle ID provided' });
+    }
+
+    const deleted = await Puzzle.destroy({ where: { id: parseInt(id, 10) } });
     if (!deleted) return res.status(404).json({ message: 'Puzzle not found' });
     res.json({ message: 'Puzzle removed' });
   } catch (err) {
@@ -71,8 +92,15 @@ exports.deletePuzzle = async (req, res, next) => {
 // @desc    Submit an answer
 exports.submitAnswer = async (req, res, next) => {
   try {
+    const { id } = req.params;
     const { answer } = req.body;
-    const result = await puzzleService.validateAndAwardPoints(req.params.id, answer, req.user);
+    
+    // Validate ID
+    if (!id || id === 'undefined' || isNaN(id)) {
+      return res.status(400).json({ message: 'Invalid puzzle ID provided' });
+    }
+    
+    const result = await puzzleService.validateAndAwardPoints(parseInt(id, 10), answer, req.user);
 
     if (!result.correct) {
       return res.json({ correct: false, message: 'Incorrect answer, please try again.' });

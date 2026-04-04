@@ -13,7 +13,7 @@ export interface Challenge {
 }
 
 export interface Puzzle {
-  _id: string;
+  id: number;
   title: string;
   tag?: string;
   category: string;

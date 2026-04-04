@@ -142,7 +142,7 @@ export const PuzzlesViewAdmin = () => {
         {puzzles.length > 0 ? (
           puzzles.map((puzzle: Puzzle) => (
             <div 
-              key={puzzle._id} 
+              key={puzzle.id} 
               className={`bg-zinc-950 border ${
                 puzzle.active ? 'border-zinc-800' : 'border-red-900/50'
               } rounded-xl shadow-2xl p-6 flex flex-col hover:border-red-600/50 transition-all duration-300 group relative overflow-hidden`}
