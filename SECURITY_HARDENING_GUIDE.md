@@ -736,7 +736,7 @@ npm audit --fix [package-name]
 **Create .env.example (with dummy values):**
 ```env
 # CYBackend/.env.example
-MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/db
+DATABASE_URL=postgresql://username:password@localhost:5432/cyber-mind
 FIREBASE_PROJECT_ID=your-project-id
 FIREBASE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n
 FIREBASE_CLIENT_EMAIL=firebase-adminsdk@...iam.gserviceaccount.com
@@ -766,7 +766,7 @@ echo "firebase-service-account.json" >> .gitignore
 
 ```javascript
 // Use connection string with credentials
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/cyber-mind?retryWrites=true&w=majority
+DATABASE_URL=postgresql://username:password@cluster.postgresql.net/cyber-mind?retryWrites=true&w=majority
 ```
 
 ---

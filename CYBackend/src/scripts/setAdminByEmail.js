@@ -4,15 +4,14 @@
  */
 
 require('dotenv').config();
-const mongoose = require('mongoose');
-const User = require('../models/User');
-const connectDB = require('../config/db');
+const { connectDB } = require('../config/db');
+const { User } = require('../models');
 
 async function setAdminByEmail(email) {
   try {
     await connectDB();
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
 
     if (!user) {
       console.error(`User with email "${email}" not found`);

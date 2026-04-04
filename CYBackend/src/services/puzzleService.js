@@ -1,10 +1,9 @@
-const Puzzle = require('../models/Puzzle');
-const User = require('../models/User');
+const { Puzzle, User, Profile } = require('../models');
 const userService = require('./userService'); // استدعاء السيرفيس التانية
 const { getPointsForLevel } = require('../utils/points');
 
 exports.validateAndAwardPoints = async (puzzleId, submittedAnswer, user) => {
-  const puzzle = await Puzzle.findById(puzzleId).select('+answer tag level');
+  const puzzle = await Puzzle.findByPk(puzzleId, { attributes: { include: ['answer', 'tag', 'level'] } });
   if (!puzzle) throw new Error('Puzzle not found');
 
   const isCorrect = puzzle.answer.trim().toLowerCase() === submittedAnswer.trim().toLowerCase();
@@ -12,13 +11,12 @@ exports.validateAndAwardPoints = async (puzzleId, submittedAnswer, user) => {
 
   if (!user) return { correct: true, guest: true };
 
-  const puzzleIdStr = String(puzzle._id);
-  const alreadySolved = user.solvedPuzzles?.some(sp => String(sp) === puzzleIdStr || sp === puzzle.tag);
+  const alreadySolved = user.solvedPuzzles?.includes(puzzleId);
   if (alreadySolved) return { correct: true, alreadySolved: true };
 
   // 1. تحديث قائمة الألغاز المحلولة في موديل اليوزر
   user.solvedPuzzles = user.solvedPuzzles || [];
-  user.solvedPuzzles.push(puzzle._id);
+  user.solvedPuzzles.push(puzzleId);
   await user.save();
 
   // 2. حساب النقاط
@@ -26,10 +24,10 @@ exports.validateAndAwardPoints = async (puzzleId, submittedAnswer, user) => {
   const awardedPointsAmount = getPointsForLevel(parsedLevel) || 10;
 
   // 3. نداء الوظيفة الموحدة من userService لزيادة النقاط
-  await userService.addPointsToUser(user._id, awardedPointsAmount);
+  await userService.addPointsToUser(user.id, awardedPointsAmount);
 
   // جلب بيانات اليوزر كاملة بعد التحديث
-  const updatedUser = await User.findById(user._id).populate('profile');
+  const updatedUser = await User.findByPk(user.id, { include: [{ model: Profile, as: 'profile' }] });
 
   return {
     correct: true,

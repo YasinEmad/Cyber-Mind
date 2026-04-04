@@ -1,10 +1,10 @@
-const connectDB = require('../config/db');
-const Puzzle = require('../models/Puzzle');
+const { connectDB } = require('../config/db');
+const { Puzzle } = require('../models');
 
 const run = async () => {
   await connectDB();
   console.log('Scanning puzzles for missing/invalid level...');
-  const puzzles = await Puzzle.find();
+  const puzzles = await Puzzle.findAll();
   let fixed = 0;
   for (const p of puzzles) {
     const lvl = p.level;
@@ -13,9 +13,9 @@ const run = async () => {
       try {
         await p.save();
         fixed++;
-        console.log(`Fixed puzzle ${p._id} — set level to 1`);
+        console.log(`Fixed puzzle ${p.id} — set level to 1`);
       } catch (err) {
-        console.error(`Failed to fix puzzle ${p._id}:`, err.message || err);
+        console.error(`Failed to fix puzzle ${p.id}:`, err.message || err);
       }
     }
   }

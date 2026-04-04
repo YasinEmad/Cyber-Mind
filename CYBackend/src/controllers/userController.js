@@ -1,5 +1,5 @@
 const admin = require('../config/firebaseAdmin');
-const User = require('../models/User');
+const { User, Profile } = require('../models');
 const userService = require('../services/userService');
 const { getPointsForLevel } = require('../utils/points');
 
@@ -78,7 +78,7 @@ exports.updateMe = async (req, res, next) => {
 
     if (changed) await user.save();
 
-    const updated = await User.findById(user._id).populate('profile');
+    const updated = await User.findByPk(user.id, { include: [{ model: Profile, as: 'profile' }] });
     res.status(200).json({ success: true, data: updated });
   } catch (error) {
     next(error);
@@ -98,7 +98,7 @@ exports.addPoints = async (req, res, next) => {
     // itemId: الـ ID بتاع اللغز أو التحدي
     // itemType: 'puzzle' أو 'challenge'
     const result = await userService.addPointsToUser(
-      req.user._id, 
+      req.user.id, 
       awardedAmount, 
       itemId, 
       itemType || 'puzzle'
@@ -112,7 +112,7 @@ exports.addPoints = async (req, res, next) => {
     }
 
     // 3. جلب بيانات اليوزر كاملة بعد التحديث
-    const updatedUser = await User.findById(req.user._id).populate('profile');
+    const updatedUser = await User.findByPk(req.user.id, { include: [{ model: Profile, as: 'profile' }] });
 
     res.status(200).json({
       success: true,

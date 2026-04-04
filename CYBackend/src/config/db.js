@@ -1,27 +1,30 @@
 // config/db.js
 
-const mongoose = require('mongoose');
+const { Sequelize } = require('sequelize');
+
+const sequelize = new Sequelize(process.env.DATABASE_URL || 'postgresql://username:password@localhost:5432/cybermind', {
+  dialect: 'postgres',
+  logging: false, // Set to console.log to see SQL queries
+  pool: {
+    max: 5,
+    min: 0,
+    acquire: 30000,
+    idle: 10000
+  }
+});
 
 const connectDB = async () => {
   try {
-    // 1. Get the URI from environment variables.
-    // 2. If it's not found, use a local default (great for development).
-    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/cyber-mind';
+    await sequelize.authenticate();
+    console.log('PostgreSQL Connected');
 
-    // Options for the connection
-    const options = {
-      serverSelectionTimeoutMS: 5000, // Fail fast if no connection
-    };
-
-    // Connect using the single, complete URI
-    const conn = await mongoose.connect(mongoURI, options);
-    
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    // Sync all models
+    await sequelize.sync({ alter: true }); // Use { force: true } in development to drop and recreate
+    console.log('Database synced');
   } catch (error) {
-    console.error(`MongoDB Connection Error: ${error.message}`);
-    // Exit the process with failure
+    console.error(`PostgreSQL Connection Error: ${error.message}`);
     process.exit(1);
   }
 };
 
-module.exports = connectDB;
+module.exports = { sequelize, connectDB };

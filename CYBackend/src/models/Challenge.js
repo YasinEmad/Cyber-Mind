@@ -1,76 +1,65 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const challengeSchema = new mongoose.Schema({
+const Challenge = sequelize.define('Challenge', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
   title: {
-    type: String,
-    required: [true, 'Title is required'],
-    trim: true,
+    type: DataTypes.STRING,
+    allowNull: false,
   },
   description: {
-    type: String,
-    trim: true,
+    type: DataTypes.TEXT,
   },
   code: {
-    type: String,
-    trim: true,
+    type: DataTypes.TEXT,
   },
   level: {
-    type: String,
-    enum: ['easy', 'medium', 'hard'],
-    required: [true, 'Level is required'],
-    lowercase: true,
+    type: DataTypes.ENUM('easy', 'medium', 'hard'),
+    allowNull: false,
   },
-  hints: [{
-    type: String,
-    trim: true,
-  }],
+  hints: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: [],
+  },
   challengeDetails: {
-    type: String,
-    trim: true,
+    type: DataTypes.TEXT,
   },
   recommendation: {
-    type: String,
-    trim: true,
+    type: DataTypes.TEXT,
   },
   feedback: {
-    type: String,
-    trim: true,
+    type: DataTypes.TEXT,
   },
-
-  // الحقل اللي هيخزن الإجابة (Regex أو نص)
-  // عملنا select: false عشان الأمان
   solution: {
-    type: String,
-    required: [true, 'Solution is required for validation'],
-    select: false, 
+    type: DataTypes.STRING,
+    allowNull: false,
   },
-
-  // نوع التقييم (هل بنقارن كود ولا كلمة سر ثابتة؟)
   validationType: {
-    type: String,
-    enum: ['regex', 'exact'],
-    default: 'regex',
+    type: DataTypes.ENUM('regex', 'exact'),
+    defaultValue: 'regex',
   },
-
   points: {
-    type: Number,
-    default: 0,
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
   },
   createdAt: {
-    type: Date,
-    default: Date.now,
-  }
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+  updatedAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
 }, {
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  tableName: 'challenges',
+  timestamps: true,
+  indexes: [
+    { fields: ['level', 'points'] },
+  ],
 });
 
-// Index for performance
-challengeSchema.index({ level: 1, points: -1 });
-
-// Virtual id
-challengeSchema.virtual('id').get(function() {
-  return this._id.toHexString();
-});
-
-module.exports = mongoose.model('Challenge', challengeSchema);
+module.exports = Challenge;

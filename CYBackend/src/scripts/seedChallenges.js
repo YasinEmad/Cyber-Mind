@@ -1,9 +1,9 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
-const mongoose = require('mongoose');
-const Challenge = require('../models/Challenge');
-const connectDB = require('../config/db');
+const { sequelize } = require('../config/db');
+const { Challenge } = require('../models');
+const { connectDB } = require('../config/db');
 
 const challenges = [
   {
@@ -49,16 +49,16 @@ const seedChallenges = async () => {
   try {
     await connectDB();
     // بنمسح القديم وننزل الجديد بالحلول
-    await Challenge.deleteMany({});
+    await Challenge.destroy({ truncate: true });
     console.log('Existing challenges removed');
     
-    await Challenge.insertMany(challenges);
+    await Challenge.bulkCreate(challenges);
     console.log('Challenges seeded successfully with solutions!');
     
-    mongoose.disconnect();
+    await sequelize.close();
   } catch (err) {
     console.error('Seeding failed', err);
-    mongoose.disconnect();
+    await sequelize.close();
     process.exit(1);
   }
 };
