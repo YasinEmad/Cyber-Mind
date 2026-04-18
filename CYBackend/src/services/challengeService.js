@@ -10,17 +10,17 @@ exports.submitChallengeAnswer = async (challengeId, user, userAnswer) => {
   // 2. التحقق من الإجابة (Validation Logic)
   let isCorrect = false;
   
-  if (challenge.validationType === 'regex') {
+  if (!challenge.solution) {
+    isCorrect = false;
+    console.warn(`Challenge ${challengeId} has no solution configured; answer cannot be validated.`);
+  } else if (challenge.validationType === 'regex') {
     try {
-      const pattern = challenge.solution; 
-      const regex = new RegExp(pattern, 'i'); 
-      
+      const pattern = challenge.solution;
+      const regex = new RegExp(pattern, 'i');
       isCorrect = regex.test(userAnswer.trim());
-      
       console.log(`Checking Answer: "${userAnswer}" against Pattern: "${pattern}" -> Result: ${isCorrect}`);
-      
     } catch (e) {
-      console.error("Regex Error:", e);
+      console.error('Regex Error:', e);
       isCorrect = false;
     }
   } else {
