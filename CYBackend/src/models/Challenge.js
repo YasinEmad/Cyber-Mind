@@ -36,10 +36,12 @@ const Challenge = sequelize.define('Challenge', {
   },
   solution: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
+    defaultValue: '',
   },
   validationType: {
     type: DataTypes.ENUM('regex', 'exact'),
+    allowNull: true,
     defaultValue: 'regex',
   },
   points: {
