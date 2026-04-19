@@ -69,7 +69,7 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, index }) => {
         <div className="mt-8">
           <Link
             to={`/challenges/${challenge.id}`}
-            className="relative w-full flex items-center justify-center px-4 py-4 bg-gray-900 border border-gray-800 text-white font-black text-xs tracking-widest rounded-md overflow-hidden transition-all duration-300 group/btn"
+            className="relative w-full flex items-center justify-center px-4 py-4 bg-black border border-red-900/40 text-white font-black text-xs tracking-widest rounded-md overflow-hidden transition-all duration-300 group/btn"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-orange-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
             

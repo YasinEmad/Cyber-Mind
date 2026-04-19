@@ -59,6 +59,12 @@ exports.updatePuzzle = async (req, res, next) => {
     const puzzle = await Puzzle.findByPk(parseInt(id, 10));
     if (!puzzle) return res.status(404).json({ message: 'Puzzle not found' });
 
+    // Check if tag is being updated and if it already exists (excluding current puzzle)
+    if (req.body.tag && req.body.tag !== puzzle.tag) {
+      const existing = await Puzzle.findOne({ where: { tag: req.body.tag } });
+      if (existing) return res.status(400).json({ message: 'Tag already exists' });
+    }
+
     // update only fields sent in req.body
     Object.keys(req.body).forEach(key => {
       puzzle[key] = req.body[key];

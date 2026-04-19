@@ -44,7 +44,7 @@ export const PuzzlesViewAdmin = () => {
 
   const handleConfirmDelete = () => {
     if (puzzleToDelete) {
-      dispatch(deletePuzzle(puzzleToDelete._id));
+      dispatch(deletePuzzle(puzzleToDelete.id));
       setIsAlertOpen(false);
       setPuzzleToDelete(null);
     }
@@ -56,8 +56,8 @@ export const PuzzlesViewAdmin = () => {
   };
 
   const handleSave = (puzzleData: Omit<Puzzle, '_id'> | Puzzle) => {
-    if ('_id' in puzzleData) {
-      dispatch(updatePuzzle({ id: puzzleData._id, updatedData: puzzleData }));
+    if ('id' in puzzleData && puzzleData.id) {
+      dispatch(updatePuzzle({ id: puzzleData.id.toString(), updatedData: puzzleData }));
     } else {
       dispatch(createPuzzle(puzzleData));
     }

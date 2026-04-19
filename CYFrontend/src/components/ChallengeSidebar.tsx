@@ -154,14 +154,14 @@ const ChallengeSidebar: React.FC<SidebarProps> = ({
                     key={hint.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="bg-black border border-gray-700 rounded-lg overflow-hidden hover:border-orange-500/50 transition-all duration-300 group hover:shadow-lg hover:shadow-orange-500/20"
+                    className="bg-black border border-red-900/40 rounded-lg overflow-hidden hover:border-red-500/50 transition-all duration-300 group hover:shadow-lg hover:shadow-red-900/20"
                   >
                     <button 
                       onClick={() => toggleHint(hint.id)} 
-                      className="w-full text-left p-4 flex items-center justify-between hover:bg-gray-700/50 transition-all"
+                      className="w-full text-left p-4 flex items-center justify-between hover:bg-red-900/10 transition-all"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gray-700 rounded-lg border border-gray-600">
+                        <div className="p-2 bg-black rounded-lg border border-red-900/40">
                           <Lightbulb size={16} className="text-orange-400" />
                         </div>
                         <div>
