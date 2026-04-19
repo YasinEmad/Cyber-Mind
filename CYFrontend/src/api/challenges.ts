@@ -12,6 +12,11 @@ export async function fetchChallengeById(id: string) {
   return res.data;
 }
 
+export async function createChallenge(challengeData: any) {
+  const res = await axios.post(BASE, challengeData);
+  return res.data;
+}
+
 // التعديل هنا يا وحش 👇
 export async function submitChallenge(id: string, answer: string) {
   // بنبعت الـ answer في الـ body بتاع الـ POST request
