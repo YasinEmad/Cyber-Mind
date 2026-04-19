@@ -8,7 +8,6 @@ import {
   resetSubmitStatus, 
   SubmitResponse
 } from '@/redux/slices/challengeSlice';
-import { toast } from 'react-hot-toast';
 
 interface SubmissionResult extends SubmitResponse {
   challengeTitle: string;
@@ -50,7 +49,7 @@ export const usePlayChallenge = () => {
   // 2. Update code and hints once data arrives from the server
   useEffect(() => {
     if (chFromStore) {
-      if (chFromStore.code) setCode(chFromStore.code);
+      setCode(chFromStore.initialCode || chFromStore.code || "");
       if (Array.isArray(chFromStore.hints) && chFromStore.hints.length > 0) {
         setHintsList(chFromStore.hints.map((h: string, idx: number) => ({ 
           id: idx, 
@@ -66,14 +65,15 @@ export const usePlayChallenge = () => {
   // --- Handlers ---
 
   const handleEditorChange = (value: string | undefined) => {
-    if (value) setCode(value);
+    const nextCode = value ?? '';
+    setCode(nextCode);
+    console.debug('Editor changed, length:', nextCode.length);
   };
 
   const handleReset = () => {
     setCode(chFromStore?.code || "");
     setOutput("");
     setTestResults([]);
-    toast.success("Code reset to default");
   }; 
 
   const toggleHint = (hintId: number) => {
@@ -143,42 +143,50 @@ export const usePlayChallenge = () => {
         severity: test.severity
       })));
       setIsRunning(false);
-      
-      const allPassed = tests.every(t => t.check);
-      if (allPassed) {
-        toast.success("All local tests passed! Ready to submit.");
-      } else {
-        toast.error("Some security checks failed. Review your code.");
-      }
     }, 1000);
   };
 
   // --- Submit Logic ---
   const handleSubmit = async () => {
-    const localTestsPassed = testResults.length > 0 && testResults.every(t => t.passed);
-    
-    if (!localTestsPassed) {
-      toast.error("Please pass all local security tests first!");
+    console.debug('usePlayChallenge.handleSubmit called', { challengeId, codeLength: code.length, challengeLoaded: !!chFromStore });
+    if (!challengeId || !chFromStore) {
       return;
     }
 
-    if (challengeId && chFromStore) {
-      const resultAction = await dispatch(submitChallenge({ 
-        challengeId, 
-        answer: code 
-      }));
-      
-      if (submitChallenge.fulfilled.match(resultAction)) {
-        const payload = resultAction.payload as SubmitResponse;
-        
-        if (payload.success) { // If the submission is correct
-          setSubmissionResult({ ...payload, challengeTitle: chFromStore.title });
-        } else { // If the submission is incorrect
-          toast.error(payload.message || "Incorrect answer. Please try again.");
-        }
-      } else { // If there was a network error or something else
-        toast.error("Network error. Please try again later.");
+    const originalCode = (chFromStore.initialCode || chFromStore.code || '').trim();
+    const currentCode = code.trim();
+
+    if (!currentCode) {
+      console.debug('handleSubmit aborted: current code empty');
+      return;
+    }
+
+    if (currentCode === originalCode) {
+      return;
+    }
+
+    setActiveBottomTab('output');
+
+    console.debug('Submitting AI review', { challengeId, codeLength: code.length });
+    const resultAction = await dispatch(submitChallenge({ 
+      challengeId, 
+      answer: code 
+    }));
+    
+    if (submitChallenge.fulfilled.match(resultAction)) {
+      const payload = resultAction.payload as SubmitResponse;
+
+      if (payload.success && (payload.awarded || payload.alreadySolved)) {
+        setSubmissionResult({ ...payload, challengeTitle: chFromStore.title });
+      } else if (payload.success) {
+        // Correct logic but not eligible for points (e.g. not logged in)
+        setSubmissionResult(null);
+      } else {
+        // Incorrect solution - show AI feedback
+        setSubmissionResult({ ...payload, challengeTitle: chFromStore.title });
       }
+    } else {
+      const errorPayload = resultAction.payload as string | undefined;
     }
   };
 

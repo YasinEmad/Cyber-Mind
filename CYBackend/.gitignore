@@ -30,11 +30,4 @@ pnpm-debug.log*
 # Also ignore any file with this name elsewhere
 firebase-service-account.json
 
-# Frontend
-/CYFrontend/dist/
-/CYFrontend/node_modules/
 
-# Backend
-/CYBackend/dist/
-/CYBackend/node_modules/
-Cyber-Mind-clean/
