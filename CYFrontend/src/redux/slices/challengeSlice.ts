@@ -5,6 +5,7 @@ import * as challengesApi from '@/api/challenges'
 export interface SubmitResponse {
   success: boolean
   awarded: boolean
+  alreadySolved?: boolean
   points: number
   message: string
 }

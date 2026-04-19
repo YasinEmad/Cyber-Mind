@@ -13,21 +13,11 @@ import {
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createChallenge, fetchChallenges } from '../redux/slices/challengeSlice';
+import type { Challenge } from '../redux/slices/challengeSlice';
 import { AppDispatch, RootState } from '../redux/store';
 import toast from 'react-hot-toast';
 
-interface Challenge {
-  id: number;
-  title: string;
-  description: string;
-  level: 'easy' | 'medium' | 'hard';
-  code?: string;
-  initialCode?: string;
-  challengeDetails?: string;
-  recommendation?: string;
-  hints?: string[];
-  points?: number;
-}
+// Reuse the shared challenge type from Redux to match API data shape.
 
 const ChallengeView = () => {
   const dispatch = useDispatch<AppDispatch>();

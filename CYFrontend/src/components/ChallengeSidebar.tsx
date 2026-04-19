@@ -70,6 +70,17 @@ const ChallengeSidebar: React.FC<SidebarProps> = ({
                 </p>
               </div>
 
+              {chFromStore?.initialCode && (
+                <div className="bg-black/40 border border-gray-700 rounded-lg p-4 mt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs uppercase tracking-wide text-gray-400">Original Vulnerable Code</span>
+                  </div>
+                  <pre className="max-h-48 overflow-auto text-xs text-gray-200 font-mono whitespace-pre-wrap break-words">
+                    {chFromStore.initialCode}
+                  </pre>
+                </div>
+              )}
+
               <div className="bg-black/30 border border-gray-700/30 rounded-lg p-4 mt-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Clock size={14} className="text-white" />

@@ -14,8 +14,10 @@ exports.submitChallengeAnswer = async (challengeId, user, userAnswer) => {
 
   // Check if this is a security challenge (has initialCode)
   if (challenge.initialCode) {
+    console.log('Evaluating security challenge with AI...');
     // Use AI evaluation for security challenges
     const evaluation = await aiService.evaluateSecurityFix(challenge, userAnswer);
+    console.log('AI evaluation result:', evaluation);
     isCorrect = evaluation.fixed;
     feedback = evaluation.feedback;
     
@@ -46,18 +48,27 @@ exports.submitChallengeAnswer = async (challengeId, user, userAnswer) => {
   }
 
   let awarded = false;
+  let alreadySolved = false;
   let message = feedback || 'Brilliant! You solved it correctly!';
+
+  console.log('Challenge evaluation:', { isCorrect, feedback, message });
 
   // 4. ندي النقط لليوزر (الـ userService هيتكفل بمنع التكرار)
   if (user && isCorrect) {
     const result = await userService.addPointsToUser(user.id, pointsToAward, challengeId, 'challenge');
     awarded = result.awarded;
-    if (!awarded) message = feedback || 'Correct, but you have already earned points for this challenge.';
+    alreadySolved = result.alreadySolved || false;
+    if (!awarded) {
+      message = feedback || (alreadySolved ? 'Correct, but you have already earned points for this challenge.' : 'Correct, but points could not be awarded.');
+    }
   } else if (!user && isCorrect) {
     message = feedback || 'Correct! Log in to save your progress and earn points.';
   } else if (!isCorrect) {
     message = feedback || 'Incorrect answer. Try again!';
+    console.log('Incorrect answer, final message:', message);
   }
 
-  return { awarded, points: awarded ? pointsToAward : 0, message };
+  console.log('Final result:', { success: isCorrect, awarded, alreadySolved, points: awarded ? pointsToAward : 0, message });
+
+  return { success: isCorrect, awarded, alreadySolved, points: awarded ? pointsToAward : 0, message };
 };
