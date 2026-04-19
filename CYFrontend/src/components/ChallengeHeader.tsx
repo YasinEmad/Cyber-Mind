@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import type { FC } from 'react';
+import { toast } from 'react-hot-toast';
 import { 
   Shield, Award, Send, Loader2, RotateCcw, Play, Beaker 
 } from 'lucide-react';
@@ -18,7 +18,7 @@ interface HeaderProps {
   handleTest: () => void;
 }
 
-export const ChallengeHeader: React.FC<HeaderProps> = ({
+export const ChallengeHeader: FC<HeaderProps> = ({
   chFromStore, challengeId, totalTests, isAllTestsPassed, passedTests,
   submitStatus, isRunning, handleSubmit, handleReset, handleRun, handleTest
 }) => (
@@ -47,32 +47,28 @@ export const ChallengeHeader: React.FC<HeaderProps> = ({
     </div>
 
     <div className="flex items-center gap-3">
-      <AnimatePresence>
-        {isAllTestsPassed && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          >
-            <button
-              onClick={handleSubmit}
-              disabled={submitStatus === 'loading'}
-              className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-400 hover:to-teal-400 text-white text-sm font-bold rounded-lg shadow-xl shadow-green-700/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-              title="Submit your final solution"
-            >
-              {submitStatus === 'loading' ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Send size={16} />
-              )}
-              <span>Submit Solution</span>
-            </button>
-          </motion.div>
+      <button
+        type="button"
+        onPointerDown={() => console.debug('ChallengeHeader submit pointerdown')}
+        onClick={() => {
+          console.debug('ChallengeHeader submit clicked');
+          toast('Submitting for AI review...', { icon: '🚀' });
+          handleSubmit();
+        }}
+        disabled={submitStatus === 'loading'}
+        className="pointer-events-auto flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-400 hover:to-teal-400 text-white text-sm font-bold rounded-lg shadow-xl shadow-green-700/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+        title="Submit your solution for AI review"
+      >
+        {submitStatus === 'loading' ? (
+          <Loader2 size={16} className="animate-spin" />
+        ) : (
+          <Send size={16} />
         )}
-      </AnimatePresence>
+        <span>{submitStatus === 'loading' ? 'Submitting...' : 'Submit for AI Review'}</span>
+      </button>
 
       <button 
+        type="button"
         onClick={handleReset} 
         className="flex items-center gap-2 px-3 py-2 text-white hover:text-white hover:bg-black rounded-lg transition-all border border-transparent hover:border-gray-600 group"
         title="Reset to original code"
@@ -84,6 +80,7 @@ export const ChallengeHeader: React.FC<HeaderProps> = ({
       <div className="h-8 w-px bg-gray-700"></div>
       
       <button 
+        type="button"
         onClick={handleRun} 
         disabled={isRunning}
         className="flex items-center gap-2 px-4 py-2 bg-black hover:bg-gray-700 text-white text-sm font-medium rounded-lg border border-gray-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-black/50"
@@ -94,6 +91,7 @@ export const ChallengeHeader: React.FC<HeaderProps> = ({
       </button>
       
       <button 
+        type="button"
         onClick={handleTest} 
         disabled={isRunning}
         className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white text-sm font-bold rounded-lg shadow-xl shadow-red-700/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"

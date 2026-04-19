@@ -17,6 +17,12 @@ const Challenge = sequelize.define('Challenge', {
   code: {
     type: DataTypes.TEXT,
   },
+  initialCode: {
+    type: DataTypes.TEXT,
+  },
+  vulnerabilityType: {
+    type: DataTypes.ENUM('Injection', 'XSS', 'Path Traversal', 'IDOR', 'Authentication flaw', 'Authorization flaw', 'Missing validation', 'Unsafe input handling'),
+  },
   level: {
     type: DataTypes.ENUM('easy', 'medium', 'hard'),
     allowNull: false,

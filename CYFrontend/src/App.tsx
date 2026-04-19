@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { HashRouter } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
+import { Toaster } from 'react-hot-toast';
 import axios from '@/api/axios';
 import AnimatedRoutes from './router/routes';
 import { setUser, clearUser } from './redux/slices/userSlice';
@@ -29,6 +30,7 @@ export default function App() {
   return (
     <HashRouter>
       <AnimatedRoutes />
+      <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
     </HashRouter>
   );
 }

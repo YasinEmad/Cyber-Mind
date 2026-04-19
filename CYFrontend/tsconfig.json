@@ -15,6 +15,9 @@
     "noEmit": true,
     "allowJs": true,
     "jsx": "react-jsx",
+    "baseUrl": ".",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
 
     /* Linting */
     "strict": true,
