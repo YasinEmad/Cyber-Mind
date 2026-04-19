@@ -51,3 +51,44 @@ exports.submitAnswer = async (req, res, next) => {
     next(error); 
   }
 };
+
+// 5. تحديث تحدي موجود
+exports.updateChallenge = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // حساب النقط لو الـ level اتغير
+    if (updateData.level) {
+      const { getPointsForDifficulty } = require('../utils/challingesPoints');
+      updateData.points = getPointsForDifficulty(updateData.level);
+    }
+
+    const [updatedRowsCount] = await Challenge.update(updateData, { where: { id } });
+    
+    if (updatedRowsCount === 0) {
+      return res.status(404).json({ success: false, message: 'Challenge not found' });
+    }
+
+    const updatedChallenge = await Challenge.findByPk(id);
+    res.status(200).json({ success: true, data: updatedChallenge });
+  } catch (error) { 
+    next(error); 
+  }
+};
+
+// 6. حذف تحدي
+exports.deleteChallenge = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const deletedRowsCount = await Challenge.destroy({ where: { id } });
+    
+    if (deletedRowsCount === 0) {
+      return res.status(404).json({ success: false, message: 'Challenge not found' });
+    }
+
+    res.status(200).json({ success: true, message: 'Challenge deleted successfully' });
+  } catch (error) { 
+    next(error); 
+  }
+};

@@ -17,6 +17,16 @@ export async function createChallenge(challengeData: any) {
   return res.data;
 }
 
+export async function updateChallenge(id: string, challengeData: any) {
+  const res = await axios.put(`${BASE}/${id}`, challengeData);
+  return res.data;
+}
+
+export async function deleteChallenge(id: string) {
+  const res = await axios.delete(`${BASE}/${id}`);
+  return res.data;
+}
+
 // التعديل هنا يا وحش 👇
 export async function submitChallenge(id: string, answer: string) {
   // بنبعت الـ answer في الـ body بتاع الـ POST request

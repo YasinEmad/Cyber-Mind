@@ -12,66 +12,24 @@ exports.evaluateSecurityFix = async (challengeData, userCode) => {
   }
 };
 
-async function evaluateWithAI(challengeData, userCode) {
-  const prompt = `
-You are a security evaluation system for code in the Challenge Section.
-
-Goal
-Verify whether the user has fixed the security vulnerability present in the initial code.
-
-Inputs
-* Title: ${challengeData.title}
-* Description: ${challengeData.description}
-* Level: ${challengeData.level}
-* Initial Code: ${challengeData.initialCode}
-* User Code: ${userCode}
-* Recommendation: ${challengeData.recommendation}
-
-How it works
-* The initial code contains an intentional security vulnerability.
-* The user is only required to fix that vulnerability.
-* Do not evaluate general code functionality.
-* Compare security posture only between Initial Code and User Code.
-
-Analysis method
-* Understand the vulnerability in the Initial Code.
-* Check whether the User Code has correctly fixed the same vulnerability.
-* Do not treat unrelated changes as significant.
-* Use Recommendation only for context.
-
-Evaluation cases
-* If the vulnerability is fixed correctly → the user earns full Level points.
-* If the vulnerability remains or is fixed incorrectly → the user earns 0 or partial points depending on the case.
-
-Evaluation rules
-* Focus only on the intended vulnerability.
-* Ignore improvements outside the vulnerability scope.
-* Accept more than one correct fix method.
-* Reject superficial fixes that do not prevent exploitation.
-
-Possible vulnerability types
-* Injection
-* XSS
-* Path Traversal
-* IDOR
-* Authentication flaw
-* Authorization flaw
-* Missing validation
-* Unsafe input handling
-
-Required output
-Return a JSON object:
-{
-  "fixed": boolean,
-  "feedback": string
+// Extract relevant code lines to reduce token count
+function extractRelevantCode(code) {
+  const keywordPatterns = ['query', 'req', 'input', 'db', 'execute', 'eval', 'setTimeout', 'innerHTML', 'dangerouslySetInnerHTML', 'sql', 'password', 'token', 'auth', 'validate', 'sanitize', 'params', 'join'];
+  const lines = code.split('\n');
+  const relevantLines = lines.filter(line => 
+    keywordPatterns.some(keyword => line.toLowerCase().includes(keyword))
+  );
+  return relevantLines.length > 0 
+    ? relevantLines.slice(0, 30).join('\n') 
+    : lines.slice(0, 30).join('\n');
 }
 
-Rules:
-* English only in feedback
-* Max 3 sentences
-* No full solutions
-* Focus only on vulnerability fix
-`;
+async function evaluateWithAI(challengeData, userCode) {
+  // Extract relevant code sections only
+  const initialCodeRelevant = extractRelevantCode(challengeData.initialCode);
+  const userCodeRelevant = extractRelevantCode(userCode);
+
+  const prompt = `Initial Code:\n${initialCodeRelevant}\n\nUser Code:\n${userCodeRelevant}\n\nVulnerability: ${challengeData.description}`;
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
@@ -81,13 +39,19 @@ Rules:
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
+      systemInstruction: {
+        parts: [{
+          text: "You are a security fix evaluator. Analyze code changes and determine if a vulnerability is fixed. Return ONLY valid JSON with 'fixed' (boolean) and 'feedback' (max 15 words) fields. No explanations outside JSON."
+        }]
+      },
       contents: [
         {
           parts: [{ text: prompt }]
         }
       ],
       generationConfig: {
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        maxOutputTokens: 100
       }
     })
   });

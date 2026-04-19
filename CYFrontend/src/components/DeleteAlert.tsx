@@ -11,7 +11,7 @@ interface DeleteAlertProps {
 const DeleteAlert: React.FC<DeleteAlertProps> = ({ title, puzzleTitle, onConfirm, onCancel }) => {
   return (
     <div className="fixed inset-0 bg-transparent backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-6 w-full max-w-md m-4">
+      <div className="bg-black border border-red-900/40 rounded-lg shadow-xl p-6 w-full max-w-md m-4">
         <div className="text-center">
           <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-900/50 mb-4">
             <ShieldAlert className="h-6 w-6 text-red-400" />
@@ -25,7 +25,7 @@ const DeleteAlert: React.FC<DeleteAlertProps> = ({ title, puzzleTitle, onConfirm
           <div className="flex justify-center items-center gap-4 mt-4">
             <button
               onClick={onCancel}
-              className="px-6 py-2 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
+              className="px-6 py-2 bg-black text-white font-semibold rounded-lg hover:bg-red-900/20 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 border border-red-900/40"
             >
               Cancel
             </button>

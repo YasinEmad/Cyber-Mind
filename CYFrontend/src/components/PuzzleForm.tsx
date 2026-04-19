@@ -3,7 +3,7 @@ import { Puzzle } from '../redux/slices/puzzleSlice';
 
 interface PuzzleFormProps {
   puzzle?: Puzzle | null;
-  onSave: (puzzle: Omit<Puzzle, '_id'> | Puzzle) => void;
+  onSave: (puzzle: (Omit<Puzzle, 'createdAt' | 'updatedAt'> & { id?: number }) | Puzzle) => void;
   onCancel: () => void;
 }
 

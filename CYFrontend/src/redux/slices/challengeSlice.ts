@@ -99,6 +99,34 @@ export const createChallenge = createAsyncThunk<Challenge, any>(
   }
 )
 
+// 5. الأكشن بتاع تحديث تحدي موجود
+export const updateChallenge = createAsyncThunk<Challenge, { id: string; challengeData: any }>(
+  'challenges/update',
+  async ({ id, challengeData }, { rejectWithValue }) => {
+    try {
+      const response = await challengesApi.updateChallenge(id, challengeData);
+      return (response as any).data || response;
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to update challenge';
+      return rejectWithValue(errorMsg);
+    }
+  }
+)
+
+// 6. الأكشن بتاع حذف تحدي
+export const deleteChallenge = createAsyncThunk<string, string>(
+  'challenges/delete',
+  async (id, { rejectWithValue }) => {
+    try {
+      await challengesApi.deleteChallenge(id);
+      return id;
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to delete challenge';
+      return rejectWithValue(errorMsg);
+    }
+  }
+)
+
 const slice = createSlice({
   name: 'challenges',
   initialState,
@@ -162,6 +190,35 @@ const slice = createSlice({
       .addCase(createChallenge.rejected, (state, action) => {
         state.status = 'failed'
         state.error = ((action.payload as string) || action.error.message) ?? 'Failed to create challenge'
+      })
+
+      // تحديث تحدي
+      .addCase(updateChallenge.pending, (state) => {
+        state.status = 'loading'
+      })
+      .addCase(updateChallenge.fulfilled, (state, action) => {
+        state.status = 'succeeded'
+        const index = state.challenges.findIndex(c => c.id === action.payload.id || c._id === action.payload._id)
+        if (index !== -1) {
+          state.challenges[index] = action.payload
+        }
+      })
+      .addCase(updateChallenge.rejected, (state, action) => {
+        state.status = 'failed'
+        state.error = ((action.payload as string) || action.error.message) ?? 'Failed to update challenge'
+      })
+
+      // حذف تحدي
+      .addCase(deleteChallenge.pending, (state) => {
+        state.status = 'loading'
+      })
+      .addCase(deleteChallenge.fulfilled, (state, action) => {
+        state.status = 'succeeded'
+        state.challenges = state.challenges.filter(c => (c.id || c._id) !== action.payload)
+      })
+      .addCase(deleteChallenge.rejected, (state, action) => {
+        state.status = 'failed'
+        state.error = ((action.payload as string) || action.error.message) ?? 'Failed to delete challenge'
       })
   }
 })

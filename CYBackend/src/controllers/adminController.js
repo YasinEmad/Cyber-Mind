@@ -5,7 +5,7 @@ const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'yemad7676@gmail.com'
 
 exports.getAllUsers = async (req, res, next) => {
   try {
-    const users = await User.find().select('-solvedPuzzles -__v');
+    const users = await User.findAll();
     res.status(200).json({ success: true, data: users });
   } catch (error) { next(error); }
 };

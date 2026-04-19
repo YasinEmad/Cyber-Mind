@@ -4,7 +4,7 @@ import Editor from '@monaco-editor/react';
 // Cleaned up unused imports: Award and Beaker
 import { 
   Terminal, CheckCircle, Maximize2, Minimize2, Info, 
-  Code2, PanelLeftClose, PanelLeft, Loader2, XCircle, Send 
+  Code2, PanelLeftClose, PanelLeft, Loader2, XCircle
 } from 'lucide-react';
 import { usePlayChallenge } from '../lib/usePlayChallenge';
 import { ChallengeHeader } from '../components/ChallengeHeader';
@@ -31,7 +31,6 @@ const PlayChallengePage = () => {
   const totalTests = testResults.length;
 
   const wrappedHandleRun = () => { setLastAction('run'); handleRun(); };
-  const wrappedHandleTest = () => { setLastAction('test'); handleTest(); };
 
   const LoadingIndicator = ({ text }: { text: string }) => (
     <div className="flex flex-col items-center justify-center h-full text-white py-12">
@@ -60,7 +59,7 @@ const PlayChallengePage = () => {
         totalTests={totalTests} isAllTestsPassed={isAllTestsPassed}
         passedTests={passedTests} submitStatus={submitStatus}
         isRunning={isRunning} handleSubmit={handleSubmit}
-        handleReset={handleReset} handleRun={wrappedHandleRun} handleTest={wrappedHandleTest}
+        handleReset={handleReset} handleRun={wrappedHandleRun}
       />
 
       {chFromStore?.description && (
@@ -98,50 +97,7 @@ const PlayChallengePage = () => {
             </button>
           </div>
 
-          {submissionResult && !isFullScreenEditor && (
-            <div className={`mx-6 mt-16 mb-4 rounded-2xl border px-5 py-4 ${submissionResult.awarded ? 'border-green-500/20 bg-green-500/5' : 'border-red-500/20 bg-red-500/5'}`}>
-              <div className="flex items-start gap-3">
-                <div className={`mt-1 h-10 w-10 rounded-2xl flex items-center justify-center ${submissionResult.awarded ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-                  {submissionResult.awarded ? <CheckCircle size={20} /> : <XCircle size={20} />}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-white">
-                    {submissionResult.awarded ? 'AI Review Passed' : 'AI Review Result'}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-gray-200 whitespace-pre-line">{submissionResult.message}</p>
-                  <p className="mt-3 text-xs text-gray-400">
-                    Points: {submissionResult.points} · {submissionResult.awarded ? 'Accepted' : 'Needs improvement'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {!isFullScreenEditor && (
-            <div className="mx-6 mb-4 flex flex-col items-center gap-3">
-              <button
-                type="button"
-                onPointerDown={() => console.debug('Page fallback submit pointerdown')}
-                onClick={() => {
-                  console.debug('Page fallback submit clicked');
-                  handleSubmit();
-                }}
-                className="inline-flex items-center gap-2 rounded-full bg-green-600 px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-green-700/30 transition hover:bg-green-500"
-              >
-                <Send size={16} />
-                Submit for AI Review
-              </button>
-              {submitStatus === 'loading' && (
-                <span className="text-xs text-yellow-300">Submitting for AI review…</span>
-              )}
-              {submitStatus === 'succeeded' && (
-                <span className="text-xs text-green-300">AI review completed.</span>
-              )}
-              {submitStatus === 'failed' && (
-                <span className="text-xs text-red-300">AI review failed. Check the console or try again.</span>
-              )}
-            </div>
-          )}
 
           <motion.div animate={{ height: isFullScreenEditor ? '100%' : '60%' }} className="relative overflow-hidden border-b border-gray-700">
             <Editor
