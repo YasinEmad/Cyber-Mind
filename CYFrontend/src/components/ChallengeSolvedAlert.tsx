@@ -1,12 +1,14 @@
 import { motion } from 'framer-motion';
 import { CheckCircle, Info, X } from 'lucide-react'; // Using Info for the already solved case
-import React, { useEffect } from 'react';
+import * as React from 'react';
 
 interface ChallengeSolvedAlertProps {
   challengeTitle: string;
   points: number;
   onClose: () => void;
   isSolvedBefore: boolean;
+  isIncorrect?: boolean;
+  message?: string;
 }
 
 const ChallengeSolvedAlert: React.FC<ChallengeSolvedAlertProps> = ({
@@ -14,101 +16,127 @@ const ChallengeSolvedAlert: React.FC<ChallengeSolvedAlertProps> = ({
   points,
   onClose,
   isSolvedBefore,
+  isIncorrect = false,
+  message,
 }) => {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, 5000); // Auto-close after 5 seconds
+  const feedbackSummary = message
+    ? message
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean)
+        .slice(0, 3)
+        .join(' ')
+    : 'The vulnerability is still present. Please review your solution and try again.';
 
-    return () => clearTimeout(timer);
-  }, [onClose]);
+  const shortFeedback = feedbackSummary.length > 220
+    ? `${feedbackSummary.slice(0, 220)}...`
+    : feedbackSummary;
 
   if (isSolvedBefore) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: -50, scale: 0.9 }}
+        initial={{ opacity: 0, y: -20, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 50, scale: 0.9 }}
-        transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black border border-blue-500 rounded-lg shadow-xl p-6 z-50 w-full max-w-md text-white"
+        exit={{ opacity: 0, y: 20, scale: 0.96 }}
+        transition={{ duration: 0.3, type: 'spring', stiffness: 120 }}
+        className="fixed top-24 right-4 z-50 w-full max-w-sm rounded-3xl border border-slate-700 bg-slate-950/95 shadow-2xl p-4 text-slate-100 backdrop-blur"
       >
-        <div className="flex flex-col items-center text-center">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, duration: 0.8, type: 'spring' }}
-            className="bg-blue-500 rounded-full p-3 mb-4"
-          >
-            <Info size={48} className="text-white" />
-          </motion.div>
-          <h2 className="text-2xl font-bold mb-2">Solution Correct!</h2>
-          <p className="text-lg mb-4">
-            You have already solved{' '}
-            <span className="font-semibold text-blue-400">{challengeTitle}</span>.
-          </p>
-          <div
-            className="bg-gray-800 rounded-full px-4 py-2"
-          >
-            <p className="text-lg font-semibold text-gray-300">
-              No points awarded this time.
-            </p>
+        <div className="relative flex flex-col gap-3 text-left">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-sky-500 p-2 text-slate-950">
+                <Info size={20} />
+              </div>
+              <div>
+                <p className="text-sm uppercase tracking-[0.16em] text-sky-300">Already solved</p>
+                <p className="font-semibold text-white">{challengeTitle}</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="rounded-full p-2 text-slate-300 hover:bg-slate-800 hover:text-white"
+              aria-label="Close alert"
+            >
+              <X size={18} />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="absolute top-2 right-2 text-gray-400 hover:text-white transition-colors"
-          >
-            <X size={24} />
-          </button>
+
+          <div className="rounded-3xl bg-slate-900/95 border border-slate-800 px-4 py-3">
+            <p className="text-sm text-slate-300">You have already solved this challenge, so no additional points were awarded.</p>
+          </div>
         </div>
       </motion.div>
     );
   }
 
+  if (isIncorrect) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -20, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 20, scale: 0.96 }}
+        transition={{ duration: 0.3, type: 'spring', stiffness: 120 }}
+        className="fixed top-24 right-4 z-50 w-full max-w-sm rounded-3xl border border-orange-600 bg-slate-950/95 shadow-2xl p-4 text-white backdrop-blur"
+      >
+        <div className="relative flex flex-col gap-3 text-left">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-orange-500 p-2 text-slate-950">
+                <X size={20} />
+              </div>
+              <div>
+                <p className="text-sm uppercase tracking-[0.16em] text-orange-300">AI Review</p>
+                <p className="font-semibold text-white">{challengeTitle}</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="rounded-full p-2 text-slate-300 hover:bg-slate-800 hover:text-white"
+              aria-label="Close alert"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="rounded-3xl bg-slate-900/95 border border-slate-800 px-4 py-3">
+            <p className="text-sm leading-relaxed text-slate-200">{shortFeedback}</p>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -50, scale: 0.9 }}
+      initial={{ opacity: 0, y: -20, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 50, scale: 0.9 }}
-      transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
-      // Change: bg-gray-800 to bg-black, border-green-500 to border-red-600
-      className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black border border-red-600 rounded-lg shadow-xl p-6 z-50 w-full max-w-md text-white"
+      exit={{ opacity: 0, y: 20, scale: 0.96 }}
+      transition={{ duration: 0.3, type: 'spring', stiffness: 120 }}
+      className="fixed top-24 right-4 z-50 w-full max-w-sm rounded-3xl border border-emerald-500 bg-slate-950/95 shadow-2xl p-4 text-white backdrop-blur"
     >
-      <div className="flex flex-col items-center text-center">
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1, rotate: 360 }}
-          transition={{ delay: 0.2, duration: 0.8, type: 'spring' }}
-          // Change: bg-green-500 to bg-red-600
-          className="bg-red-600 rounded-full p-3 mb-4"
-        >
-          <CheckCircle size={48} className="text-white" />
-        </motion.div>
-        <h2 className="text-2xl font-bold mb-2">Challenge Solved!</h2>
-        <p className="text-lg mb-4">
-          Congratulations on solving{' '}
-          {/* Change: text-green-400 to text-red-400 */}
-          <span className="font-semibold text-red-400">{challengeTitle}</span>.
-        </p>
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.5, duration: 0.5 }}
-          // Change: bg-gray-700 to bg-red-950 (a very dark red for contrast)
-          className="bg-red-950 rounded-full px-4 py-2 border border-red-900"
-        >
-          <p className="text-xl font-bold">
-            {/* Change: text-yellow-400 to text-red-400 */}
-            +<span className="text-red-400">{points}</span> Points
-          </p>
-        </motion.div>
-        <button
-          onClick={onClose}
-          // Change: hover:text-white to hover:text-red-500
-          className="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition-colors"
-        >
-          <X size={24} />
-        </button>
+      <div className="relative flex flex-col gap-3 text-left">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="rounded-2xl bg-emerald-500 p-2 text-slate-950">
+              <CheckCircle size={20} />
+            </div>
+            <div>
+              <p className="text-sm uppercase tracking-[0.16em] text-emerald-300">Challenge Solved</p>
+              <p className="font-semibold text-white">{challengeTitle}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-full p-2 text-slate-300 hover:bg-slate-800 hover:text-white"
+            aria-label="Close alert"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="rounded-3xl bg-slate-900/95 border border-slate-800 px-4 py-3">
+          <p className="text-sm text-slate-200">You earned <span className="font-semibold text-emerald-300">{points}</span> points.</p>
+        </div>
       </div>
     </motion.div>
   );

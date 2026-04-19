@@ -42,7 +42,7 @@ exports.addPointsToUser = async (userId, points, itemId, itemType = 'puzzle') =>
 
   // Check if already solved
   if (profile[solvedField].includes(itemId)) {
-    return { awarded: false };
+    return { awarded: false, alreadySolved: true };
   }
 
   // Update

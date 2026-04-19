@@ -1,11 +1,25 @@
 exports.evaluateSecurityFix = async (challengeData, userCode) => {
+  try {
+    const aiResult = await evaluateWithAI(challengeData, userCode);
+    return aiResult;
+  } catch (error) {
+    console.error("AI evaluation failed:", error);
+
+    return {
+      fixed: false,
+      feedback: "Evaluation service is temporarily unavailable. Please try again in a moment."
+    };
+  }
+};
+
+async function evaluateWithAI(challengeData, userCode) {
   const prompt = `
-أنت نظام تقييم أمان للكود داخل Challenge Section باستخدام Gemini 2.5 Flash
+You are a security evaluation system for code in the Challenge Section.
 
-الهدف
-التحقق هل المستخدم قام بإغلاق الثغرة الأمنية الموجودة في الكود الأولي أم لا
+Goal
+Verify whether the user has fixed the security vulnerability present in the initial code.
 
-المدخلات
+Inputs
 * Title: ${challengeData.title}
 * Description: ${challengeData.description}
 * Level: ${challengeData.level}
@@ -13,29 +27,29 @@ exports.evaluateSecurityFix = async (challengeData, userCode) => {
 * User Code: ${userCode}
 * Recommendation: ${challengeData.recommendation}
 
-فكرة العمل
-* الكود الأولي يحتوي على ثغرة أمنية مقصودة
-* المطلوب من المستخدم إصلاح الثغرة فقط
-* لا يتم تقييم الوظيفة العامة للكود
-* يتم مقارنة حالة الأمان فقط بين Initial Code و User Code
+How it works
+* The initial code contains an intentional security vulnerability.
+* The user is only required to fix that vulnerability.
+* Do not evaluate general code functionality.
+* Compare security posture only between Initial Code and User Code.
 
-طريقة التحليل
-* افهم الثغرة الموجودة في Initial Code
-* تحقق هل User Code قام بإغلاق نفس الثغرة بشكل صحيح
-* لا تعتبر أي تغيير غير متعلق بالثغرة مهم
-* استخدم Recommendation للفهم فقط
+Analysis method
+* Understand the vulnerability in the Initial Code.
+* Check whether the User Code has correctly fixed the same vulnerability.
+* Do not treat unrelated changes as significant.
+* Use Recommendation only for context.
 
-حالات التقييم
-* إذا الثغرة تم إغلاقها بشكل صحيح → المستخدم يحصل على كامل نقاط Level
-* إذا الثغرة ما زالت موجودة أو تم إصلاحها بشكل خاطئ → المستخدم يحصل على 0 أو جزء من النقاط حسب الحالة
+Evaluation cases
+* If the vulnerability is fixed correctly → the user earns full Level points.
+* If the vulnerability remains or is fixed incorrectly → the user earns 0 or partial points depending on the case.
 
-قواعد التقييم
-* التركيز فقط على الثغرة المقصودة
-* تجاهل أي تحسينات خارج نطاق الثغرة
-* قبول أكثر من طريقة إصلاح صحيحة
-* رفض أي إصلاح شكلي لا يمنع الاستغلال
+Evaluation rules
+* Focus only on the intended vulnerability.
+* Ignore improvements outside the vulnerability scope.
+* Accept more than one correct fix method.
+* Reject superficial fixes that do not prevent exploitation.
 
-أنواع الثغرات الممكنة
+Possible vulnerability types
 * Injection
 * XSS
 * Path Traversal
@@ -45,71 +59,74 @@ exports.evaluateSecurityFix = async (challengeData, userCode) => {
 * Missing validation
 * Unsafe input handling
 
-الإخراج المطلوب
-أرجع فقط JSON بدون أي نص إضافي
-
+Required output
+Return a JSON object:
 {
-"fixed": boolean,
-"feedback": string
+  "fixed": boolean,
+  "feedback": string
 }
 
-feedback يجب أن يحتوي
-* هل الثغرة تم إصلاحها أم لا
-* شرح الثغرة الأصلية
-* هل ما زال يمكن استغلالها أم لا
-* إذا فشل المستخدم اشرح له أين الخطأ
-* كيف يصلحها بطريقة صحيحة
-* توجيه واضح لإعادة المحاولة
-
-قواعد صارمة
-* لا تقييم للوظيفة
-* لا مقارنة عامة للكود
-* لا خروج خارج JSON
-* لا تقديم حل كامل جاهز
-* التركيز فقط على الثغرة المقصودة في Initial Code
+Rules:
+* English only in feedback
+* Max 3 sentences
+* No full solutions
+* Focus only on vulnerability fix
 `;
 
-  try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: prompt }],
-          },
-        ],
-      }),
-    });
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [{ text: prompt }]
+        }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json"
+      }
+    })
+  });
 
-    const data = await response.json();
+  const data = await response.json();
 
-    console.log("RAW RESPONSE:", JSON.stringify(data, null, 2));
+  console.log("GEMINI RAW RESPONSE");
+  console.log(JSON.stringify(data, null, 2));
 
-    const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join("") || "";
+  if (!response.ok || data.error) {
+    console.error("STATUS:", response.status);
+    console.error("API ERROR:", data.error);
 
-    if (!text) {
-      console.error("Empty response from Gemini:", data);
-      return {
-        fixed: false,
-        feedback: 'حدث خطأ في تقييم الحل. يرجى المحاولة مرة أخرى.'
-      };
+    const errorMessage = data.error?.message || response.statusText;
+
+    if (data.error?.code === 429) {
+      throw new Error("Quota exceeded");
     }
 
-    // Parse the JSON response
-    const evaluation = JSON.parse(text.trim());
-
-    return evaluation;
-  } catch (error) {
-    console.error('Error evaluating security fix:', error);
-    // Fallback: return not fixed if evaluation fails
-    return {
-      fixed: false,
-      feedback: 'حدث خطأ في تقييم الحل. يرجى المحاولة مرة أخرى.'
-    };
+    throw new Error(`API Error: ${errorMessage}`);
   }
-};
+
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  console.log("EXTRACTED TEXT");
+  console.log(text);
+
+  if (!text) {
+    throw new Error("Empty response from Gemini");
+  }
+
+  try {
+    const result = JSON.parse(text);
+    return result;
+  } catch (err) {
+    console.error("JSON PARSE FAILED");
+    console.error("RAW TEXT:", text);
+    console.error("ERROR:", err);
+
+    throw new Error("JSON parsing failed");
+  }
+}
