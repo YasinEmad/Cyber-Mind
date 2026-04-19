@@ -15,6 +15,7 @@ export interface Challenge {
   title: string
   description?: string
   code?: string
+  initialCode?: string
   level: 'easy' | 'medium' | 'hard'
   hints?: string[]
   challengeDetails?: string
@@ -83,6 +84,20 @@ export const submitChallenge = createAsyncThunk<SubmitResponse, { challengeId: s
   }
 )
 
+// 4. الأكشن بتاع إنشاء تحدي جديد
+export const createChallenge = createAsyncThunk<Challenge, any>(
+  'challenges/create',
+  async (challengeData, { rejectWithValue }) => {
+    try {
+      const response = await challengesApi.createChallenge(challengeData);
+      return (response as any).data || response;
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to create challenge';
+      return rejectWithValue(errorMsg);
+    }
+  }
+)
+
 const slice = createSlice({
   name: 'challenges',
   initialState,
@@ -133,6 +148,19 @@ const slice = createSlice({
       .addCase(submitChallenge.rejected, (state, action) => {
         state.submitStatus = 'failed'
         state.error = ((action.payload as string) || action.error.message) ?? 'Failed to submit challenge'
+      })
+
+      // إنشاء تحدي جديد
+      .addCase(createChallenge.pending, (state) => {
+        state.status = 'loading'
+      })
+      .addCase(createChallenge.fulfilled, (state, action) => {
+        state.status = 'succeeded'
+        state.challenges.push(action.payload)
+      })
+      .addCase(createChallenge.rejected, (state, action) => {
+        state.status = 'failed'
+        state.error = ((action.payload as string) || action.error.message) ?? 'Failed to create challenge'
       })
   }
 })
