@@ -1,166 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-interface PortData {
-  id: number;
-  x: number;
-  y: number;
-}
-
-interface PiratePos {
-  x: number;
-  y: number;
-}
-
-interface TrailDot {
-  x: number;
-  y: number;
-  id: number;
-}
-
-interface GameState {
-  current: number;
-  completed: number[];
-}
-
-// ── Port layout ───────────────────────────────────────────────────────────────
-const PORTS: PortData[] = [
-  { id: 1,  x: 9,   y: 80 },
-  { id: 2,  x: 15,  y: 70 },
-  { id: 3,  x: 11,  y: 59 },
-  { id: 4,  x: 19,  y: 49 },
-  { id: 5,  x: 13,  y: 38 },
-  { id: 6,  x: 23,  y: 28 },
-  { id: 7,  x: 33,  y: 22 },
-  { id: 8,  x: 43,  y: 17 },
-  { id: 9,  x: 53,  y: 13 },
-  { id: 10, x: 63,  y: 19 },
-  { id: 11, x: 71,  y: 27 },
-  { id: 12, x: 79,  y: 21 },
-  { id: 13, x: 87,  y: 13 },
-  { id: 14, x: 91,  y: 23 },
-  { id: 15, x: 85,  y: 33 },
-  { id: 16, x: 89,  y: 43 },
-  { id: 17, x: 83,  y: 53 },
-  { id: 18, x: 89,  y: 63 },
-  { id: 19, x: 83,  y: 73 },
-  { id: 20, x: 75,  y: 80 },
-  { id: 21, x: 65,  y: 76 },
-  { id: 22, x: 57,  y: 83 },
-  { id: 23, x: 47,  y: 79 },
-  { id: 24, x: 39,  y: 85 },
-  { id: 25, x: 31,  y: 78 },
-  { id: 26, x: 37,  y: 67 },
-  { id: 27, x: 29,  y: 59 },
-  { id: 28, x: 37,  y: 51 },
-  { id: 29, x: 47,  y: 55 },
-  { id: 30, x: 57,  y: 51 },
-  { id: 31, x: 65,  y: 57 },
-  { id: 32, x: 73,  y: 49 },
-  { id: 33, x: 67,  y: 39 },
-  { id: 34, x: 55,  y: 35 },
-  { id: 35, x: 45,  y: 41 },
-];
+import { PORTS, PiratePos, TrailDot, loadProgress, saveProgress, easeInOut } from "@/utils/gameTypes";
+import { Port } from "@/components/Port";
+import { PirateIcon } from "@/components/PirateIcon";
 
 function useSounds() {
   const play = useCallback((_sound: string) => {}, []);
   return { play };
 }
 
-const STORAGE_KEY = "pirate_island_v2";
-function loadProgress(): GameState {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : { current: 1, completed: [] };
-  } catch { return { current: 1, completed: [] }; }
-}
-function saveProgress(state: GameState) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
-}
-
-function easeInOut(t: number): number {
-  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-}
-
-// ── Pirate character ──────────────────────────────────────────────────────────
-function PirateIcon({ size = 32 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 40 44" fill="none">
-      <ellipse cx="20" cy="42" rx="8" ry="2" fill="rgba(0,0,0,0.4)" />
-      <path d="M11 38 Q11 28 20 28 Q29 28 29 38 Z" fill="#1a0000" />
-      <path d="M11 38 Q11 30 15 28 L14 38 Z" fill="#cc0000" />
-      <path d="M29 38 Q29 30 25 28 L26 38 Z" fill="#cc0000" />
-      <rect x="13" y="31" width="14" height="2.5" rx="1" fill="#8B0000" />
-      <rect x="18.5" y="30.5" width="3" height="3.5" rx="0.5" fill="#cc9900" />
-      <rect x="18" y="24" width="4" height="5" fill="#e8c49a" />
-      <circle cx="20" cy="20" r="9.5" fill="#e8c49a" />
-      <rect x="9" y="12.5" width="22" height="3.5" rx="1.5" fill="#0d0d0d" />
-      <path d="M13 13 L13 5 Q13 3 15 3 L25 3 Q27 3 27 5 L27 13 Z" fill="#0d0d0d" />
-      <rect x="13" y="10.5" width="14" height="2.5" fill="#cc0000" />
-      <circle cx="20" cy="7" r="2.2" fill="white" opacity="0.85" />
-      <line x1="17" y1="9.5" x2="23" y2="9.5" stroke="white" strokeWidth="1" opacity="0.85" />
-      <line x1="17.5" y1="8.5" x2="22.5" y2="10.5" stroke="white" strokeWidth="0.8" opacity="0.85" />
-      <line x1="22.5" y1="8.5" x2="17.5" y2="10.5" stroke="white" strokeWidth="0.8" opacity="0.85" />
-      <ellipse cx="23.5" cy="19" rx="3" ry="2.2" fill="#0d0d0d" />
-      <line x1="20.5" y1="18" x2="27" y2="16.5" stroke="#0d0d0d" strokeWidth="1.2" />
-      <circle cx="16.5" cy="19.5" r="2" fill="#0d0d0d" />
-      <circle cx="17" cy="19" r="0.7" fill="white" />
-      <path d="M22 22 Q23 23 22 24" stroke="#c0392b" strokeWidth="0.8" fill="none" />
-      <path d="M17 23.5 Q19 25 21 23.5" stroke="#8B4513" strokeWidth="1.1" fill="none" strokeLinecap="round" />
-      <rect x="17.5" y="23.5" width="2" height="1.5" rx="0.3" fill="white" opacity="0.8" />
-      <rect x="25.5" y="28" width="1.5" height="6" rx="0.5" fill="#8B6914" />
-      <rect x="24" y="30" width="4.5" height="1" rx="0.3" fill="#cc9900" />
-    </svg>
-  );
-}
-
-function Port({ port, status, onClick, isAnimating }: { port: PortData; status: string; onClick: () => void; isAnimating: boolean }) {
-  const isCompleted = status === "completed";
-  const isCurrent = status === "current";
-  const isLocked = status === "locked";
-
-  const colors = isCompleted
-    ? { ring: "#cc0000", fill: "#2a0000", text: "#ff4444", glow: "rgba(204,0,0,0.45)" }
-    : isCurrent
-    ? { ring: "#ff2222", fill: "#1a0000", text: "#ff6666", glow: "rgba(255,30,30,0.55)" }
-    : { ring: "#3a1a1a", fill: "#0d0000", text: "#5a2a2a", glow: "none" };
-
-  return (
-    <g
-      style={{ cursor: isLocked || isAnimating ? "default" : "pointer" }}
-      onClick={() => !isLocked && !isAnimating && onClick()}
-    >
-      {!isLocked && (
-        <circle cx={`${port.x}%`} cy={`${port.y}%`} r="20"
-          fill={colors.glow} className={isCurrent ? "port-pulse" : ""} />
-      )}
-      <circle cx={`${port.x}%`} cy={`${port.y}%`} r="16"
-        fill="none" stroke={isCompleted ? "#8B0000" : isCurrent ? "#cc0000" : "#1a0808"}
-        strokeWidth="1" strokeDasharray={isLocked ? "3,2" : "none"} />
-      <circle cx={`${port.x}%`} cy={`${port.y}%`} r="13"
-        fill={colors.fill} stroke={colors.ring}
-        strokeWidth={isCurrent ? "2.5" : "1.8"} />
-      {isCompleted ? (
-        <text x={`${port.x}%`} y={`${port.y - 0.3}%`}
-          textAnchor="middle" dominantBaseline="central"
-          fontSize="10" fill="#cc0000">✓</text>
-      ) : (
-        <text x={`${port.x}%`} y={`${port.y}%`}
-          textAnchor="middle" dominantBaseline="central"
-          fontSize={port.id >= 10 ? "7.5" : "9"}
-          fontWeight="bold" fill={colors.text}
-          fontFamily="'Cinzel', serif">{port.id}</text>
-      )}
-      {isLocked && (
-        <text x={`${port.x}%`} y={`${port.y + 2.5}%`}
-          textAnchor="middle" dominantBaseline="central"
-          fontSize="5" fill="#3a1a1a" opacity="0.6">🔒</text>
-      )}
-    </g>
-  );
-}
-
-// ── Main game ─────────────────────────────────────────────────────────────────
 export default function PirateIslandGame() {
   const saved = loadProgress();
   const [currentPort, setCurrentPort] = useState(saved.current);
@@ -257,7 +104,7 @@ export default function PirateIslandGame() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "radial-gradient(ellipse at 30% 20%, #1a0000 0%, #0d0000 40%, #000000 100%)",
+      background: "radial-gradient(ellipse at 30% 20%, #000011 0%, #000033 40%, #000000 100%)",
       display: "flex", flexDirection: "column", alignItems: "center",
       fontFamily: "'Cinzel', serif",
       overflow: "hidden", position: "relative",
@@ -321,7 +168,7 @@ export default function PirateIslandGame() {
         ::-webkit-scrollbar-thumb { background:#4a0000; border-radius:3px; }
       `}</style>
 
-      {/* Ambient ember particles */}
+      {/* Ambient cyber particles */}
       {[...Array(18)].map((_, i) => (
         <div key={i} className="ember" style={{
           position: "fixed",
@@ -329,7 +176,7 @@ export default function PirateIslandGame() {
           top: `${50 + (i * 17) % 45}%`,
           width: i % 4 === 0 ? "4px" : "2px", height: i % 4 === 0 ? "4px" : "2px",
           borderRadius: "50%",
-          background: i % 3 === 0 ? "#cc0000" : "#ff4400",
+          background: i % 3 === 0 ? "#00ff88" : "#00aaff",
           boxShadow: "0 0 4px currentColor",
           pointerEvents: "none", zIndex: 0,
           animationDelay: `${(i * 0.31) % 2.5}s`,
@@ -340,24 +187,26 @@ export default function PirateIslandGame() {
       {/* ── Header ── */}
       <div style={{ textAlign: "center", padding: "18px 20px 6px", position: "relative", zIndex: 10 }}>
         <div style={{ display:"flex", alignItems:"center", gap:"10px", justifyContent:"center", marginBottom:"6px" }}>
-          <div style={{ height:"1px", width:"60px", background:"linear-gradient(to right, transparent, #8B0000)" }} />
-          <span style={{ color:"#8B0000", fontSize:"1rem" }}>☠</span>
-          <div style={{ height:"1px", width:"60px", background:"linear-gradient(to left, transparent, #8B0000)" }} />
+          <div style={{ height:"2px", width:"80px", background:"linear-gradient(to right, transparent, #00ff88, #00aaff)" }} />
+          <span style={{ color:"#00ff88", fontSize:"1.2rem", textShadow: "0 0 10px #00ff88" }}>⚡</span>
+          <div style={{ height:"2px", width:"80px", background:"linear-gradient(to left, transparent, #00ff88, #00aaff)" }} />
         </div>
         <h1 style={{
-          fontSize: "clamp(1.3rem, 4vw, 2.2rem)",
-          color: "#cc0000", margin: 0, letterSpacing: "0.18em", fontWeight: 900,
-          textShadow: "0 0 40px rgba(200,0,0,0.7), 0 0 80px rgba(200,0,0,0.3), 0 2px 8px #000",
+          fontSize: "clamp(1.5rem, 5vw, 2.5rem)",
+          color: "#00ff88", margin: 0, letterSpacing: "0.2em", fontWeight: 900,
+          textShadow: "0 0 40px rgba(0,255,136,0.8), 0 0 80px rgba(0,255,136,0.4), 0 3px 12px #000",
           textTransform: "uppercase",
-        }}>Crimson Tides</h1>
+          fontFamily: "'Cinzel', serif",
+        }}>Cyber Games</h1>
         <p style={{
-          color: "#5a1a1a", margin: "4px 0 0", fontSize: "0.72rem", letterSpacing: "0.3em",
+          color: "#00aaff", margin: "6px 0 0", fontSize: "0.85rem", letterSpacing: "0.4em",
           fontFamily: "'Crimson Text', serif", fontStyle: "italic",
-        }}>35 Ports of Damnation</p>
-        <div style={{ display:"flex", alignItems:"center", gap:"10px", justifyContent:"center", marginTop:"6px" }}>
-          <div style={{ height:"1px", width:"60px", background:"linear-gradient(to right, transparent, #8B0000)" }} />
-          <span style={{ color:"#8B0000", fontSize:"1rem" }}>☠</span>
-          <div style={{ height:"1px", width:"60px", background:"linear-gradient(to left, transparent, #8B0000)" }} />
+          textShadow: "0 0 20px rgba(0,170,255,0.6)",
+        }}>Enjoy with your journey</p>
+        <div style={{ display:"flex", alignItems:"center", gap:"10px", justifyContent:"center", marginTop:"8px" }}>
+          <div style={{ height:"2px", width:"80px", background:"linear-gradient(to right, transparent, #00ff88, #00aaff)" }} />
+          <span style={{ color:"#00aaff", fontSize:"1.2rem", textShadow: "0 0 10px #00aaff" }}>🔗</span>
+          <div style={{ height:"2px", width:"80px", background:"linear-gradient(to left, transparent, #00ff88, #00aaff)" }} />
         </div>
       </div>
 
@@ -403,46 +252,12 @@ export default function PirateIslandGame() {
         position: "relative", width: "min(96vw, 1200px)", aspectRatio: "1 / 0.82",
         margin: "0 auto", zIndex: 10, overflow: "hidden",
         background: "transparent", boxShadow: "none",
-        clipPath: "ellipse(52% 50% at 50% 50%)",
+        clipPath: "ellipse(60% 55% at 50% 50%)",
       }}>
         <svg ref={svgRef} viewBox="0 0 720 590"
           style={{ width: "100%", height: "100%", display: "block", background: "transparent" }}
           preserveAspectRatio="xMidYMid meet">
-          <defs>
-            <radialGradient id="islandBase" cx="48%" cy="42%" r="55%">
-              <stop offset="0%" stopColor="#3d2b14" />
-              <stop offset="35%" stopColor="#2e1f0a" />
-              <stop offset="70%" stopColor="#1e1308" />
-              <stop offset="100%" stopColor="#150e05" />
-            </radialGradient>
-            <radialGradient id="volcanoGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#cc2200" stopOpacity="0.9" />
-              <stop offset="60%" stopColor="#880000" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="#440000" stopOpacity="0" />
-            </radialGradient>
-            <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
-              <stop offset="60%" stopColor="transparent" />
-              <stop offset="100%" stopColor="#000000" stopOpacity="0.65" />
-            </radialGradient>
-            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3.5" result="blur" />
-              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-            </filter>
-            <filter id="islandShadow" x="-10%" y="-10%" width="120%" height="130%">
-              <feDropShadow dx="0" dy="10" stdDeviation="14" floodColor="#000" floodOpacity="0.85" />
-            </filter>
-            <filter id="softBlur">
-              <feGaussianBlur stdDeviation="3" />
-            </filter>
-            <filter id="emberGlow">
-              <feGaussianBlur stdDeviation="2" result="blur"/>
-              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-            <filter id="terrainFuzz">
-              <feTurbulence type="turbulence" baseFrequency="0.65" numOctaves="3" result="noise"/>
-              <feDisplacementMap in="SourceGraphic" in2="noise" scale="4" xChannelSelector="R" yChannelSelector="G"/>
-            </filter>
-          </defs>
+          
 
           {/* ── OCEAN ── */}
           <ellipse cx="360" cy="295" rx="380" ry="320" fill="#1a0005" opacity="0.5" />
@@ -466,9 +281,10 @@ export default function PirateIslandGame() {
           <ellipse cx="360" cy="560" rx="240" ry="35" fill="#0d0004" opacity="0.3" className="fog"
             style={{ animationDelay: "2s" }} />
 
-          {/* ── ISLAND OUTER SHAPES ── */}
-          {/* Surf / wake zone */}
-          <ellipse cx="360" cy="295" rx="322" ry="262" fill="#1a0e04" filter="url(#softBlur)" />
+          <g transform="translate(360 295) scale(0.88) translate(-360 -295)">
+            {/* ── ISLAND OUTER SHAPES ── */}
+            {/* Surf / wake zone */}
+            <ellipse cx="360" cy="295" rx="322" ry="262" fill="#1a0e04" filter="url(#softBlur)" />
           {/* Beach sand layers */}
           <ellipse cx="360" cy="295" rx="308" ry="248" fill="#2a1a08" />
           <ellipse cx="360" cy="293" rx="298" ry="240" fill="#4a3010" opacity="0.65" />
@@ -690,6 +506,7 @@ export default function PirateIslandGame() {
               </g>
             );
           })()}
+          </g>
 
           {/* Vignette */}
           <rect width="720" height="590" fill="url(#vignette)" />
