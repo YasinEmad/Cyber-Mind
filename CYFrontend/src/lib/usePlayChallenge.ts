@@ -147,6 +147,12 @@ export const usePlayChallenge = () => {
   };
 
   // --- Submit Logic ---
+  // عند التسليم:
+  // 1. يتم التحقق من أن المستخدم غير مسجل الدخول
+  // 2. يتم إرسال الحل إلى الـ Backend مع Challenge ID الفريد
+  // 3. الـ Backend يتحقق إذا كان المستخدم حل هذا التحدي من قبل
+  // 4. إذا كانت أول مرة ويكون الحل صحيح: تُضاف النقاط
+  // 5. إذا كان حله من قبل: يُسمح بالحل بدون إضافة نقاط
   const handleSubmit = async () => {
     console.debug('usePlayChallenge.handleSubmit called', { challengeId, codeLength: code.length, challengeLoaded: !!chFromStore });
     if (!challengeId || !chFromStore) {
