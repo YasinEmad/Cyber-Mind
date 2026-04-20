@@ -11,8 +11,9 @@ export interface SubmitResponse {
 }
 
 export interface Challenge {
-  _id: string
-  id?: string
+  // معرف التحدي الفريد والثابت (PRIMARY KEY من قاعدة البيانات)
+  id: string | number
+  _id?: string // للتوافقية مع MongoDB إن وجدت
   title: string
   description?: string
   code?: string

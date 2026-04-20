@@ -34,17 +34,23 @@ exports.createChallenge = async (req, res, next) => {
 
 // 4. تسليم الحل
 // 4. تسليم الحل (بعد التعديل لاستقبال الإجابة)
+// يتم التحقق من أن المستخدم لم يحل هذا التحدي من قبل
+// عند النجاح لأول مرة فقط: تتم إضافة النقاط و تسجيل التحدي كمحلول
 exports.submitAnswer = async (req, res, next) => {
   try {
-    // بناخد الإجابة من الـ body اللي جاي من الـ Editor في الفرونت إند
-    const { answer } = req.body; 
+    const challengeId = req.params.id;
+    const { answer } = req.body;
+
+    console.log(`[SUBMISSION] User: ${req.user?.id || 'anonymous'}, Challenge ID: ${challengeId}`);
 
     if (!answer) {
       return res.status(400).json({ success: false, message: 'Please provide an answer' });
     }
 
     // بنبعت الـ ID، اليوزر (عشان النقط)، والحل (عشان التقييم)
-    const result = await challengeService.submitChallengeAnswer(req.params.id, req.user, answer);
+    const result = await challengeService.submitChallengeAnswer(challengeId, req.user, answer);
+    
+    console.log(`[SUBMISSION RESULT] Challenge: ${challengeId}, Success: ${result.success}, Awarded: ${result.awarded}, AlreadySolved: ${result.alreadySolved}`);
     
     res.status(200).json({ success: true, ...result });
   } catch (error) { 
