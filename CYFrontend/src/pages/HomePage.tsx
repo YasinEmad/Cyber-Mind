@@ -237,14 +237,14 @@ const HomePage: React.FC = () => {
               >
                 WELCOME TO <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-500">
-                  CYBER MIND
+                  Cyber MIND
                 </span>
               </motion.h1>
               <motion.p 
                 variants={fadeInUp} 
                 className="text-lg text-gray-400 max-w-2xl mx-auto lg:mx-0 font-light mb-8"
               >
-                Master the digital realm through interactive intelligence.
+                Think like a hacker. Solve like a defender. Train your mind in ethical cybersecurity through real-world CTF challenges.
               </motion.p>
               <motion.div 
                 variants={fadeInUp}
@@ -289,10 +289,10 @@ const HomePage: React.FC = () => {
               className="text-center mb-20"
             >
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                Explore Our <span className="text-red-500">Features</span>
+                Train Your <span className="text-red-500">Security Mindset</span>
               </h2>
               <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                Dive into interactive learning experiences designed to sharpen your cyber skills
+                Master cryptography, penetration testing, and vulnerability analysis through hands-on challenges
               </p>
             </motion.div>
 
