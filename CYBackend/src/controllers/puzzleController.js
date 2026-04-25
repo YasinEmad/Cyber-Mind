@@ -32,12 +32,10 @@ exports.getPuzzleById = async (req, res, next) => {
 // @desc    Create a new puzzle
 exports.createPuzzle = async (req, res, next) => {
   try {
-    if (req.body.tag) {
-      const existing = await Puzzle.findOne({ where: { tag: req.body.tag } });
-      if (existing) return res.status(400).json({ message: 'Tag already exists' });
-    }
-
     if (req.body.level) req.body.level = Number(req.body.level);
+
+    // Generate tags automatically
+    req.body.tags = puzzleService.generateTags(req.body);
 
     const puzzle = await Puzzle.create(req.body);
     res.status(201).json(puzzle);
@@ -63,6 +61,9 @@ exports.updatePuzzle = async (req, res, next) => {
     Object.keys(req.body).forEach(key => {
       puzzle[key] = req.body[key];
     });
+
+    // Regenerate tags based on updated data
+    puzzle.tags = puzzleService.generateTags(puzzle);
 
     await puzzle.save(); // triggers validation
     res.json(puzzle);
@@ -111,7 +112,12 @@ exports.submitAnswer = async (req, res, next) => {
     }
 
     if (result.alreadySolved) {
-      return res.json({ correct: true, alreadySolved: true, message: 'Already solved. No points awarded.' });
+      return res.json({
+        correct: true,
+        alreadySolved: true,
+        message: 'Correct. You already solved it.',
+        user: req.user ? req.user.toJSON ? req.user.toJSON() : req.user : null
+      });
     }
 
     res.json({

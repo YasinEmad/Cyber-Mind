@@ -40,6 +40,8 @@ exports.handleGoogleSignIn = async (req, res, next) => {
         email: user.email,
         name: user.name,
         photoURL: user.photoURL,
+        solvedPuzzles: user.solvedPuzzles,
+        solvedChallenges: user.solvedChallenges,
         profile: user.profile,
       },
     });
@@ -58,7 +60,11 @@ exports.logout = (req, res) => {
 };
 
 exports.getMe = (req, res) => {
-  res.status(200).json({ success: true, data: req.user });
+  const user = req.user.toJSON ? req.user.toJSON() : req.user;
+  if (!Array.isArray(user.solvedPuzzles) && Array.isArray(user.profile?.solvedPuzzles)) {
+    user.solvedPuzzles = user.profile.solvedPuzzles;
+  }
+  res.status(200).json({ success: true, data: user });
 };
 
 exports.updateMe = async (req, res, next) => {
@@ -78,7 +84,10 @@ exports.updateMe = async (req, res, next) => {
 
     if (changed) await user.save();
 
-    const updated = await User.findByPk(user.id, { include: [{ model: Profile, as: 'profile' }] });
+    const updated = await User.findByPk(user.id, { 
+      include: [{ model: Profile, as: 'profile' }],
+      attributes: { include: ['solvedPuzzles', 'solvedChallenges'] }
+    });
     res.status(200).json({ success: true, data: updated });
   } catch (error) {
     next(error);

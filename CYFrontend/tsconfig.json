@@ -16,9 +16,9 @@
     "allowJs": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
