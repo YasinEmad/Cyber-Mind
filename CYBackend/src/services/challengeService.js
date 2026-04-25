@@ -79,3 +79,50 @@ exports.submitChallengeAnswer = async (challengeId, user, userAnswer) => {
 
   return { success: isCorrect, awarded, alreadySolved, points: awarded ? pointsToAward : 0, message };
 };
+
+const vm = require('vm');
+
+exports.runCode = async (challengeId, code) => {
+  try {
+    // Get the challenge to ensure it exists
+    const challenge = await Challenge.findByPk(challengeId);
+    if (!challenge) throw new Error('Challenge not found');
+
+    // Create a sandbox context
+    const sandbox = {
+      console: {
+        log: (...args) => {
+          // Capture console.log output
+          if (!sandbox._output) sandbox._output = [];
+          sandbox._output.push(args.join(' '));
+        },
+        error: (...args) => {
+          if (!sandbox._output) sandbox._output = [];
+          sandbox._output.push('ERROR: ' + args.join(' '));
+        },
+        warn: (...args) => {
+          if (!sandbox._output) sandbox._output = [];
+          sandbox._output.push('WARN: ' + args.join(' '));
+        }
+      },
+      _output: []
+    };
+
+    // Run the code in the sandbox with timeout
+    const script = new vm.Script(code);
+    const context = vm.createContext(sandbox);
+    
+    // Run with timeout to prevent infinite loops
+    await Promise.race([
+      script.runInContext(context),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Code execution timed out')), 5000)
+      )
+    ]);
+
+    // Return the captured output
+    return { output: sandbox._output.join('\n'), error: null };
+  } catch (error) {
+    return { output: '', error: error.message };
+  }
+};
