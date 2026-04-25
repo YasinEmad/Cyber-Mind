@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import axios from '@/api/axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Edit, LogOut, BarChart, CheckSquare, Trophy, 
-  Puzzle, Flag, Shield, Zap, Activity,  User as UserIcon 
+  Puzzle, Flag, Shield, Zap, Activity,  User as UserIcon,
+  Clock, Target
 } from 'lucide-react';
 import { clearUser, selectUser, setUser } from '../redux/slices/userSlice';
 
@@ -18,6 +19,62 @@ const ProfilePage: React.FC = () => {
   const [formName, setFormName] = useState(user?.name || '');
   const [formPhoto, setFormPhoto] = useState(user?.photoURL || '');
   const [editLoading, setEditLoading] = useState(false);
+  const [solvedPuzzles, setSolvedPuzzles] = useState<any[]>([]);
+  const [loadingPuzzles, setLoadingPuzzles] = useState(false);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const { data } = await axios.get('/users/me');
+        dispatch(setUser(data.data));
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    if (!user || !Array.isArray(user.solvedPuzzles)) {
+      fetchUserData();
+    }
+  }, [dispatch, user]);
+
+  useEffect(() => {
+    const fetchSolvedPuzzles = async () => {
+      const solvedIds = Array.isArray(user?.solvedPuzzles) && user.solvedPuzzles.length > 0
+        ? user.solvedPuzzles
+        : Array.isArray(user?.profile?.solvedPuzzles)
+          ? user.profile.solvedPuzzles
+          : [];
+
+      if (solvedIds.length === 0) {
+        setSolvedPuzzles([]);
+        return;
+      }
+      
+      setLoadingPuzzles(true);
+      try {
+        const lastSolvedIds = solvedIds.slice(-5).reverse();
+        const responses = await Promise.allSettled(
+          lastSolvedIds.map((id) => axios.get(`/puzzles/${id}`))
+        );
+
+        const puzzles = responses
+          .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
+          .map((result) => result.value.data);
+
+        if (responses.some((result) => result.status === 'rejected')) {
+          console.warn('One or more solved puzzle fetches failed, showing available puzzles only.');
+        }
+
+        setSolvedPuzzles(puzzles);
+      } catch (error) {
+        console.error('Failed to fetch solved puzzles:', error);
+      } finally {
+        setLoadingPuzzles(false);
+      }
+    };
+
+    fetchSolvedPuzzles();
+  }, [user?.solvedPuzzles, user?.profile?.solvedPuzzles]);
 
   const handleLogout = async () => {
     try {
@@ -117,7 +174,7 @@ const ProfilePage: React.FC = () => {
 
           {/* Stats Row */}
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatBox icon={<Trophy />} label="Total Score" value={user?.profile?.totalScore?.toLocaleString() || '0'} color="text-red-500" />
+            <StatBox icon={<Trophy />} label="Puzzles Points" value={user?.profile?.totalScore?.toLocaleString() || '0'} color="text-red-500" />
             <StatBox icon={<CheckSquare />} label="Completed" value={user?.profile?.challengesDone?.toString() || '0'} color="text-orange-500" />
             <StatBox icon={<Puzzle />} label="Puzzles" value={user?.profile?.puzzlesDone?.toString() || '0'} color="text-neutral-200" />
             <StatBox icon={<Flag />} label="Captures" value={user?.profile?.flags?.toString() || '0'} color="text-red-600" />
@@ -133,16 +190,42 @@ const ProfilePage: React.FC = () => {
                <table className="w-full text-left">
                  <thead>
                    <tr className="text-[10px] font-black uppercase text-neutral-500 border-b border-neutral-800">
-                     <th className="px-8 py-4">Operation</th>
+                     <th className="px-8 py-4">Puzzle</th>
+                     <th className="px-8 py-4">Level</th>
+                     <th className="px-8 py-4">Category</th>
+                     <th className="px-8 py-4">Tags</th>
                      <th className="px-8 py-4">Status</th>
-                     <th className="px-8 py-4">Yield</th>
-                     <th className="px-8 py-4">Timestamp</th>
                    </tr>
                  </thead>
                  <tbody className="divide-y divide-neutral-800/50">
-                   <ActivityRow name="Neural Breach Beta" status="Success" yield="+500 XP" time="14:20:01" />
-                   <ActivityRow name="Logic Gate 04" status="Success" yield="+120 XP" time="12:05:44" />
-                   <ActivityRow name="Encryption Phase" status="Pending" yield="---" time="09:12:10" />
+                   {loadingPuzzles ? (
+                     <tr>
+                       <td colSpan={5} className="px-8 py-8 text-center text-neutral-500">
+                         <div className="flex items-center justify-center gap-2">
+                           <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                           Loading deployment data...
+                         </div>
+                       </td>
+                     </tr>
+                   ) : solvedPuzzles.length > 0 ? (
+                     solvedPuzzles.map((puzzle, index) => (
+                       <PuzzleActivityRow 
+                         key={puzzle.id} 
+                         puzzle={puzzle} 
+                         isRecent={index === 0}
+                       />
+                     ))
+                   ) : (
+                     <tr>
+                       <td colSpan={5} className="px-8 py-8 text-center text-neutral-600">
+                         <div className="flex flex-col items-center gap-2">
+                           <Target size={24} className="text-neutral-700" />
+                           <span className="text-sm">No puzzles solved yet</span>
+                           <span className="text-xs">Start your first challenge!</span>
+                         </div>
+                       </td>
+                     </tr>
+                   )}
                  </tbody>
                </table>
              </div>
@@ -195,17 +278,51 @@ const StatBox = ({ icon, label, value, color }: any) => (
   </div>
 );
 
-const ActivityRow = ({ name, status, yield: y, time }: any) => (
-  <tr className="hover:bg-white/[0.02] transition-colors">
-    <td className="px-8 py-5 font-bold text-sm text-neutral-200">{name}</td>
-    <td className={`px-8 py-5 text-[10px] font-black uppercase tracking-widest ${status === 'Success' ? 'text-orange-500' : 'text-neutral-600'}`}>
-      <div className="flex items-center gap-2">
-        <div className={`w-1.5 h-1.5 rounded-full ${status === 'Success' ? 'bg-orange-500 animate-pulse' : 'bg-neutral-600'}`} />
-        {status}
+const PuzzleActivityRow = ({ puzzle, isRecent }: { puzzle: any; isRecent: boolean }) => (
+  <tr className={`hover:bg-white/[0.02] transition-colors ${isRecent ? 'bg-red-500/5 border-l-4 border-l-red-500' : ''}`}>
+    <td className="px-8 py-5">
+      <div className="flex items-center gap-3">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isRecent ? 'bg-red-500/20' : 'bg-neutral-800'}`}>
+          <Puzzle size={16} className={isRecent ? 'text-red-400' : 'text-neutral-400'} />
+        </div>
+        <div>
+          <p className="font-bold text-sm text-neutral-200">{puzzle.title}</p>
+          {isRecent && <span className="text-[10px] text-red-400 font-bold uppercase tracking-widest">Latest</span>}
+        </div>
       </div>
     </td>
-    <td className="px-8 py-5 font-mono text-xs text-neutral-400">{y}</td>
-    <td className="px-8 py-5 font-mono text-xs text-neutral-500">{time}</td>
+    <td className="px-8 py-5">
+      <span className={`px-2 py-1 text-[10px] font-black uppercase tracking-widest rounded ${
+        puzzle.level === 1 ? 'bg-green-500/20 text-green-400' :
+        puzzle.level === 2 ? 'bg-yellow-500/20 text-yellow-400' :
+        'bg-red-500/20 text-red-400'
+      }`}>
+        Level {puzzle.level}
+      </span>
+    </td>
+    <td className="px-8 py-5">
+      <span className="text-xs font-mono text-neutral-400 bg-neutral-800/50 px-2 py-1 rounded">
+        {puzzle.category}
+      </span>
+    </td>
+    <td className="px-8 py-5">
+      <div className="flex flex-wrap gap-1">
+        {puzzle.tags?.slice(0, 3).map((tag: string, idx: number) => (
+          <span key={idx} className="text-[9px] text-red-400 bg-red-950/30 border border-red-900/30 px-1.5 py-0.5 rounded font-mono uppercase">
+            {tag}
+          </span>
+        ))}
+        {puzzle.tags?.length > 3 && (
+          <span className="text-[9px] text-neutral-500">+{puzzle.tags.length - 3}</span>
+        )}
+      </div>
+    </td>
+    <td className="px-8 py-5">
+      <div className="flex items-center gap-2">
+        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+        <span className="text-[10px] font-black uppercase tracking-widest text-green-400">Solved</span>
+      </div>
+    </td>
   </tr>
 );
 

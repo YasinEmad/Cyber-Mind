@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Editor from '@monaco-editor/react';
 // Cleaned up unused imports: Award and Beaker
 import { 
-  Terminal, CheckCircle, Maximize2, Minimize2, Info, 
-  Code2, PanelLeftClose, PanelLeft, Loader2, XCircle, Send 
+  Terminal, Maximize2, Minimize2, Info, 
+  Code2, PanelLeftClose, PanelLeft, Loader2
 } from 'lucide-react';
 import { usePlayChallenge } from '../lib/usePlayChallenge';
 import { ChallengeHeader } from '../components/ChallengeHeader';
@@ -31,7 +31,6 @@ const PlayChallengePage = () => {
   const totalTests = testResults.length;
 
   const wrappedHandleRun = () => { setLastAction('run'); handleRun(); };
-  const wrappedHandleTest = () => { setLastAction('test'); handleTest(); };
 
   const LoadingIndicator = ({ text }: { text: string }) => (
     <div className="flex flex-col items-center justify-center h-full text-white py-12">
@@ -60,7 +59,7 @@ const PlayChallengePage = () => {
         totalTests={totalTests} isAllTestsPassed={isAllTestsPassed}
         passedTests={passedTests} submitStatus={submitStatus}
         isRunning={isRunning} handleSubmit={handleSubmit}
-        handleReset={handleReset} handleRun={wrappedHandleRun} handleTest={wrappedHandleTest}
+        handleReset={handleReset} handleRun={wrappedHandleRun}
       />
 
       {chFromStore?.description && (
@@ -98,50 +97,7 @@ const PlayChallengePage = () => {
             </button>
           </div>
 
-          {submissionResult && !isFullScreenEditor && (
-            <div className={`mx-6 mt-16 mb-4 rounded-2xl border px-5 py-4 ${submissionResult.awarded ? 'border-green-500/20 bg-green-500/5' : 'border-red-500/20 bg-red-500/5'}`}>
-              <div className="flex items-start gap-3">
-                <div className={`mt-1 h-10 w-10 rounded-2xl flex items-center justify-center ${submissionResult.awarded ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-                  {submissionResult.awarded ? <CheckCircle size={20} /> : <XCircle size={20} />}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-white">
-                    {submissionResult.awarded ? 'AI Review Passed' : 'AI Review Result'}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-gray-200 whitespace-pre-line">{submissionResult.message}</p>
-                  <p className="mt-3 text-xs text-gray-400">
-                    Points: {submissionResult.points} · {submissionResult.awarded ? 'Accepted' : 'Needs improvement'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {!isFullScreenEditor && (
-            <div className="mx-6 mb-4 flex flex-col items-center gap-3">
-              <button
-                type="button"
-                onPointerDown={() => console.debug('Page fallback submit pointerdown')}
-                onClick={() => {
-                  console.debug('Page fallback submit clicked');
-                  handleSubmit();
-                }}
-                className="inline-flex items-center gap-2 rounded-full bg-green-600 px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-green-700/30 transition hover:bg-green-500"
-              >
-                <Send size={16} />
-                Submit for AI Review
-              </button>
-              {submitStatus === 'loading' && (
-                <span className="text-xs text-yellow-300">Submitting for AI review…</span>
-              )}
-              {submitStatus === 'succeeded' && (
-                <span className="text-xs text-green-300">AI review completed.</span>
-              )}
-              {submitStatus === 'failed' && (
-                <span className="text-xs text-red-300">AI review failed. Check the console or try again.</span>
-              )}
-            </div>
-          )}
 
           <motion.div animate={{ height: isFullScreenEditor ? '100%' : '60%' }} className="relative overflow-hidden border-b border-gray-700">
             <Editor
@@ -154,30 +110,13 @@ const PlayChallengePage = () => {
           {!isFullScreenEditor && (
             <div className="flex-1 flex flex-col bg-black">
               <div className="flex items-center bg-black border-b border-gray-700 h-11">
-                <button onClick={() => setActiveBottomTab('output')} className={`h-full px-5 text-xs flex items-center gap-2 border-r border-gray-700 ${activeBottomTab === 'output' ? 'bg-black text-white' : 'text-white/60'}`}>
+                <button className={`h-full px-5 text-xs flex items-center gap-2 border-r border-gray-700 bg-black text-white`}>
                   <Terminal size={14} /> Console Output
-                </button>
-                <button onClick={() => setActiveBottomTab('tests')} className={`h-full px-5 text-xs flex items-center gap-2 border-r border-gray-700 ${activeBottomTab === 'tests' ? 'bg-black text-white' : 'text-white/60'}`}>
-                  <CheckCircle size={14} className={isAllTestsPassed ? "text-green-400" : ""} /> Test Results
                 </button>
               </div>
 
               <div className="flex-1 overflow-auto p-5 font-mono text-sm bg-black">
-                {activeBottomTab === 'output' ? (
-                  isRunning && lastAction === 'run' ? <LoadingIndicator text="Executing..." /> : (output || <p className="opacity-30">Console output will appear here</p>)
-                ) : (
-                  isRunning && lastAction === 'test' ? <LoadingIndicator text="Testing..." /> : (
-                    <div className="space-y-2">
-                      {isAllTestsPassed && <div className="bg-green-500/10 border border-green-500/30 p-4 rounded-lg text-green-400">Challenge Complete!</div>}
-                      {testResults.map((result, i) => (
-                        <div key={i} className={`flex items-start gap-3 p-4 rounded-lg border ${result.passed ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
-                          {result.passed ? <CheckCircle size={16} className="text-green-400 mt-0.5" /> : <XCircle size={16} className="text-red-400 mt-0.5" />}
-                          <span className="text-sm">{result.message}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )
-                )}
+                {isRunning && lastAction === 'run' ? <LoadingIndicator text="Executing..." /> : (output || <p className="opacity-30">Console output will appear here</p>)}
               </div>
             </div>
           )}

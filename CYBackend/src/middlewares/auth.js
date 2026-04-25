@@ -11,7 +11,8 @@ exports.protect = async (req, res, next) => {
     const decodedToken = await admin.auth().verifyIdToken(token);
     const user = await User.findOne({
       where: { uid: decodedToken.uid },
-      include: [{ model: Profile, as: 'profile' }]
+      include: [{ model: Profile, as: 'profile' }],
+      attributes: { include: ['solvedPuzzles', 'solvedChallenges'] }
     });
 
     if (!user) return res.status(401).json({ success: false, message: 'User not found' });
@@ -55,7 +56,8 @@ exports.optionalAuth = async (req, res, next) => {
     const decodedToken = await admin.auth().verifyIdToken(token);
     const user = await User.findOne({
       where: { uid: decodedToken.uid },
-      include: [{ model: Profile, as: 'profile' }]
+      include: [{ model: Profile, as: 'profile' }],
+      attributes: { include: ['solvedPuzzles', 'solvedChallenges'] }
     });
     req.user = user || null;
     next();

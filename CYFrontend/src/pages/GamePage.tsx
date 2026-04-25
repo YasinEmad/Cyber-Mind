@@ -1,488 +1,463 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import PageWrapper from '@/components/PageWrapper';
-import { motion, TargetAndTransition } from 'framer-motion';
-import { Lock, Play, Star, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import ctfInfo from "@/utils/ctfinfo";
 
-interface Zone {
-  id: number;
+interface LevelData {
+  level: number;
   name: string;
   description: string;
-  color: string;
-  textColor: string;
-  glowColor: string;
-  levels: Array<{ id: number; isLocked: boolean; completed?: boolean; stars?: number }>;
 }
 
-const zones: Zone[] = [
-  {
-    id: 1,
-    name: 'Foundation',
-    description: 'Master the basics',
-    color: 'from-red-800 to-black',
-    textColor: 'text-red-300',
-    glowColor: 'rgba(239, 68, 68, 0.3)',
-    levels: Array.from({ length: 3 }, (_, i) => ({
-      id: i + 1,
-      isLocked: i > 0,
-      completed: i === 0,
-      stars: i === 0 ? 3 : 0,
-    })),
-  },
-  {
-    id: 2,
-    name: 'Intermediate',
-    description: 'Increase difficulty',
-    color: 'from-red-900 to-red-800',
-    textColor: 'text-red-400',
-    glowColor: 'rgba(220, 38, 38, 0.3)',
-    levels: Array.from({ length: 3 }, (_, i) => ({
-      id: i + 4,
-      isLocked: i === 0,
-      completed: false,
-      stars: 0,
-    })),
-  },
-  {
-    id: 3,
-    name: 'Advanced',
-    description: 'Push your limits',
-    color: 'from-black to-red-900',
-    textColor: 'text-red-200',
-    glowColor: 'rgba(239, 68, 68, 0.4)',
-    levels: Array.from({ length: 2 }, (_, i) => ({
-      id: i + 7,
-      isLocked: true,
-      completed: false,
-      stars: 0,
-    })),
-  },
-  {
-    id: 4,
-    name: 'Expert',
-    description: 'Conquer the challenge',
-    color: 'from-red-950 to-black',
-    textColor: 'text-red-100',
-    glowColor: 'rgba(255, 0, 0, 0.4)',
-    levels: Array.from({ length: 2 }, (_, i) => ({
-      id: i + 9,
-      isLocked: true,
-      completed: false,
-      stars: 0,
-    })),
-  },
-];
+const keyframes = `
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap');
 
-interface LevelNodeProps {
-  level: { id: number; isLocked: boolean; completed?: boolean; stars?: number };
-  index: number;
-  zone: Zone;
+@keyframes floatImage {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-8px) scale(1.02); }
 }
 
-const LevelNode = React.memo<LevelNodeProps>(({ level, index, zone }) => {
-  const isUnlocked = !level.isLocked;
-  const isCompleted = level.completed;
+@keyframes scanline {
+  0% { top: -8%; }
+  100% { top: 108%; }
+}
 
-  const content = (
-    <div
-      className={`relative w-24 h-24 md:w-28 md:h-28 rounded-full flex flex-col items-center justify-center border-2 transition-all duration-300 group
-        ${
-          isUnlocked
-            ? isCompleted
-              ? `bg-gradient-to-br ${zone.color} border-yellow-400/60 shadow-[0_0_20px_${zone.glowColor}]`
-              : `bg-black/40 border-red-600/60 shadow-[0_0_20px_${zone.glowColor}]`
-            : 'bg-black/30 border-red-900/40'
-        }
-      `}
-    >
-      <div className={`text-2xl md:text-3xl font-extrabold ${isUnlocked ? (isCompleted ? 'text-yellow-300' : 'text-red-100') : 'text-slate-500'}`}>
-        {level.id}
-      </div>
-      <div className={`text-xs font-semibold ${isUnlocked ? 'text-cyan-300' : 'text-slate-600'}`}>
-        Level
-      </div>
-      
-      {/* Lock/Play Icon */}
-      <div className="absolute top-2 right-2">
-        {level.isLocked ? (
-          <Lock className="h-4 w-4 text-slate-500" />
-        ) : (
-          <div className={`${isCompleted ? 'text-yellow-400' : 'text-red-400'}`}>
-            <Play className="h-4 w-4" />
-          </div>
-        )}
-      </div>
+@keyframes glitch {
+  0%, 94%, 100% { clip-path: none; transform: translate(0); opacity: 1; }
+  95% { clip-path: polygon(0 30%, 100% 30%, 100% 45%, 0 45%); transform: translate(-3px, 1px); opacity: 0.9; }
+  97% { clip-path: polygon(0 60%, 100% 60%, 100% 75%, 0 75%); transform: translate(3px, -1px); opacity: 0.9; }
+}
 
-      {/* Stars for completed levels */}
-      {isCompleted && level.stars && (
-        <div className="absolute bottom-1 flex gap-1">
-          {[...Array(Math.min(level.stars, 3))].map((_, i) => (
-            <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-          ))}
-        </div>
-      )}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-      {/* Glow ring on hover for unlocked */}
-      {isUnlocked && (
-        <div className="absolute inset-0 rounded-full border-2 border-red-300/0 group-hover:border-red-300/60 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
-      )}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+}
+
+@keyframes levelPop {
+  0% { transform: scale(0.6) translateY(15px); opacity: 0; }
+  70% { transform: scale(1.1) translateY(-3px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes redGlow {
+  0%, 100% { text-shadow: 0 0 20px rgba(239, 68, 68, 0.8), 0 0 40px rgba(239, 68, 68, 0.4); }
+  50% { text-shadow: 0 0 30px rgba(239, 68, 68, 1), 0 0 60px rgba(239, 68, 68, 0.6); }
+}
+
+@keyframes matrixRain {
+  0% { transform: translateY(-100vh); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+@keyframes borderGlow {
+  0%, 100% { border-color: rgba(239, 68, 68, 0.3); box-shadow: 0 0 20px rgba(239, 68, 68, 0.1); }
+  50% { border-color: rgba(239, 68, 68, 0.8); box-shadow: 0 0 40px rgba(239, 68, 68, 0.3); }
+}
+
+@keyframes particleFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+  33% { transform: translateY(-20px) rotate(120deg); opacity: 0.7; }
+  66% { transform: translateY(-10px) rotate(240deg); opacity: 0.5; }
+}
+`;
+
+function TypewriterLine({ text, delay, color, fontSize, mono }: {
+  text: string;
+  delay: number;
+  color?: string;
+  fontSize?: "small" | "large" | "normal";
+  mono?: boolean;
+}) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), delay);
+    return () => clearTimeout(t);
+  }, [delay]);
+  if (!visible) return <div style={{ height: fontSize === "small" ? 28 : fontSize === "large" ? 52 : 38 }} />;
+  return (
+    <div style={{
+      animation: "fadeInUp 0.6s ease forwards",
+      fontFamily: mono ? "'Share Tech Mono', monospace" : "'Orbitron', sans-serif",
+      color: color || "#ffffff",
+      fontSize: fontSize === "large" ? "2.3rem" : fontSize === "small" ? "0.9rem" : "1.1rem",
+      fontWeight: fontSize === "large" ? 900 : 700,
+      textAlign: "center",
+      lineHeight: 1.4,
+      textShadow: color === "#ef4444" ? "0 0 20px rgba(239, 68, 68, 0.8)" : color === "#dc2626" ? "0 0 15px rgba(220, 38, 38, 0.6)" : "0 0 10px rgba(255, 255, 255, 0.3)",
+      marginBottom: fontSize === "large" ? 8 : 6,
+      letterSpacing: mono ? "0.5px" : "1px",
+    }}>
+      {text}
     </div>
   );
+}
 
-  const motionProps = {
-    initial: { opacity: 0, scale: 0.3, y: 20 },
-    animate: {
-      opacity: 1,
-      scale: 1,
-      y: 0
-    },
-    transition: {
-      duration: 0.4,
-      delay: index * 0.06,
-      type: 'spring',
-      stiffness: 100,
-    }
-  };
-  
-  const hoverEffect: TargetAndTransition = isUnlocked
-    ? {
-        scale: 1.08,
-        y: -8,
-        transition: { duration: 0.2 }
-      }
-    : {};
-
-  if (level.isLocked) {
-    return <motion.div {...motionProps} className="cursor-not-allowed">{content}</motion.div>;
-  }
+function LevelGrid({ show }: { show: boolean }) {
+  const [revealed, setRevealed] = useState<number[]>([]);
+  const [hoveredLevel, setHoveredLevel] = useState<number | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  useEffect(() => {
+    if (!show) return;
+    let i = 0;
+    const interval = setInterval(() => {
+      setRevealed(prev => [...prev, i]);
+      i++;
+      if (i >= 35) clearInterval(interval);
+    }, 55);
+    return () => clearInterval(interval);
+  }, [show]);
 
   return (
-    <motion.div {...motionProps} whileHover={hoverEffect}>
-      <Link to={`/game/level/${level.id}`} className="block">{content}</Link>
-    </motion.div>
-  );
-});
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(7, 1fr)",
+      gap: 7,
+      marginTop: 16,
+      maxWidth: 380,
+      marginLeft: "auto",
+      marginRight: "auto",
+      position: "relative",
+    }}>
+      {Array.from({ length: 35 }, (_, i) => {
+        const isRevealed = revealed.includes(i);
+        const isFirst = i === 0;
+        const levelData = ctfInfo.levels.find((level: LevelData) => level.level === i + 1);
+        const levelLink = `/game/level/${i + 1}`;
 
-
-
-const GamePage: React.FC = () => {
-  // Generate random positions for background elements
-  const bgElements = React.useMemo(() => 
-    Array.from({ length: 15 }, () => ({
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: Math.random() * 300 + 100,
-      duration: Math.random() * 40 + 40,
-      delay: Math.random() * 5,
-    })),
-    []
-  );
-
-  const floatingNodes = React.useMemo(() =>
-    Array.from({ length: 30 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: Math.random() * 4 + 2,
-      duration: Math.random() * 30 + 20,
-      delay: Math.random() * 10,
-      color: ['cyan', 'blue', 'purple', 'pink'][Math.floor(Math.random() * 4)],  // will be remapped to red variants
-    })),
-    []
-  );
-
-  return (
-    <PageWrapper>
-      {/* Enhanced Dynamic Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        {/* Base gradient backdrop */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-900 to-black"></div>
-
-        {/* Radial gradient overlays for depth */}
-        <div className="absolute inset-0 bg-radial-gradient" style={{
-          background: `radial-gradient(circle at 20% 50%, rgba(239, 68, 68, 0.15) 0%, transparent 50%)`
-        }}></div>
-        <div className="absolute inset-0" style={{
-          background: `radial-gradient(circle at 80% 80%, rgba(220, 38, 38, 0.1) 0%, transparent 50%)`
-        }}></div>
-
-        {/* Animated gradient shift */}
-        <motion.div
-          className="absolute inset-0"
-          style={{
-            background: `conic-gradient(from 0deg, rgba(239, 68, 68, 0.08), rgba(220, 38, 38, 0.08), rgba(185, 28, 28, 0.08), rgba(239, 68, 68, 0.08))`
+        const levelSquare = (
+          <div style={{
+            width: "100%",
+            aspectRatio: "1",
+            borderRadius: 10,
+            background: isRevealed ? (isFirst ? "linear-gradient(135deg,#ef4444,#dc2626)" : "#1a1a1a") : "transparent",
+            border: isRevealed ? (isFirst ? "2px solid #ef4444" : "1px solid #4a4a4a") : "1px dashed #333333",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "0.7rem",
+            fontFamily: "'Share Tech Mono', monospace",
+            color: isRevealed ? (isFirst ? "#ffffff" : "#cccccc") : "transparent",
+            fontWeight: 700,
+            animation: isRevealed ? "levelPop 0.4s cubic-bezier(.34,1.56,.64,1) forwards" : "none",
+            boxShadow: isFirst && isRevealed ? "0 0 20px rgba(239, 68, 68, 0.6)" : "none",
+            transition: "all 0.3s ease",
+            cursor: isRevealed ? "pointer" : "default",
+            position: "relative",
           }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 100, repeat: Infinity, ease: 'linear' }}
-        ></motion.div>
-
-        {/* Advanced grid pattern */}
-        <div 
-          className="absolute inset-0 opacity-[0.08]"
-          style={{ 
-            backgroundImage: `
-              repeating-linear-gradient(0deg, transparent 0px, transparent 80px, rgba(239, 68, 68, 0.1) 80px, rgba(239, 68, 68, 0.1) 81px),
-              repeating-linear-gradient(90deg, transparent 0px, transparent 80px, rgba(239, 68, 68, 0.1) 80px, rgba(239, 68, 68, 0.1) 81px)
-            `,
-            backgroundSize: '80px 80px'
-          }}
-        ></div>
-
-        {/* Scan lines effect */}
-        <div 
-          className="absolute inset-0 opacity-5 pointer-events-none"
-          style={{ 
-            backgroundImage: 'repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(255, 255, 255, 0.03) 2px, rgba(255, 255, 255, 0.03) 4px)',
-            backgroundSize: '100% 4px',
-            animation: 'scanlines 8s linear infinite'
-          }}
-        >
-          <style>{`
-            @keyframes scanlines {
-              0% { transform: translateY(0); }
-              100% { transform: translateY(10px); }
+          onMouseEnter={(e) => {
+            if (isRevealed && levelData) {
+              const rect = e.currentTarget.getBoundingClientRect();
+              setTooltipPosition({
+                x: rect.left + rect.width / 2,
+                y: rect.top - 10
+              });
+              setHoveredLevel(i + 1);
+              // Add hover effect to the level square
+              e.currentTarget.style.transform = "scale(1.1)";
+              e.currentTarget.style.boxShadow = isFirst
+                ? "0 0 25px rgba(239, 68, 68, 0.8)"
+                : "0 0 15px rgba(239, 68, 68, 0.4)";
             }
-          `}</style>
-        </div>
-
-        {/* Large floating glowing orbs - background layer */}
-        {bgElements.map((elem, i) => (
-          <motion.div
-            key={`bg-${i}`}
-            className="absolute rounded-full blur-3xl pointer-events-none"
-            style={{
-              left: `${elem.x}%`,
-              top: `${elem.y}%`,
-              width: elem.size,
-              height: elem.size,
-              background: i % 3 === 0 
-                ? 'radial-gradient(circle, rgba(239, 68, 68, 0.12) 0%, rgba(239, 68, 68, 0) 70%)'
-                : i % 3 === 1
-                ? 'radial-gradient(circle, rgba(220, 38, 38, 0.1) 0%, rgba(220, 38, 38, 0) 70%)'
-                : 'radial-gradient(circle, rgba(185, 28, 28, 0.1) 0%, rgba(185, 28, 28, 0) 70%)'
-            }}
-            animate={{
-              x: [0, Math.random() * 100 - 50, 0],
-              y: [0, Math.random() * 100 - 50, 0],
-              opacity: [0.3, 0.8, 0.3],
-            }}
-            transition={{
-              duration: elem.duration,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              delay: elem.delay,
-            }}
-          ></motion.div>
-        ))}
-
-        {/* Floating illuminated nodes */}
-        {floatingNodes.map((node) => (
-          <motion.div
-            key={`node-${node.id}`}
-            className="absolute rounded-full pointer-events-none"
-            style={{
-              left: `${node.x}%`,
-              top: `${node.y}%`,
-              width: node.size,
-              height: node.size,
-              background: 
-                node.color === 'cyan' ? 'rgba(239, 68, 68, 0.8)' :
-                node.color === 'blue' ? 'rgba(220, 38, 38, 0.7)' :
-                node.color === 'purple' ? 'rgba(185, 28, 28, 0.6)' :
-                'rgba(239, 68, 68, 0.6)',
-              boxShadow:
-                node.color === 'cyan' ? '0 0 20px rgba(239, 68, 68, 0.8)' :
-                node.color === 'blue' ? '0 0 15px rgba(220, 38, 38, 0.7)' :
-                node.color === 'purple' ? '0 0 15px rgba(185, 28, 28, 0.6)' :
-                '0 0 12px rgba(239, 68, 68, 0.6)',
-            }}
-            animate={{
-              y: [0, -30, 0],
-              opacity: [0.4, 1, 0.4],
-              scale: [0.8, 1.2, 0.8],
-            }}
-            transition={{
-              duration: node.duration,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              delay: node.delay,
-            }}
-          ></motion.div>
-        ))}
-
-        {/* Connection lines between nodes */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20">
-          <defs>
-            <linearGradient id="connGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="rgba(239, 68, 68, 0.6)" />
-              <stop offset="100%" stopColor="rgba(220, 38, 38, 0.6)" />
-            </linearGradient>
-          </defs>
-          {floatingNodes.slice(0, 10).map((node1, i) => {
-            const node2 = floatingNodes[(i + 1) % 10];
-            return (
-              <line
-                key={`line-${i}`}
-                x1={`${node1.x}%`}
-                y1={`${node1.y}%`}
-                x2={`${node2.x}%`}
-                y2={`${node2.y}%`}
-                stroke="url(#connGrad1)"
-                strokeWidth="1.5"
-                opacity="0.5"
-              />
-            );
-          })}
-        </svg>
-
-        {/* Ambient light pulses */}
-        <motion.div
-          className="absolute inset-0 pointer-events-none"
-          animate={{
-            background: [
-              'radial-gradient(circle at 50% 50%, rgba(239, 68, 68, 0.05) 0%, transparent 60%)',
-              'radial-gradient(circle at 50% 50%, rgba(239, 68, 68, 0.1) 0%, transparent 60%)',
-              'radial-gradient(circle at 50% 50%, rgba(239, 68, 68, 0.05) 0%, transparent 60%)',
-            ]
           }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            ease: 'easeInOut',
+          onMouseLeave={(e) => {
+            setHoveredLevel(null);
+            // Remove hover effect from the level square
+            e.currentTarget.style.transform = "scale(1)";
+            e.currentTarget.style.boxShadow = isFirst && isRevealed
+              ? "0 0 20px rgba(239, 68, 68, 0.6)"
+              : "none";
           }}
-        ></motion.div>
-
-        {/* Vignette effect */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-950/50 pointer-events-none"></div>
-      </div>
-
-      {/* Header */}
-      <div className="relative text-center mb-12 md:mb-16 z-20">
-        <motion.div
-          initial={{ y: -30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
         >
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-red-400 via-red-500 to-red-600 bg-clip-text text-transparent mb-4">
-            World Map
-          </h1>
-          <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-            Navigate through zones and master cybersecurity challenges. Unlock new areas as you progress.
-          </p>
-        </motion.div>
-      </div>
-
-      {/* Zones Container */}
-      <div className="relative z-10 max-w-6xl mx-auto px-4">
-        <div className="space-y-16 md:space-y-20">
-          {zones.map((zone, zoneIndex) => (
-            <motion.div
-              key={zone.id}
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: zoneIndex * 0.15 }}
-              className="relative"
-            >
-              {/* Zone Card Background */}
-              <div className="absolute -inset-4 md:-inset-6 rounded-3xl opacity-0 group hover:opacity-100 transition-all duration-300 pointer-events-none"></div>
-
-              {/* Zone Header */}
-              <div className="relative mb-8 flex items-center gap-4 group">
-                <div className={`flex-1 h-1 bg-gradient-to-r ${zone.color} rounded-full opacity-60`}></div>
-                <div className="flex-shrink-0">
-                  <motion.div
-                    className={`inline-block`}
-                    whileHover={{ scale: 1.05 }}
-                  >
-                    <h2 className={`text-2xl md:text-3xl font-bold ${zone.textColor}`}>
-                      {zone.name}
-                    </h2>
-                    <p className="text-slate-400 text-sm mt-1 text-center">
-                      {zone.description}
-                    </p>
-                  </motion.div>
-                </div>
-                <div className={`flex-1 h-1 bg-gradient-to-l ${zone.color} rounded-full opacity-60`}></div>
-              </div>
-
-              {/* Zone Background */}
-              <div className={`relative rounded-3xl bg-gradient-to-br ${zone.color} p-8 md:p-12 overflow-hidden border border-slate-700/50 shadow-xl`}>
-                {/* Animated zone glow */}
-                <div className={`absolute inset-0 opacity-10 blur-3xl pointer-events-none`} style={{ background: zone.glowColor }}></div>
-
-                {/* Connecting path SVG */}
-                {zone.levels.length > 1 && (
-                  <svg 
-                    className="absolute inset-0 w-full h-full pointer-events-none" 
-                    style={{ overflow: 'visible' }}
-                  >
-                    <defs>
-                      <linearGradient id={`pathGrad-${zone.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" style={{ stopColor: '#22d3ee', stopOpacity: 0 }} />
-                        <stop offset="50%" style={{ stopColor: '#22d3ee', stopOpacity: 0.3 }} />
-                        <stop offset="100%" style={{ stopColor: '#22d3ee', stopOpacity: 0 }} />
-                      </linearGradient>
-                    </defs>
-                    <path 
-                      d={`M 5% 50% Q 50% 30%, 95% 50%`}
-                      stroke={`url(#pathGrad-${zone.id})`}
-                      strokeWidth="2"
-                      fill="none"
-                      strokeDasharray="8 4"
-                      className="opacity-40"
-                    />
-                  </svg>
-                )}
-
-                {/* Levels Grid */}
-                <div className="relative z-20 flex flex-wrap justify-center items-center gap-6 md:gap-8 lg:gap-10">
-                  {zone.levels.map((level, buildingIndex) => (
-                    <LevelNode
-                      key={level.id}
-                      level={level}
-                      index={buildingIndex}
-                      zone={zone}
-                    />
-                  ))}
-                </div>
-
-                {/* Zone border accent */}
-                <div className="absolute inset-0 rounded-3xl border-2 border-gradient pointer-events-none opacity-30" 
-                  style={{
-                    borderImage: `linear-gradient(135deg, transparent, ${zone.glowColor}, transparent) 1`
-                  }}
-                ></div>
-              </div>
-            </motion.div>
-          ))}
+          {isRevealed ? (i + 1) : ""}
         </div>
-      </div>
+        );
 
-      {/* Progress indicator at bottom */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8 }}
-        className="relative z-20 mt-16 mb-8 text-center"
-      >
-        <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-black/50 border border-red-600/50 backdrop-blur-sm">
-          <div className="flex gap-1">
-            {[...Array(10)].map((_, i) => (
-              <motion.div
-                key={i}
-                className={`w-2 h-2 rounded-full ${
-                  i === 0 ? 'bg-yellow-400' : i === 1 ? 'bg-red-600' : 'bg-slate-700'
-                }`}
-                animate={i === 0 ? { scale: [1, 1.3, 1] } : {}}
-                transition={{ duration: 2, repeat: Infinity }}
-              />
-            ))}
+        return (
+          <div key={i} style={{ width: "100%", position: "relative" }}>
+            {isRevealed ? (
+              <Link to={levelLink} style={{ display: "block", textDecoration: "none" }}>
+                {levelSquare}
+              </Link>
+            ) : levelSquare}
           </div>
-          <span className="text-red-400 text-sm font-semibold ml-2">Level 1 Complete - 1/10</span>
-        </div>
-      </motion.div>
-    </PageWrapper>
-  );
-};
+        );
+      })}
 
-export default GamePage;
+      {/* Tooltip */}
+      {hoveredLevel && (() => {
+        const levelData = ctfInfo.levels.find((level: LevelData) => level.level === hoveredLevel);
+        if (!levelData) return null;
+
+        return (
+          <div style={{
+            position: "fixed",
+            left: tooltipPosition.x,
+            top: tooltipPosition.y,
+            transform: "translate(-50%, -100%)",
+            background: "linear-gradient(135deg, #1a1a1a, #000000)",
+            border: "2px solid #ef4444",
+            borderRadius: "12px",
+            padding: "16px",
+            minWidth: "280px",
+            maxWidth: "320px",
+            boxShadow: "0 0 30px rgba(239, 68, 68, 0.3), 0 10px 30px rgba(0, 0, 0, 0.8)",
+            zIndex: 1000,
+            animation: "fadeInUp 0.2s ease-out",
+            pointerEvents: "none",
+          }}>
+            {/* Arrow */}
+            <div style={{
+              position: "absolute",
+              bottom: "-8px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: 0,
+              height: 0,
+              borderLeft: "8px solid transparent",
+              borderRight: "8px solid transparent",
+              borderTop: "8px solid #ef4444",
+            }} />
+
+            {/* Content */}
+            <div style={{
+              color: "#ef4444",
+              fontSize: "0.9rem",
+              fontWeight: 700,
+              fontFamily: "'Orbitron', sans-serif",
+              marginBottom: "8px",
+              textAlign: "center",
+              textShadow: "0 0 10px rgba(239, 68, 68, 0.5)",
+            }}>
+              Level {levelData.level}: {levelData.name}
+            </div>
+            <div style={{
+              color: "#ffffff",
+              fontSize: "0.8rem",
+              fontFamily: "'Share Tech Mono', monospace",
+              lineHeight: "1.4",
+              textAlign: "center",
+            }}>
+              {levelData.description}
+            </div>
+          </div>
+        );
+      })()}
+    </div>
+  );
+}
+
+export default function CTFMindWelcome() {
+  const [phase, setPhase] = useState(0);
+
+  useEffect(() => {
+    const timers = [
+      setTimeout(() => setPhase(1), 400),
+      setTimeout(() => setPhase(2), 1200),
+      setTimeout(() => setPhase(3), 2200),
+      setTimeout(() => setPhase(4), 3000),
+      setTimeout(() => setPhase(5), 3800),
+      setTimeout(() => setPhase(6), 4800),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  return (
+    <>
+      <style>{keyframes}</style>
+      <div style={{
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #000000 0%, #0a0a0a 50%, #000000 100%)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "2rem 1rem",
+        position: "relative",
+        overflow: "hidden",
+      }}>
+        {/* Matrix-style background particles */}
+        {Array.from({ length: 50 }, (_, i) => (
+          <div key={i} style={{
+            position: "absolute",
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            width: "2px",
+            height: "2px",
+            background: Math.random() > 0.7 ? "#ef4444" : "#666666",
+            borderRadius: "50%",
+            animation: `particleFloat ${3 + Math.random() * 4}s ease-in-out infinite`,
+            animationDelay: `${Math.random() * 3}s`,
+            opacity: 0.3,
+          }} />
+        ))}
+
+        {/* Scanline effect */}
+        <div style={{
+          position: "absolute",
+          left: 0, right: 0,
+          height: "8%",
+          background: "linear-gradient(to bottom, transparent, rgba(239, 68, 68, 0.05), transparent)",
+          animation: "scanline 8s linear infinite",
+          pointerEvents: "none",
+          zIndex: 10,
+        }} />
+
+        {/* Grid bg */}
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: "linear-gradient(rgba(239, 68, 68, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(239, 68, 68, 0.03) 1px, transparent 1px)",
+          backgroundSize: "50px 50px",
+          pointerEvents: "none",
+        }} />
+
+        {/* Corner decorations */}
+        {[
+          { top: 20, left: 20 },
+          { top: 20, right: 20 },
+          { bottom: 20, left: 20 },
+          { bottom: 20, right: 20 },
+        ].map((pos, i) => (
+          <div key={i} style={{
+            position: "absolute",
+            ...pos,
+            width: 40, height: 40,
+            borderTop: i < 2 ? "3px solid rgba(239, 68, 68, 0.6)" : "none",
+            borderBottom: i >= 2 ? "3px solid rgba(239, 68, 68, 0.6)" : "none",
+            borderLeft: (i === 0 || i === 2) ? "3px solid rgba(239, 68, 68, 0.6)" : "none",
+            borderRight: (i === 1 || i === 3) ? "3px solid rgba(239, 68, 68, 0.6)" : "none",
+            opacity: 0.7,
+            animation: "borderGlow 3s ease-in-out infinite",
+            animationDelay: `${i * 0.5}s`,
+          }} />
+        ))}
+
+        <div style={{ maxWidth: 480, width: "100%", zIndex: 2 }}>
+          {/* CTF Image */}
+          {phase >= 1 && (
+            <div style={{ animation: "fadeInUp 0.8s ease forwards", display: "flex", justifyContent: "center", marginBottom: 12 }}>
+              <img
+                src="/assets/ctf-image.png"
+                alt="CTF Mind"
+                style={{
+                  width: "280px",
+                  height: "380px",
+                  objectFit: "contain",
+                  filter: "drop-shadow(0 0 30px rgba(239, 68, 68, 0.4)) brightness(1.1) contrast(1.2)",
+                  borderRadius: "8px",
+                  animation: "floatImage 4s ease-in-out infinite",
+                }}
+              />
+            </div>
+          )}
+
+          {/* Title */}
+          {phase >= 2 && (
+            <div style={{
+              animation: "glitch 8s ease-in-out infinite",
+              textAlign: "center",
+              marginBottom: 6,
+            }}>
+              <TypewriterLine text="Welcome to" delay={0} color="#cccccc" fontSize="small" mono={false} />
+              <TypewriterLine text="CTF MIND" delay={100} color="#ef4444" fontSize="large" mono={false} />
+            </div>
+          )}
+
+          {phase >= 3 && (
+            <div style={{
+              width: 140,
+              height: 3,
+              background: "linear-gradient(to right, transparent, #ef4444, #dc2626, transparent)",
+              margin: "12px auto 20px",
+              borderRadius: 2,
+              boxShadow: "0 0 20px rgba(239, 68, 68, 0.3)",
+            }} />
+          )}
+
+          {/* Messages */}
+          {phase >= 3 && <TypewriterLine text="I will make this simple for you." delay={0} color="#ffffff" fontSize="normal" mono={true} />}
+          {phase >= 4 && <TypewriterLine text="You have 35 challenge levels." delay={0} color="#ef4444" fontSize="normal" mono={true} />}
+          {phase >= 5 && <TypewriterLine text="No level will open unless the previous one is completed." delay={0} color="#cccccc" fontSize="small" mono={true} />}
+          {phase >= 6 && (
+            <>
+              <TypewriterLine text="You are capable of finishing this on your own." delay={0} color="#ffffff" fontSize="small" mono={true} />
+              <TypewriterLine text="I believe in you." delay={200} color="#ef4444" fontSize="normal" mono={false} />
+            </>
+          )}
+
+          {/* Level grid */}
+          {phase >= 6 && (
+            <div style={{ animation: "fadeInUp 0.6s ease 0.5s forwards", opacity: 0 }}>
+              <div style={{
+                textAlign: "center",
+                marginTop: 32,
+                fontFamily: "'Share Tech Mono', monospace",
+                color: "#888888",
+                fontSize: "0.8rem",
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+                marginBottom: 8,
+                textShadow: "0 0 10px rgba(239, 68, 68, 0.2)",
+              }}>
+                — 35 levels —
+              </div>
+              <LevelGrid show={phase >= 6} />
+            </div>
+          )}
+
+          {/* Start button */}
+          {phase >= 6 && (
+            <div style={{
+              display: "flex",
+              justifyContent: "center",
+              marginTop: 28,
+              animation: "fadeInUp 0.6s ease 1.8s forwards",
+              opacity: 0,
+            }}>
+              <button
+                onClick={() => alert("Level 1 — Good luck, soldier!")}
+                style={{
+                  background: "linear-gradient(135deg, #ef4444, #dc2626)",
+                  border: "2px solid #ef4444",
+                  color: "#ffffff",
+                  padding: "14px 52px",
+                  borderRadius: 12,
+                  fontFamily: "'Orbitron', sans-serif",
+                  fontSize: "1rem",
+                  fontWeight: 700,
+                  letterSpacing: "0.15em",
+                  cursor: "pointer",
+                  textShadow: "0 0 10px rgba(255, 255, 255, 0.5)",
+                  boxShadow: "0 0 30px rgba(239, 68, 68, 0.4)",
+                  animation: "pulse 3s ease-in-out infinite",
+                  transition: "all 0.3s ease",
+                  textTransform: "uppercase",
+                }}
+                onMouseEnter={e => {
+                  const target = e.target as HTMLElement;
+                  target.style.background = "linear-gradient(135deg, #dc2626, #b91c1c)";
+                  target.style.boxShadow = "0 0 40px rgba(239, 68, 68, 0.6)";
+                  target.style.transform = "scale(1.05)";
+                }}
+                onMouseLeave={e => {
+                  const target = e.target as HTMLElement;
+                  target.style.background = "linear-gradient(135deg, #ef4444, #dc2626)";
+                  target.style.boxShadow = "0 0 30px rgba(239, 68, 68, 0.4)";
+                  target.style.transform = "scale(1)";
+                }}
+              >
+                START LEVEL 1
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}

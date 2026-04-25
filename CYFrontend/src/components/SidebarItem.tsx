@@ -13,8 +13,8 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }: Props) => (
     className={`w-full flex items-center space-x-3 px-6 py-4 transition-colors duration-200 
       ${
         active
-          ? "bg-blue-600 text-white border-r-4 border-blue-300"
-          : "text-gray-400 hover:bg-gray-800 hover:text-white"
+          ? "bg-red-600 text-white border-r-4 border-red-400"
+          : "text-gray-400 hover:bg-red-900/20 hover:text-white"
       }`}
   >
     <Icon size={20} />

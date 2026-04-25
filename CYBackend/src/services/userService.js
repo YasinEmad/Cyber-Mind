@@ -29,6 +29,8 @@ exports.findOrCreateGoogleUser = async (userData) => {
 
 /**
  * وظيفة احترافية لزيادة النقاط وتحديث عداد الإنجازات
+ * يتم التحقق من أن المستخدم لم يحل هذا التحدي من قبل
+ * ثم يتم تحديث كلاً من User و Profile لضمان التزامن
  */
 exports.addPointsToUser = async (userId, points, itemId, itemType = 'puzzle') => {
   // 1. تحديد أسماء الحقول بناءً على نوع العملية
@@ -36,20 +38,29 @@ exports.addPointsToUser = async (userId, points, itemId, itemType = 'puzzle') =>
   const solvedField = isPuzzle ? 'solvedPuzzles' : 'solvedChallenges';
   const counterField = isPuzzle ? 'puzzlesDone' : 'challengesDone';
 
-  // 2. تحديث البروفايل في خطوة واحدة (Atomic Update)
+  // 2. جلب المستخدم والبروفايل
+  const user = await User.findByPk(userId);
+  if (!user) throw new Error('User not found');
+
   const profile = await Profile.findOne({ where: { userId } });
   if (!profile) throw new Error('Profile not found');
 
-  // Check if already solved
+  // 3. التحقق من عدم حل هذا التحدي من قبل (من Profile)
   if (profile[solvedField].includes(itemId)) {
     return { awarded: false, alreadySolved: true };
   }
 
-  // Update
+  // 4. تحديث Profile
   profile.totalScore += points;
   profile[counterField] += 1;
   profile[solvedField] = [...profile[solvedField], itemId];
   await profile.save();
 
-  return { awarded: true, profile };
+  // 5. تحديث User ليكون متزامناً مع Profile
+  user[solvedField] = [...(user[solvedField] || []), itemId];
+  await user.save();
+
+  console.log(`✓ Points awarded to user ${userId}: +${points} for ${itemType} #${itemId}`);
+
+  return { awarded: true, profile, user };
 };

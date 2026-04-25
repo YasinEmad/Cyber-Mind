@@ -16,6 +16,8 @@ interface User {
   name: string;
   photoURL: string;
   role?: string;
+  solvedPuzzles?: number[];
+  solvedChallenges?: number[];
   profile: Profile;
 }
 

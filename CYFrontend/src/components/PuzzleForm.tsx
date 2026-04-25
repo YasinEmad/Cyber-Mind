@@ -3,14 +3,14 @@ import { Puzzle } from '../redux/slices/puzzleSlice';
 
 interface PuzzleFormProps {
   puzzle?: Puzzle | null;
-  onSave: (puzzle: Omit<Puzzle, '_id'> | Puzzle) => void;
+  onSave: (puzzle: (Omit<Puzzle, 'createdAt' | 'updatedAt'> & { id?: number }) | Puzzle) => void;
   onCancel: () => void;
 }
 
 export const PuzzleForm: React.FC<PuzzleFormProps> = ({ puzzle, onSave, onCancel }) => {
-  const [formData, setFormData] = useState<Omit<Puzzle, '_id' | 'createdAt' | 'updatedAt'>>({
+  const [formData, setFormData] = useState<Omit<Puzzle, 'id' | 'createdAt' | 'updatedAt' | '_id'>>({
     title: '',
-    tag: '',
+    tags: [],
     description: '',
     level: 1,
     hints: [],
@@ -24,7 +24,7 @@ export const PuzzleForm: React.FC<PuzzleFormProps> = ({ puzzle, onSave, onCancel
     if (puzzle) {
         setFormData({
         title: puzzle.title,
-          tag: puzzle.tag || '',
+          tags: puzzle.tags || [],
         description: puzzle.description,
         level: typeof puzzle.level === 'undefined' || puzzle.level === null ? 1 : Number(puzzle.level),
         hints: puzzle.hints,
@@ -32,6 +32,19 @@ export const PuzzleForm: React.FC<PuzzleFormProps> = ({ puzzle, onSave, onCancel
         scenario: puzzle.scenario,
         category: puzzle.category,
         active: puzzle.active,
+      });
+    } else {
+      // Reset to initial state for new puzzle
+      setFormData({
+        title: '',
+        tags: [],
+        description: '',
+        level: 1,
+        hints: [],
+        answer: '',
+        scenario: '',
+        category: '',
+        active: true,
       });
     }
   }, [puzzle]);
@@ -92,7 +105,6 @@ export const PuzzleForm: React.FC<PuzzleFormProps> = ({ puzzle, onSave, onCancel
         
         <form onSubmit={handleSubmit} className="space-y-4">
           {[
-            { label: 'Tag', name: 'tag', type: 'text' },
             { label: 'Title', name: 'title', type: 'text' },
             { label: 'Description', name: 'description', type: 'textarea' },
             { label: 'Level (1-3)', name: 'level', type: 'number', min: 1, max: 3 },

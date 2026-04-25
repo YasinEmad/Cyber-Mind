@@ -8,6 +8,7 @@ import {
   resetSubmitStatus, 
   SubmitResponse
 } from '@/redux/slices/challengeSlice';
+import axios from '@/api/axios';
 
 interface SubmissionResult extends SubmitResponse {
   challengeTitle: string;
@@ -90,25 +91,23 @@ export const usePlayChallenge = () => {
     setSubmissionResult(null);
   };
 
-  const handleRun = () => {
+  const handleRun = async () => {
     setIsRunning(true);
     setActiveBottomTab('output');
-    setOutput("Initializing security sandbox...\n> Analyzing AST...\n");
-    
-    setTimeout(() => {
-      try {
-        // Quick simulation of console output
-        setOutput(prev => 
-          prev + 
-          `\n[LOG] Sandbox execution started...` +
-          `\n[WARN] Monitoring insecure patterns...` +
-          `\n[SUCCESS] Script finished without crashing.`
-        );
-      } catch (error) {
-        setOutput(prev => prev + `\n[ERROR] ${error}`);
+    setOutput("");
+
+    try {
+      const response = await axios.post(`/challenges/${challengeId}/run`, { code });
+      if (response.data.success) {
+        setOutput(response.data.output || "Code executed successfully with no output.");
+      } else {
+        setOutput("Error: " + (response.data.message || "Unknown error"));
       }
+    } catch (error: any) {
+      setOutput("Execution failed: " + (error.response?.data?.message || error.message));
+    } finally {
       setIsRunning(false);
-    }, 800);
+    }
   };
 
   const handleTest = () => {
@@ -147,6 +146,12 @@ export const usePlayChallenge = () => {
   };
 
   // --- Submit Logic ---
+  // عند التسليم:
+  // 1. يتم التحقق من أن المستخدم غير مسجل الدخول
+  // 2. يتم إرسال الحل إلى الـ Backend مع Challenge ID الفريد
+  // 3. الـ Backend يتحقق إذا كان المستخدم حل هذا التحدي من قبل
+  // 4. إذا كانت أول مرة ويكون الحل صحيح: تُضاف النقاط
+  // 5. إذا كان حله من قبل: يُسمح بالحل بدون إضافة نقاط
   const handleSubmit = async () => {
     console.debug('usePlayChallenge.handleSubmit called', { challengeId, codeLength: code.length, challengeLoaded: !!chFromStore });
     if (!challengeId || !chFromStore) {

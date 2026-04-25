@@ -35,11 +35,11 @@ const ChallengeSolvedAlert: React.FC<ChallengeSolvedAlertProps> = ({
   if (isSolvedBefore) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: -20, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 20, scale: 0.96 }}
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.96 }}
         transition={{ duration: 0.3, type: 'spring', stiffness: 120 }}
-        className="fixed top-24 right-4 z-50 w-full max-w-sm rounded-3xl border border-slate-700 bg-slate-950/95 shadow-2xl p-4 text-slate-100 backdrop-blur"
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm rounded-3xl border border-slate-700 bg-slate-950/95 shadow-2xl p-4 text-slate-100 backdrop-blur"
       >
         <div className="relative flex flex-col gap-3 text-left">
           <div className="flex items-start justify-between gap-3">
@@ -72,11 +72,11 @@ const ChallengeSolvedAlert: React.FC<ChallengeSolvedAlertProps> = ({
   if (isIncorrect) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: -20, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 20, scale: 0.96 }}
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.96 }}
         transition={{ duration: 0.3, type: 'spring', stiffness: 120 }}
-        className="fixed top-24 right-4 z-50 w-full max-w-sm rounded-3xl border border-orange-600 bg-slate-950/95 shadow-2xl p-4 text-white backdrop-blur"
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm rounded-3xl border border-orange-600 bg-slate-950/95 shadow-2xl p-4 text-white backdrop-blur"
       >
         <div className="relative flex flex-col gap-3 text-left">
           <div className="flex items-start justify-between gap-3">
@@ -108,11 +108,11 @@ const ChallengeSolvedAlert: React.FC<ChallengeSolvedAlertProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -20, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 20, scale: 0.96 }}
+      initial={{ opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.96 }}
       transition={{ duration: 0.3, type: 'spring', stiffness: 120 }}
-      className="fixed top-24 right-4 z-50 w-full max-w-sm rounded-3xl border border-emerald-500 bg-slate-950/95 shadow-2xl p-4 text-white backdrop-blur"
+      className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm rounded-3xl border border-emerald-500 bg-slate-950/95 shadow-2xl p-4 text-white backdrop-blur"
     >
       <div className="relative flex flex-col gap-3 text-left">
         <div className="flex items-start justify-between gap-3">

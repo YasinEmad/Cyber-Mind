@@ -111,17 +111,17 @@ const GrantAdminSection: React.FC = () => {
   const isBusy = fetchingUsers || actionLoading;
 
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 mb-8">
+    <div className="bg-black border border-red-900/40 rounded-xl p-6 mb-8 shadow-2xl shadow-red-900/5">
       <div className="flex items-center gap-2 mb-6">
-        <UserPlus className="text-blue-500" size={24} />
-        <h2 className="text-2xl font-bold text-white">Grant Admin Access</h2>
+        <UserPlus className="text-red-500" size={24} />
+        <h2 className="text-2xl font-bold text-white tracking-tight">Users & Admin Management</h2>
       </div>
 
       {message && (
         <div className={`p-4 rounded-lg mb-6 flex items-start gap-3 ${
-          message.type === 'success' ? 'bg-green-500/10 border border-green-500/30' :
-          message.type === 'error' ? 'bg-red-500/10 border border-red-500/30' :
-          'bg-blue-500/10 border border-blue-500/30'
+          message.type === 'success' ? 'bg-green-900/20 border border-green-600/40' :
+          message.type === 'error' ? 'bg-red-900/20 border border-red-600/40' :
+          'bg-red-900/20 border border-red-600/40'
         }`} role="status" aria-live="polite">
           {message.type === 'success' ? (
             <CheckCircle className="text-green-500 mt-1" size={20} />
@@ -137,21 +137,21 @@ const GrantAdminSection: React.FC = () => {
       )}
 
       <div className="mb-8">
-        <h3 className="text-lg font-semibold text-gray-200 mb-4">Grant Admin to User</h3>
+        <h3 className="text-lg font-semibold text-red-400 mb-4 uppercase tracking-wider">Grant Admin Access</h3>
         <form onSubmit={handleGrantByEmail} className="flex gap-3" aria-label="Grant admin form">
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter user email"
-            className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 bg-black border border-red-900/40 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30 transition-colors"
             disabled={isBusy}
             aria-label="User email"
           />
           <button
             type="submit"
             disabled={isBusy}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-semibold px-6 py-2 rounded-lg transition-colors flex items-center gap-2"
+            className="bg-red-600 hover:bg-red-700 disabled:bg-red-900/10 disabled:text-gray-500 text-white font-semibold px-6 py-2 rounded-lg transition-colors flex items-center gap-2"
             aria-disabled={isBusy}
           >
             {(isBusy && actionLoading) && <Loader size={16} className="animate-spin" />}
@@ -164,29 +164,29 @@ const GrantAdminSection: React.FC = () => {
         <button
           onClick={fetchUsers}
           disabled={fetchingUsers}
-          className="bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2 mb-4"
+          className="bg-red-900/30 hover:bg-red-900/50 disabled:bg-red-900/10 text-red-400 hover:text-red-300 font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2 mb-4 border border-red-900/40"
         >
           {fetchingUsers && <Loader size={16} className="animate-spin" />}
-          Load All Users
+          Refresh Users
         </button>
       </div>
 
       {users.length > 0 && (
         <div>
-          <h3 className="text-lg font-semibold text-gray-200 mb-4">All Users ({users.length})</h3>
+          <h3 className="text-lg font-semibold text-red-400 mb-4 uppercase tracking-wider">Users ({users.length})</h3>
           <div className="space-y-3 max-h-96 overflow-y-auto">
             {users.map((u) => (
               <div
                 key={u._id}
-                className="bg-gray-700 border border-gray-600 rounded-lg p-4 flex items-center justify-between hover:border-gray-500 transition-colors"
+                className="bg-black border border-red-900/40 rounded-lg p-4 flex items-center justify-between hover:bg-red-900/10 hover:border-red-900/60 transition-colors"
               >
                 <div>
                   <p className="text-white font-medium">{u.name || u.email}</p>
                   <p className="text-gray-400 text-sm">{u.email}</p>
                   <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold ${
                     u.role === 'admin'
-                      ? 'bg-blue-500/30 text-blue-300'
-                      : 'bg-gray-600/50 text-gray-300'
+                      ? 'bg-red-900/40 text-red-300 border border-red-900/60'
+                      : 'bg-black border-red-900/40 text-gray-400 border'
                   }`}>
                     {u.role === 'admin' ? '🔒 Admin' : 'User'}
                   </span>
@@ -197,14 +197,14 @@ const GrantAdminSection: React.FC = () => {
                     : handleGrantAdmin(u.email)
                   }
                   disabled={isBusy || u.email === SUPER_ADMIN_EMAIL}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                  className={`px-4 py-2 rounded-lg font-semibold transition-colors border ${
                     u.role === 'admin'
-                      ? 'bg-red-600/20 hover:bg-red-600/30 text-red-300 disabled:bg-gray-600/20 disabled:text-gray-400'
-                      : 'bg-green-600/20 hover:bg-green-600/30 text-green-300 disabled:bg-gray-600/20 disabled:text-gray-400'
+                      ? 'bg-red-900/30 border-red-900/60 hover:bg-red-900/50 text-red-400 hover:text-red-300 disabled:bg-red-900/10 disabled:border-red-900/40 disabled:text-gray-500'
+                      : 'bg-green-900/30 border-green-900/60 hover:bg-green-900/50 text-green-400 hover:text-green-300 disabled:bg-red-900/10 disabled:border-red-900/40 disabled:text-gray-500'
                   }`}
                   aria-disabled={isBusy || u.email === SUPER_ADMIN_EMAIL}
                 >
-                  {u.role === 'admin' ? 'Revoke' : 'Grant'}
+                  {u.role === 'admin' ? 'Remove Admin' : 'Make Admin'}
                 </button>
               </div>
             ))}
