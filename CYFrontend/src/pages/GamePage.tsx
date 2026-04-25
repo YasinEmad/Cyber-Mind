@@ -297,29 +297,6 @@ export default function CTFMindWelcome() {
           }} />
         ))}
 
-        {/* Red glow orbs */}
-        <div style={{
-          position: "absolute",
-          top: "10%",
-          left: "10%",
-          width: "300px",
-          height: "300px",
-          background: "radial-gradient(circle, rgba(239, 68, 68, 0.1) 0%, transparent 70%)",
-          borderRadius: "50%",
-          animation: "pulse 4s ease-in-out infinite",
-        }} />
-        <div style={{
-          position: "absolute",
-          bottom: "10%",
-          right: "10%",
-          width: "250px",
-          height: "250px",
-          background: "radial-gradient(circle, rgba(220, 38, 38, 0.08) 0%, transparent 70%)",
-          borderRadius: "50%",
-          animation: "pulse 5s ease-in-out infinite",
-          animationDelay: "1s",
-        }} />
-
         {/* Scanline effect */}
         <div style={{
           position: "absolute",

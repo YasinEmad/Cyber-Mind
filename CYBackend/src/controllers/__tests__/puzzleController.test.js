@@ -31,7 +31,7 @@ describe('submitAnswer controller', () => {
         _id: 'p1',
         answer: 'secret',
         level: 1,
-        tag: 'tag1',
+        tags: ['tag1'],
       }),
     });
 
@@ -49,7 +49,7 @@ describe('submitAnswer controller', () => {
         _id: 'p1',
         answer: 'secret',
         level: 1,
-        tag: 'tag1',
+        tags: ['tag1'],
       }),
     });
 
@@ -67,7 +67,7 @@ describe('submitAnswer controller', () => {
         _id: 'p1',
         answer: 'secret',
         level: 1,
-        tag: 'tag1',
+        tags: ['tag1'],
       }),
     });
 
@@ -100,7 +100,7 @@ describe('submitAnswer controller', () => {
         _id: 'p2',
         answer: 'secret',
         level: 2,
-        tag: 'tag2',
+        tags: ['tag2'],
       }),
     });
 
@@ -129,7 +129,7 @@ describe('submitAnswer controller', () => {
         _id: 'p3',
         answer: 'secret',
         level: 3,
-        tag: 'tag3',
+        tags: ['tag3'],
       }),
     });
 

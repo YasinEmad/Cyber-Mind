@@ -24,7 +24,7 @@ export interface Challenge {
 export interface Puzzle {
   id: number;
   title: string;
-  tag?: string;
+  tags?: string[];
   category: string;
   description: string;
   level?: number;

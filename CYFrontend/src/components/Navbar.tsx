@@ -34,7 +34,7 @@ export default function Navbar() {
   const navLinks = [
     { name: 'Home', path: '/', icon: Home },
     { name: 'About', path: '/about', icon: Info },
-    { name: 'Game', path: '/game', icon: Swords },
+    { name: 'CTF', path: '/game', icon: Swords },
     { name: 'Puzzles', path: '/puzzles', icon: BrainCircuit },
     { name: 'Challenges', path: '/challenges', icon: Star },
     { name: 'Profile', path: '/profile', icon: User },
@@ -43,8 +43,8 @@ export default function Navbar() {
 
   // Mobile Menu Animation Variants
   const menuVariants = {
-    closed: { opacity: 0, height: 0, transition: { duration: 0.3, ease: "easeInOut" } },
-    open: { opacity: 1, height: "auto", transition: { duration: 0.3, ease: "easeInOut" } }
+    closed: { opacity: 0, height: 0, transition: { duration: 0.3 } },
+    open: { opacity: 1, height: "auto", transition: { duration: 0.3 } }
   };
 
   return (
