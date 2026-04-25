@@ -58,6 +58,24 @@ exports.submitAnswer = async (req, res, next) => {
   }
 };
 
+// 4.5. تشغيل الكود
+exports.runCode = async (req, res, next) => {
+  try {
+    const challengeId = req.params.id;
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ success: false, message: 'Please provide code to run' });
+    }
+
+    const result = await challengeService.runCode(challengeId, code);
+    
+    res.status(200).json({ success: true, output: result.output, error: result.error });
+  } catch (error) { 
+    next(error); 
+  }
+};
+
 // 5. تحديث تحدي موجود
 exports.updateChallenge = async (req, res, next) => {
   try {

@@ -5,6 +5,7 @@ const {
   getAllChallenges, 
   getChallengeById, 
   submitAnswer,
+  runCode,
   updateChallenge,
   deleteChallenge
 } = require('../controllers/challengeController');
@@ -21,5 +22,8 @@ router.route('/:id')
 
 // المسار السحري لتسليم الحل واحتساب النقط
 router.post('/:id/submit', optionalAuth, submitAnswer);
+
+// تشغيل الكود
+router.post('/:id/run', optionalAuth, runCode);
 
 module.exports = router;

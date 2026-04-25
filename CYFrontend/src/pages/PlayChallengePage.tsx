@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Editor from '@monaco-editor/react';
 // Cleaned up unused imports: Award and Beaker
 import { 
-  Terminal, CheckCircle, Maximize2, Minimize2, Info, 
-  Code2, PanelLeftClose, PanelLeft, Loader2, XCircle
+  Terminal, Maximize2, Minimize2, Info, 
+  Code2, PanelLeftClose, PanelLeft, Loader2
 } from 'lucide-react';
 import { usePlayChallenge } from '../lib/usePlayChallenge';
 import { ChallengeHeader } from '../components/ChallengeHeader';
@@ -110,30 +110,13 @@ const PlayChallengePage = () => {
           {!isFullScreenEditor && (
             <div className="flex-1 flex flex-col bg-black">
               <div className="flex items-center bg-black border-b border-gray-700 h-11">
-                <button onClick={() => setActiveBottomTab('output')} className={`h-full px-5 text-xs flex items-center gap-2 border-r border-gray-700 ${activeBottomTab === 'output' ? 'bg-black text-white' : 'text-white/60'}`}>
+                <button className={`h-full px-5 text-xs flex items-center gap-2 border-r border-gray-700 bg-black text-white`}>
                   <Terminal size={14} /> Console Output
-                </button>
-                <button onClick={() => setActiveBottomTab('tests')} className={`h-full px-5 text-xs flex items-center gap-2 border-r border-gray-700 ${activeBottomTab === 'tests' ? 'bg-black text-white' : 'text-white/60'}`}>
-                  <CheckCircle size={14} className={isAllTestsPassed ? "text-green-400" : ""} /> Test Results
                 </button>
               </div>
 
               <div className="flex-1 overflow-auto p-5 font-mono text-sm bg-black">
-                {activeBottomTab === 'output' ? (
-                  isRunning && lastAction === 'run' ? <LoadingIndicator text="Executing..." /> : (output || <p className="opacity-30">Console output will appear here</p>)
-                ) : (
-                  isRunning && lastAction === 'test' ? <LoadingIndicator text="Testing..." /> : (
-                    <div className="space-y-2">
-                      {isAllTestsPassed && <div className="bg-green-500/10 border border-green-500/30 p-4 rounded-lg text-green-400">Challenge Complete!</div>}
-                      {testResults.map((result, i) => (
-                        <div key={i} className={`flex items-start gap-3 p-4 rounded-lg border ${result.passed ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
-                          {result.passed ? <CheckCircle size={16} className="text-green-400 mt-0.5" /> : <XCircle size={16} className="text-red-400 mt-0.5" />}
-                          <span className="text-sm">{result.message}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )
-                )}
+                {isRunning && lastAction === 'run' ? <LoadingIndicator text="Executing..." /> : (output || <p className="opacity-30">Console output will appear here</p>)}
               </div>
             </div>
           )}
