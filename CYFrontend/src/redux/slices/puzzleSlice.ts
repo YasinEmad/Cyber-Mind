@@ -7,7 +7,7 @@ export interface Puzzle {
   id: number
   title: string
   description: string
-  tag: string
+  tags: string[]
   level: number
   hints: string[]
   answer?: string // <-- FIX: Make the answer optional

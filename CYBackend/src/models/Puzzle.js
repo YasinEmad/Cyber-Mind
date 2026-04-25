@@ -33,10 +33,9 @@ const Puzzle = sequelize.define('Puzzle', {
     type: DataTypes.TEXT,
     allowNull: false,
   },
-  tag: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
+  tags: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: [],
   },
   answer: {
     type: DataTypes.STRING,

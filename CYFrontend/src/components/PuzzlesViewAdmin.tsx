@@ -171,9 +171,13 @@ export const PuzzlesViewAdmin = () => {
               </h3>
               
               <div className="flex items-center gap-2 mb-3">
-                <p className="text-[10px] text-red-400 bg-red-950/30 border border-red-900/30 px-2 py-0.5 rounded font-mono uppercase">
-                  {puzzle.tag}
-                </p>
+                <div className="flex flex-wrap gap-1">
+                  {puzzle.tags?.map((tag, idx) => (
+                    <p key={idx} className="text-[10px] text-red-400 bg-red-950/30 border border-red-900/30 px-2 py-0.5 rounded font-mono uppercase">
+                      {tag}
+                    </p>
+                  ))}
+                </div>
                 <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-black">
                   {puzzle.category}
                 </p>
