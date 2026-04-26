@@ -2,178 +2,213 @@ export default {
   "levels": [
     {
       "level": 1,
-      "name": "View Source",
-      "description": "Open the page source and find the hidden flag inside HTML comments."
+      "name": "Linux File System Navigation",
+      "description": "Navigate through Linux directories and find hidden files.",
+      "category": "Linux"
     },
     {
       "level": 2,
-      "name": "Inspect Element",
-      "description": "Use browser dev tools to locate a hidden flag inside a DOM element."
+      "name": "Linux Permissions",
+      "description": "Understand and exploit file permission vulnerabilities in Linux.",
+      "category": "Linux"
     },
     {
       "level": 3,
-      "name": "URL Manipulation",
-      "description": "Change the URL parameter to access a restricted resource."
+      "name": "Linux Environment Variables",
+      "description": "Extract sensitive information from Linux environment variables.",
+      "category": "Linux"
     },
     {
       "level": 4,
-      "name": "robots.txt",
-      "description": "Check robots.txt file to discover hidden paths."
+      "name": "Linux Process Management",
+      "description": "Analyze running processes in Linux to find hidden data.",
+      "category": "Linux"
     },
     {
       "level": 5,
-      "name": "Base64 Decode",
-      "description": "Decode a Base64 encoded string to reveal the flag."
+      "name": "Linux Cron Jobs",
+      "description": "Discover scheduled tasks and extract flags from cron configurations.",
+      "category": "Linux"
     },
     {
       "level": 6,
-      "name": "Caesar Cipher",
-      "description": "Decode a shifted text using Caesar cipher."
+      "name": "Linux Log Analysis",
+      "description": "Search through Linux system logs to find security incidents.",
+      "category": "Linux"
     },
     {
       "level": 7,
-      "name": "Hidden Attribute",
-      "description": "Find the flag stored inside a hidden HTML attribute."
+      "name": "Linux Package Management",
+      "description": "Exploit vulnerabilities in Linux package installations.",
+      "category": "Linux"
     },
     {
       "level": 8,
-      "name": "Cookies",
-      "description": "Modify browser cookies to unlock the flag."
+      "name": "Linux Kernel Modules",
+      "description": "Analyze and manipulate Linux kernel modules for privilege escalation.",
+      "category": "Linux"
     },
     {
       "level": 9,
-      "name": "Redirect Bypass",
-      "description": "Bypass a redirect to reach the hidden page."
+      "name": "Linux Network Configuration",
+      "description": "Configure and analyze Linux network settings.",
+      "category": "Linux"
     },
     {
       "level": 10,
-      "name": "Local Storage",
-      "description": "Inspect browser local storage to find the flag."
+      "name": "Linux Boot Process",
+      "description": "Understand the Linux boot sequence and find boot-time vulnerabilities.",
+      "category": "Linux"
     },
     {
       "level": 11,
-      "name": "Hidden File",
-      "description": "Find hidden files in a directory structure."
+      "name": "Windows File System",
+      "description": "Navigate Windows file systems and find hidden files.",
+      "category": "Windows"
     },
     {
       "level": 12,
-      "name": "Log Search",
-      "description": "Search log files to extract the flag."
+      "name": "Windows Registry",
+      "description": "Extract sensitive data from Windows registry keys.",
+      "category": "Windows"
     },
     {
       "level": 13,
-      "name": "Permissions",
-      "description": "Exploit file permission misconfiguration to read a restricted file."
+      "name": "Windows Services",
+      "description": "Analyze and exploit Windows service vulnerabilities.",
+      "category": "Windows"
     },
     {
       "level": 14,
-      "name": "Nested Archive",
-      "description": "Extract multiple nested compressed files to find the flag."
+      "name": "Windows Event Logs",
+      "description": "Search Windows event logs for security information.",
+      "category": "Windows"
     },
     {
       "level": 15,
-      "name": "Environment Variables",
-      "description": "Find the flag stored in environment variables."
+      "name": "Windows User Accounts",
+      "description": "Manage and exploit Windows user account configurations.",
+      "category": "Windows"
     },
     {
       "level": 16,
-      "name": "Process Data",
-      "description": "Inspect running processes to find hidden information."
+      "name": "Windows Group Policy",
+      "description": "Understand and bypass Windows Group Policy restrictions.",
+      "category": "Windows"
     },
     {
       "level": 17,
-      "name": "Cron Job",
-      "description": "Analyze scheduled tasks to discover the flag."
+      "name": "Windows Scheduled Tasks",
+      "description": "Analyze Windows Task Scheduler for hidden tasks.",
+      "category": "Windows"
     },
     {
       "level": 18,
-      "name": "Metadata",
-      "description": "Extract hidden data from file metadata."
+      "name": "Windows DLL Hijacking",
+      "description": "Exploit DLL loading vulnerabilities in Windows.",
+      "category": "Windows"
     },
     {
       "level": 19,
-      "name": "Large File Search",
-      "description": "Search inside a large file for hidden strings."
+      "name": "Windows Firewall",
+      "description": "Bypass Windows firewall configurations.",
+      "category": "Windows"
     },
     {
       "level": 20,
-      "name": "Strings Extraction",
-      "description": "Extract readable strings from a binary file."
+      "name": "Windows PowerShell",
+      "description": "Use PowerShell for system enumeration and exploitation.",
+      "category": "Windows"
     },
     {
       "level": 21,
-      "name": "SQL Injection",
-      "description": "Bypass login using basic SQL injection."
+      "name": "Network Scanning",
+      "description": "Use network scanning tools to discover hosts and services.",
+      "category": "Network"
     },
     {
       "level": 22,
-      "name": "Database Dump",
-      "description": "Extract sensitive data from a vulnerable database query."
+      "name": "Port Analysis",
+      "description": "Analyze open ports and identify vulnerable services.",
+      "category": "Network"
     },
     {
       "level": 23,
-      "name": "IDOR",
-      "description": "Access another user's data by changing identifiers."
+      "name": "Packet Capture",
+      "description": "Capture and analyze network packets for sensitive data.",
+      "category": "Network"
     },
     {
       "level": 24,
-      "name": "Broken Access Control",
-      "description": "Access restricted endpoint without proper authorization."
+      "name": "DNS Enumeration",
+      "description": "Enumerate DNS records to find hidden domains.",
+      "category": "Network"
     },
     {
       "level": 25,
-      "name": "Parameter Tampering",
-      "description": "Modify request parameters to change application behavior."
+      "name": "Network Protocols",
+      "description": "Understand and exploit common network protocols.",
+      "category": "Network"
     },
     {
       "level": 26,
-      "name": "Reflected XSS",
-      "description": "Inject script into a reflected input field."
+      "name": "Firewall Evasion",
+      "description": "Bypass network firewalls and intrusion detection systems.",
+      "category": "Network"
     },
     {
       "level": 27,
-      "name": "Stored XSS",
-      "description": "Store malicious input that executes when viewed."
+      "name": "VPN Analysis",
+      "description": "Analyze VPN configurations and find vulnerabilities.",
+      "category": "Network"
     },
     {
       "level": 28,
-      "name": "JWT Manipulation",
-      "description": "Modify JWT token to escalate privileges."
+      "name": "Wireless Networks",
+      "description": "Exploit wireless network vulnerabilities.",
+      "category": "Network"
     },
     {
       "level": 29,
-      "name": "Directory Traversal",
-      "description": "Access restricted files using path traversal techniques."
+      "name": "Network Segmentation",
+      "description": "Understand and bypass network segmentation controls.",
+      "category": "Network"
     },
     {
       "level": 30,
-      "name": "SSRF",
-      "description": "Exploit server-side request forgery to access internal services."
+      "name": "Network Forensics",
+      "description": "Analyze network traffic for forensic evidence.",
+      "category": "Network"
     },
     {
       "level": 31,
-      "name": "Packet Capture",
-      "description": "Analyze captured network traffic to find the flag."
+      "name": "SQL Injection",
+      "description": "Exploit SQL injection vulnerabilities in web applications.",
+      "category": "Web Security"
     },
     {
       "level": 32,
-      "name": "DNS Analysis",
-      "description": "Extract hidden data from DNS queries."
+      "name": "Cross-Site Scripting (XSS)",
+      "description": "Inject malicious scripts into web pages.",
+      "category": "Web Security"
     },
     {
       "level": 33,
-      "name": "Traffic Reconstruction",
-      "description": "Rebuild messages from fragmented network packets."
+      "name": "Cross-Site Request Forgery (CSRF)",
+      "description": "Exploit CSRF vulnerabilities to perform unauthorized actions.",
+      "category": "Web Security"
     },
     {
       "level": 34,
-      "name": "Steganography",
-      "description": "Find hidden data inside images."
+      "name": "Broken Access Control",
+      "description": "Bypass access controls in web applications.",
+      "category": "Web Security"
     },
     {
       "level": 35,
-      "name": "Final Challenge",
-      "description": "Combine all learned skills to solve a multi-step complex challenge."
+      "name": "Web Application Firewall Bypass",
+      "description": "Bypass WAF protections to exploit web vulnerabilities.",
+      "category": "Web Security"
     }
   ]
 }
