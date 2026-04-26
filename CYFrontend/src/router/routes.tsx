@@ -10,6 +10,7 @@ import PuzzlePage from '../pages/PuzzlePage';
 import AboutPage from '../pages/AboutPage';
 import SolvePuzzlePage from '../pages/SolvePuzzlePage';
 import PlayChallengePage from '../pages/PlayChallengePage';
+import LinuxPage from '../pages/LinuxPage';
 import MainLayout from '../layouts/MainLayout';
 import LoginPage from '../pages/LoginPage';
 import ProtectedRoute from './ProtectedRoute';
@@ -61,6 +62,7 @@ export default function AnimatedRoutes() {
           <Route path="/" element={<Navigate to="/home" />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/linux" element={<LinuxPage />} />
           <Route path="/game" element={<GamePage />} />
           <Route path="/ctf-plan" element={<CTFPlanPage />} />
           <Route path="/game/level/1" element={<Level1 />} />

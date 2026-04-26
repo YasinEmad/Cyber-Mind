@@ -1,7 +1,8 @@
 import React from 'react';
 import PageWrapper from '@/components/PageWrapper';
 import { motion } from 'framer-motion';
-import { Gamepad2 } from 'lucide-react';
+import { Gamepad2, Monitor } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Level2: React.FC = () => {
   return (
@@ -18,6 +19,15 @@ const Level2: React.FC = () => {
           <p className="text-slate-300 mb-8">
             Welcome to Level 2! This is a dedicated page for Level 2.
           </p>
+          <div className="flex gap-4 justify-center mb-6">
+            <Link
+              to="/linux"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              <Monitor className="w-4 h-4" />
+              Linux Terminal
+            </Link>
+          </div>
           <div className="bg-slate-900/50 h-64 rounded-lg flex items-center justify-center">
             <p className="text-slate-500 italic">Level 2 content will appear here...</p>
           </div>
