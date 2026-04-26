@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { GoogleAuthProvider, GithubAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../firebase";
@@ -16,6 +16,8 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [searchParams] = useSearchParams();
+  const returnUrl = searchParams.get('returnUrl') || '/profile';
 
   const providers = {
     google: new GoogleAuthProvider(),
@@ -27,12 +29,17 @@ const LoginPage: React.FC = () => {
     setError("");
     try {
       const result = await signInWithPopup(auth, providers[provider]);
-      const token = await result.user.getIdToken();
-      const { data } = await axios.post(`/users/auth/${provider}`, { token });
+      const token = await result.user.getIdToken(true);
+      const endpoint = '/users/auth/google';
+      const { data } = await axios.post(endpoint, { token });
       dispatch(setUser(data.data));
-      navigate("/profile");
+      navigate(decodeURIComponent(returnUrl));
     } catch (err: any) {
-      setError(err?.code === "auth/popup-closed-by-user" ? "Access Denied: Canceled" : "Authentication Error");
+      const apiMessage = err?.response?.data?.message;
+      const firebaseCanceled = err?.code === 'auth/popup-closed-by-user';
+      setError(firebaseCanceled
+        ? 'Access Denied: Canceled'
+        : apiMessage || 'Authentication Error');
     } finally {
       setLoading(null);
     }
