@@ -2,7 +2,7 @@
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import HomePage from '../pages/HomePage';
-import GamePage from '../pages/GamePage';
+import GamePage from '../pages/CtfPage';
 import CTFPlanPage from '../pages/CTFPlanPage';
 import ChallengePage from '../pages/ChallengePage';
 import ProfilePage from '../pages/ProfilePage';
@@ -14,6 +14,7 @@ import MainLayout from '../layouts/MainLayout';
 import LoginPage from '../pages/LoginPage';
 import ProtectedRoute from './ProtectedRoute';
 import AdminRoute from './AdminRoute';
+import AuthCheckRoute from './AuthCheckRoute';
 import AdmainDashboard from '../pages/AdmainDashboard';
 import Level1 from '../pages/levels/Level1';
 import Level2 from '../pages/levels/Level2';
@@ -98,9 +99,17 @@ export default function AnimatedRoutes() {
           <Route path="/game/level/34" element={<Level34 />} />
           <Route path="/game/level/35" element={<Level35 />} />
           <Route path="/puzzles" element={<PuzzlePage />} />
-          <Route path="/puzzles/:puzzleId" element={<SolvePuzzlePage />} />
+          <Route path="/puzzles/:puzzleId" element={
+            <AuthCheckRoute>
+              <SolvePuzzlePage />
+            </AuthCheckRoute>
+          } />
           <Route path="/challenges" element={<ChallengePage />} />
-          <Route path="/challenges/:challengeId" element={<PlayChallengePage />} />
+          <Route path="/challenges/:challengeId" element={
+            <AuthCheckRoute>
+              <PlayChallengePage />
+            </AuthCheckRoute>
+          } />
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<ProfilePage />} />
