@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Gamepad2, Menu, X, Home, Info, Swords, 
-  Star, User, BrainCircuit, ShieldCheck 
+  Star, User, BrainCircuit, ShieldCheck
 } from 'lucide-react';
 import { selectIsAdmin } from '@/redux/slices/userSlice';
 
