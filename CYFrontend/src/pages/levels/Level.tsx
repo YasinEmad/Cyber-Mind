@@ -2,13 +2,18 @@ import React from 'react';
 import PageWrapper from '../../components/PageWrapper';
 import { motion } from 'framer-motion';
 import { Terminal, ShieldCheck, ChevronRight, Activity, Lightbulb, Play } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import ctfInfo from '../../utils/ctfinfo';
 
 const Level: React.FC = () => {
+  const navigate = useNavigate();
   const { levelId } = useParams<{ levelId: string }>();
   const levelNumber = parseInt(levelId || '1', 10);
   const levelData = ctfInfo.levels.find((level: { level: number }) => level.level === levelNumber);
+
+  const startCtf = () => {
+    navigate(`/linux?level=${levelNumber}`);
+  };
 
   return (
     <PageWrapper>
@@ -43,8 +48,8 @@ const Level: React.FC = () => {
               </div>
             </div>
 
-            <Link
-              to="/linux"
+            <button
+              onClick={startCtf}
               className="mt-10 flex items-center justify-between w-full px-5 py-4 bg-red-700 hover:bg-red-600 text-white text-sm font-bold rounded-sm transition-all group shadow-[0_4px_20px_-5px_rgba(220,38,38,0.4)]"
             >
               <div className="flex items-center gap-3">
@@ -52,7 +57,7 @@ const Level: React.FC = () => {
                 START CTF
               </div>
               <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
+            </button>
           </div>
 
           {/* Right Panel: Hints & Guidance */}

@@ -5,7 +5,7 @@ export default {
       "name": "Linux File System Navigation",
       "description": "Navigate through Linux directories and find hidden files.",
       "category": "Linux",
-      "hints": ["Use 'ls -la' to see hidden files", "Look for files starting with '.'", "Check common directories like /home and /etc"],
+      "hints": ["Use 'ls -a' to see hidden files", "Look for files starting with '.'", "Check common directories like /home and /etc"],
       "target": "Find the hidden flag file in the user directory"
     },
     {
