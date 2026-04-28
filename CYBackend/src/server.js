@@ -30,6 +30,7 @@ app.use('/api/puzzles', require('./routes/puzzleRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/challenges', require('./routes/challengeRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes')); // السطر ده ناقص عندك!
+app.use('/api/ctf', require('./routes/ctfRoutes')); // CTF routes
 
 
 // Error Handler بسيط عشان السيرفر ما يقعش لو حصل غلط
