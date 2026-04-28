@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { PuzzlesViewAdmin } from '../components/PuzzlesViewAdmin';
 import ChallengeView from '../components/ChallengeView';
 import GrantAdminSection from '../components/GrantAdminSection';
+import CTFLevelsAdmin from '../components/CTFLevelsAdmin';
 import SidebarItem from '../components/SidebarItem';
 import { 
   Puzzle, 
@@ -9,7 +10,8 @@ import {
   Menu,
   X,
   Users,
-  ShieldAlert
+  ShieldAlert,
+  Terminal
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -61,6 +63,12 @@ const AdminDashboard = () => {
             onClick={() => { setActiveTab('challenges'); setIsMobileMenuOpen(false); }}
           />
           <SidebarItem 
+            icon={Terminal} 
+            label="CTF Levels" 
+            active={activeTab === 'ctf-levels'} 
+            onClick={() => { setActiveTab('ctf-levels'); setIsMobileMenuOpen(false); }}
+          />
+          <SidebarItem 
             icon={Users} 
             label="Users & Admin" 
             active={activeTab === 'users-admin'} 
@@ -101,6 +109,7 @@ const AdminDashboard = () => {
             <div className="bg-zinc-950/50 rounded-xl border border-red-900/20 shadow-2xl shadow-red-900/5 p-2">
                 {activeTab === 'puzzles' && <PuzzlesViewAdmin />}
                 {activeTab === 'challenges' && <ChallengeView />}
+                {activeTab === 'ctf-levels' && <CTFLevelsAdmin />}
                 {activeTab === 'users-admin' && <GrantAdminSection />}
             </div>
           </div>
