@@ -36,10 +36,12 @@ exports.handleGoogleSignIn = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: {
+        id: user.id,
         uid: user.uid,
         email: user.email,
         name: user.name,
         photoURL: user.photoURL,
+        role: user.role,
         solvedPuzzles: user.solvedPuzzles,
         solvedChallenges: user.solvedChallenges,
         profile: user.profile,

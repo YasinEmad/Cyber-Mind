@@ -3,6 +3,8 @@ const User = require('./User');
 const Profile = require('./Profile');
 const Puzzle = require('./Puzzle');
 const Challenge = require('./Challenge');
+const CTFLevel = require('./CTFLevel');
+const CommandTemplate = require('./CommandTemplate');
 
 // Define associations
 User.hasOne(Profile, { foreignKey: 'userId', as: 'profile' });
@@ -17,4 +19,6 @@ module.exports = {
   Profile,
   Puzzle,
   Challenge,
+  CTFLevel,
+  CommandTemplate,
 };
