@@ -14,6 +14,8 @@ import {
   osReducer,
   getCTFFS,
   OSContext,
+  loadChallengesFromBackend,
+  getChallenges,
 } from './LinuxOS';
 import {
   BootScreen,
@@ -44,10 +46,11 @@ function LinuxDesktop() {
   const [hint, setHint] = useState('');
   const [ctfNotification, setCtfNotification] = useState<string | null>(null);
   const [ctfExpanded, setCtfExpanded] = useState(true);
+  const [loadedChallenges, setLoadedChallenges] = useState<Record<number, any> | null>(null);
 
   // OS state
   const [booted, setBooted] = useState(false);
-  const [fs, setFs] = useState(isCTFMode ? getCTFFS(levelNumber) : initialFS);
+  const [fs, setFs] = useState(isCTFMode ? getCTFFS(levelNumber, loadedChallenges || undefined) : initialFS);
   const [state, dispatch] = useReducer(osReducer, {
     windows: [],
     zCounter: 1,
@@ -55,20 +58,43 @@ function LinuxDesktop() {
     notification: undefined,
   });
 
+  // Load CTF challenges from backend on mount
+  useEffect(() => {
+    const initializeChallenges = async () => {
+      try {
+        await loadChallengesFromBackend();
+        const loaded = getChallenges();
+        setLoadedChallenges(loaded);
+        // If CTF mode is active, reload the challenge data from backend
+        if (isCTFMode && levelNumber) {
+          if (loaded[levelNumber]) {
+            setChallengeDescription(loaded[levelNumber].description);
+            setHint(loaded[levelNumber].hint);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load challenges from backend:', error);
+        // Will fall back to local challenges
+      }
+    };
+    initializeChallenges();
+  }, []);
+
   // Load CTF challenge data when CTF mode is enabled
   useEffect(() => {
     if (isCTFMode) {
       setCurrentLevel(levelNumber);
-      setFs(getCTFFS(levelNumber));
-      if (challenges[levelNumber]) {
-        setChallengeDescription(challenges[levelNumber].description);
-        setHint(challenges[levelNumber].hint);
+      setFs(getCTFFS(levelNumber, loadedChallenges || undefined));
+      const availableChallenges = loadedChallenges || challenges;
+      if (availableChallenges[levelNumber]) {
+        setChallengeDescription(availableChallenges[levelNumber].description);
+        setHint(availableChallenges[levelNumber].hint);
       }
     } else {
       setCurrentLevel(0);
       setFs(initialFS);
     }
-  }, [isCTFMode, levelNumber]);
+  }, [isCTFMode, levelNumber, loadedChallenges]);
 
   // Handle app open requests
   const onAppOpen = useCallback((appId: string, forceNew = false) => {
@@ -93,7 +119,7 @@ function LinuxDesktop() {
 
   // Main desktop UI
   return (
-    <OSContext.Provider value={{ fs, setFs, isCTFMode, currentLevel, setCtfNotification }}>
+    <OSContext.Provider value={{ fs, setFs, isCTFMode, currentLevel, setCtfNotification, challenges: loadedChallenges || undefined }}>
       <div className="linux-page h-screen overflow-hidden relative wallpaper" style={{fontFamily:'Ubuntu, sans-serif'}}>
         {/* System UI Components */}
         <TopBar onAppOpen={onAppOpen} />

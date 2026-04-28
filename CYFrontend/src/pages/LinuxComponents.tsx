@@ -220,7 +220,7 @@ export function WindowFrame({ win, dispatch, children, isActive }: {
 export function TerminalApp() {
   const context = useContext(OSContext) as OSContextType;
   if (!context) throw new Error('OSContext not found');
-  const { fs, setFs, isCTFMode, currentLevel, setCtfNotification } = context;
+  const { fs, setFs, isCTFMode, currentLevel, setCtfNotification, challenges } = context;
   const [lines, setLines] = useState<TerminalLine[]>([
     { type: 'output', text: `Ubuntu ${VERSION} (simulated)` },
     { type: 'output', text: `Welcome to Ubuntu! Type 'help' for available commands.` },
@@ -228,7 +228,7 @@ export function TerminalApp() {
   ]);
   const [input, setInput] = useState('');
   const [histIdx, setHistIdx] = useState(-1);
-  const engineRef = useRef(createTerminalEngine());
+  const engineRef = useRef(createTerminalEngine('/home/user', challenges));
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fsRef = useRef(fs);
@@ -237,9 +237,9 @@ export function TerminalApp() {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [lines]);
   useEffect(() => { inputRef.current?.focus(); }, []);
 
-  const run = (cmd: string) => {
+  const run = async (cmd: string) => {
     const engine = engineRef.current;
-    const result = engine.execute(cmd, fsRef.current, setFs, isCTFMode, currentLevel, setCtfNotification);
+    const result = await engine.execute(cmd, fsRef.current, setFs, isCTFMode, currentLevel, setCtfNotification);
     if (result.some((r: TerminalLine) => r.type === 'clear')) { setLines([]); }
     else { setLines(prev => [...prev, ...result]); }
     setInput('');
