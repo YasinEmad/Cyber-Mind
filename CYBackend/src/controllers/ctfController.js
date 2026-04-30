@@ -1,6 +1,7 @@
 const { CTFLevel, CommandTemplate } = require('../models');
 const ctfLevels = require('../data/ctfLevels');
 const ctfInfo = require('../data/ctfinfo');
+const { generateTemplateId } = require('../utils/idGenerator');
 
 // Get all CTF level information
 exports.getCTFInfo = async (req, res, next) => {
@@ -167,11 +168,15 @@ exports.getCommandTemplateById = async (req, res, next) => {
 
 exports.createCommandTemplate = async (req, res, next) => {
   try {
-    const { templateId, name, baseCommand, defaultOutput, fields, description, commands } = req.body;
-    // require templateId and name; accept either a single baseCommand or an array of commands
-    if (!templateId || !name || (!baseCommand && !Array.isArray(commands))) {
-      return res.status(400).json({ success: false, message: 'templateId, name and baseCommand or commands are required' });
+    const { name, baseCommand, defaultOutput, fields, description, commands } = req.body;
+    // Generate templateId automatically - no longer required in request
+    const templateId = generateTemplateId();
+    
+    // Require name; accept either a single baseCommand or an array of commands
+    if (!name || (!baseCommand && !Array.isArray(commands))) {
+      return res.status(400).json({ success: false, message: 'name and baseCommand or commands are required' });
     }
+    
     // basic validation for fields
     if (fields && !Array.isArray(fields)) {
       return res.status(400).json({ success: false, message: 'fields must be an array' });
@@ -179,12 +184,17 @@ exports.createCommandTemplate = async (req, res, next) => {
     if (commands && !Array.isArray(commands)) {
       return res.status(400).json({ success: false, message: 'commands must be an array' });
     }
-    // ensure uniqueness
-    const existing = await CommandTemplate.findOne({ where: { templateId } });
-    if (existing) return res.status(409).json({ success: false, message: 'templateId already exists' });
 
-    const created = await CommandTemplate.create({ templateId, name, baseCommand, defaultOutput, fields: fields || [], description, commands: commands || [] });
-    res.status(201).json({ success: true, data: created });
+    const created = await CommandTemplate.create({ 
+      templateId, 
+      name, 
+      baseCommand, 
+      defaultOutput, 
+      fields: fields || [], 
+      description, 
+      commands: commands || [] 
+    });
+    res.status(201).json({ success: true, data: created, message: `Template created with ID: ${templateId}` });
   } catch (error) {
     next(error);
   }
@@ -352,7 +362,8 @@ exports.createCTFLevel = async (req, res, next) => {
       level,
       title,
       description,
-      hint,
+      hint, // legacy: single hint or JSON
+      hints, // newer payloads use `hints` array
       flag,
       difficulty,
       isActive,
@@ -362,6 +373,9 @@ exports.createCTFLevel = async (req, res, next) => {
       successCondition,
       initialDirectory,
     } = req.body;
+
+    // normalize hint(s) into an array stored in `hint` field
+    const normalizedHints = Array.isArray(hints) ? hints : (hint ? (Array.isArray(hint) ? hint : [hint]) : []);
 
     const levelNum = parseInt(level);
     if (isNaN(levelNum)) {
@@ -380,10 +394,20 @@ exports.createCTFLevel = async (req, res, next) => {
     }
 
     // Validate required fields (commands can be created via templates)
-    if (!level || !title || !description || !hint || !flag || !finalCommands || finalCommands.length === 0) {
+    const missing = [];
+    if (!level) missing.push('level');
+    if (!title) missing.push('title');
+    if (!description) missing.push('description');
+    if (!normalizedHints || normalizedHints.length === 0) missing.push('hint(s)');
+    if (!flag) missing.push('flag');
+    if (!finalCommands || finalCommands.length === 0) missing.push('commands (or commandTemplates)');
+
+    if (missing.length > 0) {
+      // Log the incoming payload for debugging
+      console.warn('CTF Create - missing fields:', missing, 'payload:', JSON.stringify(req.body).slice(0, 1000));
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields: level, title, description, hint, flag, commands (or commandTemplates)',
+        message: `Missing required fields: ${missing.join(', ')}`,
       });
     }
 
@@ -400,7 +424,7 @@ exports.createCTFLevel = async (req, res, next) => {
       level: levelNum,
       title,
       description,
-      hint,
+      hint: normalizedHints,
       flag,
       difficulty: difficulty || 'easy',
       isActive: isActive !== undefined ? isActive : true,

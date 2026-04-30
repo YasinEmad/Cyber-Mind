@@ -1,12 +1,14 @@
-import axios from 'axios';
+import axiosInstance from './axios';
 
-const API_BASE_URL = 'http://localhost:8080/api/ctf';
+// Using the custom axios instance which includes the token interceptor
+// The baseURL is already set to 'http://localhost:8080/api' in axios.ts
+const API_BASE_URL = 'ctf';
 
 export const ctfService = {
   // Get all CTF level information
   getCTFInfo: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/info`);
+      const response = await axiosInstance.get(`${API_BASE_URL}/info`);
       return response.data.data;
     } catch (error) {
       console.error('Error fetching CTF info:', error);
@@ -17,7 +19,7 @@ export const ctfService = {
   // Get specific CTF level information
   getCTFLevelInfo: async (level: number) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/info/${level}`);
+      const response = await axiosInstance.get(`${API_BASE_URL}/info/${level}`);
       return response.data.data;
     } catch (error) {
       console.error(`Error fetching CTF level ${level} info:`, error);
@@ -28,7 +30,7 @@ export const ctfService = {
   // Get challenge data for a specific level
   getCTFChallenge: async (level: number) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/challenge/${level}`);
+      const response = await axiosInstance.get(`${API_BASE_URL}/challenge/${level}`);
       return response.data.data;
     } catch (error) {
       console.error(`Error fetching CTF challenge ${level}:`, error);
@@ -39,7 +41,7 @@ export const ctfService = {
   // Get challenge with filesystem info
   getCTFChallengeWithFS: async (level: number) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/challenge/${level}/fs`);
+      const response = await axiosInstance.get(`${API_BASE_URL}/challenge/${level}/fs`);
       return response.data.data;
     } catch (error) {
       console.error(`Error fetching CTF challenge ${level} with FS:`, error);
@@ -50,7 +52,7 @@ export const ctfService = {
   // Get all available levels
   getAvailableLevels: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/levels/available`);
+      const response = await axiosInstance.get(`${API_BASE_URL}/levels/available`);
       return response.data.data;
     } catch (error) {
       console.error('Error fetching available levels:', error);
@@ -74,7 +76,7 @@ export const ctfService = {
   // Admin CTF Level Management
   getAllCTFLevels: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/admin/levels`);
+      const response = await axiosInstance.get(`${API_BASE_URL}/admin/levels`);
       return response.data.data;
     } catch (error) {
       console.error('Error fetching all CTF levels:', error);
@@ -84,7 +86,7 @@ export const ctfService = {
 
   getCTFLevelById: async (id: number) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/admin/levels/${id}`);
+      const response = await axiosInstance.get(`${API_BASE_URL}/admin/levels/${id}`);
       return response.data.data;
     } catch (error) {
       console.error(`Error fetching CTF level ${id}:`, error);
@@ -94,7 +96,7 @@ export const ctfService = {
 
   createCTFLevel: async (levelData: any) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/admin/levels`, levelData);
+      const response = await axiosInstance.post(`${API_BASE_URL}/admin/levels`, levelData);
       return response.data.data;
     } catch (error) {
       console.error('Error creating CTF level:', error);
@@ -104,7 +106,7 @@ export const ctfService = {
 
   updateCTFLevel: async (id: number, levelData: any) => {
     try {
-      const response = await axios.put(`${API_BASE_URL}/admin/levels/${id}`, levelData);
+      const response = await axiosInstance.put(`${API_BASE_URL}/admin/levels/${id}`, levelData);
       return response.data.data;
     } catch (error) {
       console.error(`Error updating CTF level ${id}:`, error);
@@ -114,7 +116,7 @@ export const ctfService = {
 
   deleteCTFLevel: async (id: number) => {
     try {
-      await axios.delete(`${API_BASE_URL}/admin/levels/${id}`);
+      await axiosInstance.delete(`${API_BASE_URL}/admin/levels/${id}`);
     } catch (error) {
       console.error(`Error deleting CTF level ${id}:`, error);
       throw error;
@@ -123,7 +125,7 @@ export const ctfService = {
 
   toggleCTFLevelStatus: async (id: number) => {
     try {
-      const response = await axios.patch(`${API_BASE_URL}/admin/levels/${id}/toggle`);
+      const response = await axiosInstance.patch(`${API_BASE_URL}/admin/levels/${id}/toggle`);
       return response.data.data;
     } catch (error) {
       console.error(`Error toggling CTF level ${id} status:`, error);
@@ -134,7 +136,7 @@ export const ctfService = {
   // Templates
   getTemplates: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/templates`);
+      const response = await axiosInstance.get(`${API_BASE_URL}/templates`);
       return response.data.data;
     } catch (error) {
       console.error('Error fetching templates:', error);
@@ -144,7 +146,7 @@ export const ctfService = {
 
   createTemplate: async (templateData: any) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/templates`, templateData);
+      const response = await axiosInstance.post(`${API_BASE_URL}/templates`, templateData);
       return response.data.data;
     } catch (error) {
       console.error('Error creating template:', error);
@@ -153,7 +155,7 @@ export const ctfService = {
   },
   updateTemplate: async (id: number, templateData: any) => {
     try {
-      const response = await axios.put(`${API_BASE_URL}/templates/${id}`, templateData);
+      const response = await axiosInstance.put(`${API_BASE_URL}/templates/${id}`, templateData);
       return response.data.data;
     } catch (error) {
       console.error('Error updating template:', error);
@@ -163,7 +165,7 @@ export const ctfService = {
 
   deleteTemplate: async (id: number) => {
     try {
-      const response = await axios.delete(`${API_BASE_URL}/templates/${id}`);
+      const response = await axiosInstance.delete(`${API_BASE_URL}/templates/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error deleting template:', error);
@@ -174,7 +176,7 @@ export const ctfService = {
   // Execute command on backend (CTF mode)
   executeCTFCommand: async (level: number, command: string, currentPath: string, sessionState?: any) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/execute`, {
+      const response = await axiosInstance.post(`${API_BASE_URL}/execute`, {
         level,
         command,
         currentPath,
