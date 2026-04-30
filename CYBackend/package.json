@@ -7,7 +7,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "jest",
-    "migrate:create-profiles": "node src/scripts/createMissingProfiles.js"
+    "migrate:create-profiles": "node src/scripts/createMissingProfiles.js",
+    "cleanup:ctf": "node src/scripts/cleanupCTFLevels.js"
   },
   "keywords": [],
   "author": "",

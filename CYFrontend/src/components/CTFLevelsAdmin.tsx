@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ctfService } from '../api/ctfService';
+import { clearChallengeCache } from '../pages/ctfChallenges';
 import { Plus, Edit, Trash2, Eye, EyeOff, Search } from 'lucide-react';
 import CommandTemplatesAdmin from './CommandTemplatesAdmin';
 
@@ -102,6 +103,9 @@ const CTFLevelsAdmin: React.FC = () => {
       } else {
         await ctfService.createCTFLevel(formData);
       }
+      // Clear frontend challenge cache and notify other pages to reload
+      clearChallengeCache();
+      window.dispatchEvent(new Event('ctf:updated'));
       await loadLevels();
       resetForm();
     } catch (error) {
@@ -134,6 +138,8 @@ const CTFLevelsAdmin: React.FC = () => {
     if (window.confirm('Are you sure you want to delete this CTF level?')) {
       try {
         await ctfService.deleteCTFLevel(id);
+        clearChallengeCache();
+        window.dispatchEvent(new Event('ctf:updated'));
         await loadLevels();
       } catch (error) {
         console.error('Error deleting CTF level:', error);
@@ -144,6 +150,8 @@ const CTFLevelsAdmin: React.FC = () => {
   const handleToggleStatus = async (id: number) => {
     try {
       await ctfService.toggleCTFLevelStatus(id);
+      clearChallengeCache();
+      window.dispatchEvent(new Event('ctf:updated'));
       await loadLevels();
     } catch (error) {
       console.error('Error toggling CTF level status:', error);
@@ -196,21 +204,34 @@ const CTFLevelsAdmin: React.FC = () => {
 
   const addCommandFromTemplate = (templateId: string) => {
     try {
-      const tmpl = templates.find((t: any) => t.templateId === templateId);
+      const tmpl = templates.find((t: any) => String(t.templateId) === String(templateId) || String(t.id) === String(templateId));
       if (!tmpl) throw new Error('Template not found');
+      // Build a normalized values object that always contains a `commands` array
       const values: any = {
         name: tmpl?.baseCommand || tmpl?.name || '',
         output: tmpl?.defaultOutput || '',
         allowedPaths: [],
         blockedPaths: [],
+        commands: [],
       };
+
       if (Array.isArray(tmpl.commands) && tmpl.commands.length > 0) {
-        values.commands = JSON.parse(JSON.stringify(tmpl.commands));
+        // Normalize each command entry to { name, output, description, allowedPaths, blockedPaths }
+        values.commands = tmpl.commands.map((c: any) => ({
+          name: c.name || c.baseCommand || tmpl.baseCommand || tmpl.name,
+          output: c.output !== undefined ? c.output : (c.defaultOutput || tmpl.defaultOutput || ''),
+          description: c.description || '',
+          allowedPaths: Array.isArray(c.allowedPaths) ? c.allowedPaths : [],
+          blockedPaths: Array.isArray(c.blockedPaths) ? c.blockedPaths : [],
+        }));
+      } else {
+        // Fallback: create a single command from the template baseCommand/defaultOutput
+        values.commands = [{ name: values.name, output: values.output, description: '' }];
       }
       console.debug('Adding command from template:', templateId, values);
       setFormData((prev) => ({
         ...prev,
-        commandTemplates: [...(prev.commandTemplates || []), { templateId, values }],
+        commandTemplates: [...(prev.commandTemplates || []), { templateId: tmpl.templateId ?? String(tmpl.id), values }],
       }));
       // clear selection so user sees action taken
       setSelectedTemplateId('');
@@ -219,22 +240,21 @@ const CTFLevelsAdmin: React.FC = () => {
       setTimeout(() => setActionMessage(null), 3000);
 
       // Also expand locally into commands for immediate visibility
+      // Expand normalized commands into visible `formData.commands`
       if (Array.isArray(values.commands) && values.commands.length > 0) {
         const expanded = values.commands.map((c: any) => ({
-          name: c.name || c.baseCommand || tmpl.baseCommand || tmpl.name,
-          output: c.output !== undefined ? c.output : (c.defaultOutput || tmpl.defaultOutput || ''),
+          name: c.name,
+          output: c.output,
           description: c.description || '',
           allowedPaths: Array.isArray(c.allowedPaths) ? c.allowedPaths : [],
           blockedPaths: Array.isArray(c.blockedPaths) ? c.blockedPaths : [],
-          sourceTemplateId: tmpl.id,
+          sourceTemplateId: tmpl.templateId ?? String(tmpl.id),
           sourceTemplateVersion: tmpl.version || 1,
         }));
         setFormData((prev) => ({ ...prev, commands: [...(prev.commands || []), ...expanded] }));
-      } else {
-        setFormData((prev) => ({ ...prev, commands: [...(prev.commands || []), { name: values.name, output: values.output, description: '' }] }));
       }
     } catch (err: any) {
-      console.error('addCommandFromTemplate failed:', err);
+      console.error('addCommandFromTemplate failed:', err, { templateId });
       alert('Failed to add template: ' + (err?.message || String(err)));
     }
   };
@@ -431,12 +451,12 @@ const CTFLevelsAdmin: React.FC = () => {
                     >
                       <option value="">Select template</option>
                       {templates.map((t) => (
-                        <option key={t.templateId} value={t.templateId}>{t.name}</option>
+                        <option key={t.templateId ?? t.id} value={String(t.templateId ?? t.id)}>{t.name}</option>
                       ))}
                     </select>
                     {/* Show count of commands in selected template for clarity */}
                     {selectedTemplateId && (() => {
-                      const sel = templates.find(t => t.templateId === selectedTemplateId);
+                      const sel = templates.find(t => String(t.templateId) === String(selectedTemplateId) || String(t.id) === String(selectedTemplateId));
                       const cnt = sel && Array.isArray(sel.commands) ? sel.commands.length : 0;
                       return (
                         <div className="ml-2 px-2 py-1 bg-zinc-700 text-xs text-gray-200 rounded">

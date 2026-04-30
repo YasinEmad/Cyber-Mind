@@ -234,11 +234,22 @@ export function TerminalApp() {
   const fsRef = useRef(fs);
   fsRef.current = fs;
 
+  // Recreate terminal engine when challenges change so commands from templates are available
+  useEffect(() => {
+    try {
+      const prevCwd = engineRef.current?.getCwd ? engineRef.current.getCwd() : '/home/user';
+      engineRef.current = createTerminalEngine(prevCwd, challenges);
+    } catch (e) {
+      // ignore
+    }
+  }, [challenges]);
+
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [lines]);
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   const run = async (cmd: string) => {
     const engine = engineRef.current;
+    console.log('Terminal run:', { cmd, isCTFMode, currentLevel });
     const result = await engine.execute(cmd, fsRef.current, setFs, isCTFMode, currentLevel, setCtfNotification);
     if (result.some((r: TerminalLine) => r.type === 'clear')) { setLines([]); }
     else { setLines(prev => [...prev, ...result]); }
@@ -272,6 +283,9 @@ export function TerminalApp() {
 
   return (
     <div className="terminal-bg h-full flex flex-col terminal-font text-sm" onClick={() => inputRef.current?.focus()}>
+      {isCTFMode && (
+        <div className="absolute top-12 right-6 z-50 px-3 py-1 rounded bg-[#d4af37]/10 text-[#d4af37] text-xs font-semibold">CTF mode • Level {currentLevel}</div>
+      )}
       <div className="flex-1 overflow-y-auto p-3 space-y-0.5">
         {lines.map((l, i) => (
           <div key={i} className={`leading-5 whitespace-pre-wrap break-all ${l.type==='error' ? 'text-red-400' : l.type==='prompt' ? 'text-green-400' : 'text-gray-200'}`}>

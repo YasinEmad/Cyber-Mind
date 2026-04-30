@@ -77,6 +77,17 @@ exports.getCTFChallenge = async (req, res, next) => {
       });
     }
 
+    // Prepare commands to return: if templates are stored, expand them for the frontend view.
+    let responseCommands = Array.isArray(challenge.commands) ? JSON.parse(JSON.stringify(challenge.commands)) : [];
+    if (Array.isArray(challenge.commandTemplates) && challenge.commandTemplates.length > 0) {
+      try {
+        const expanded = await Promise.all(challenge.commandTemplates.map((c) => expandTemplate(c.templateId, c.values || {})));
+        responseCommands = [].concat(...expanded).filter(Boolean);
+      } catch (e) {
+        // ignore expansion errors and fall back to stored commands
+      }
+    }
+
     // Return challenge without exposing sensitive data like flag to unauthorized users
     res.status(200).json({
       success: true,
@@ -87,7 +98,7 @@ exports.getCTFChallenge = async (req, res, next) => {
         hints: challenge.hint,
         flag: challenge.flag,
         difficulty: challenge.difficulty,
-        commands: challenge.commands,
+        commands: responseCommands,
         requiredCommandSequence: challenge.requiredCommandSequence,
         successCondition: challenge.successCondition,
         initialDirectory: challenge.initialDirectory,
@@ -113,6 +124,17 @@ exports.getCTFChallengeWithFS = async (req, res, next) => {
       });
     }
 
+    // Prepare commands to return: if templates are stored, expand them for the frontend view.
+    let responseCommands = Array.isArray(challenge.commands) ? JSON.parse(JSON.stringify(challenge.commands)) : [];
+    if (Array.isArray(challenge.commandTemplates) && challenge.commandTemplates.length > 0) {
+      try {
+        const expanded = await Promise.all(challenge.commandTemplates.map((c) => expandTemplate(c.templateId, c.values || {})));
+        responseCommands = [].concat(...expanded).filter(Boolean);
+      } catch (e) {
+        // ignore expansion errors and fall back to stored commands
+      }
+    }
+
     // Return challenge info (commands will be used on frontend)
     res.status(200).json({
       success: true,
@@ -123,11 +145,11 @@ exports.getCTFChallengeWithFS = async (req, res, next) => {
         hints: challenge.hint,
         flag: challenge.flag,
         difficulty: challenge.difficulty,
-        commands: challenge.commands,
+        commands: responseCommands,
         requiredCommandSequence: challenge.requiredCommandSequence,
         successCondition: challenge.successCondition,
         initialDirectory: challenge.initialDirectory,
-        hasCustomCommands: challenge.commands && challenge.commands.length > 0,
+        hasCustomCommands: (responseCommands && responseCommands.length > 0) || (Array.isArray(challenge.commandTemplates) && challenge.commandTemplates.length > 0),
       },
     });
   } catch (error) {
@@ -385,12 +407,15 @@ exports.createCTFLevel = async (req, res, next) => {
       });
     }
 
-    // Support expanding templates: commandTemplates is an array of { templateId, values }
-    let finalCommands = Array.isArray(commands) ? JSON.parse(JSON.stringify(commands)) : [];
+    // Support storing templates separately: prefer storing `commandTemplates` as references
+    // instead of expanding them into `commands` to avoid duplication.
+    let finalCommands = [];
+    let storedCommandTemplates = [];
     if (Array.isArray(commandTemplates) && commandTemplates.length > 0) {
-      const expanded = await Promise.all(commandTemplates.map((c) => expandTemplate(c.templateId, c.values || {})));
-      const flat = [].concat(...expanded).filter(Boolean);
-      finalCommands = finalCommands.concat(flat);
+      // store the template references as-is and prefer templates at runtime
+      storedCommandTemplates = commandTemplates.map((c) => ({ templateId: c.templateId, values: c.values || {} }));
+    } else {
+      finalCommands = Array.isArray(commands) ? JSON.parse(JSON.stringify(commands)) : [];
     }
 
     // Validate required fields (commands can be created via templates)
@@ -400,7 +425,7 @@ exports.createCTFLevel = async (req, res, next) => {
     if (!description) missing.push('description');
     if (!normalizedHints || normalizedHints.length === 0) missing.push('hint(s)');
     if (!flag) missing.push('flag');
-    if (!finalCommands || finalCommands.length === 0) missing.push('commands (or commandTemplates)');
+    if ((!finalCommands || finalCommands.length === 0) && (!storedCommandTemplates || storedCommandTemplates.length === 0)) missing.push('commands (or commandTemplates)');
 
     if (missing.length > 0) {
       // Log the incoming payload for debugging
@@ -428,7 +453,9 @@ exports.createCTFLevel = async (req, res, next) => {
       flag,
       difficulty: difficulty || 'easy',
       isActive: isActive !== undefined ? isActive : true,
+      // store either commands OR commandTemplates (templates take precedence)
       commands: finalCommands,
+      commandTemplates: storedCommandTemplates,
       requiredCommandSequence,
       successCondition,
       initialDirectory: initialDirectory || '/home/user',
@@ -469,13 +496,11 @@ exports.updateCTFLevel = async (req, res, next) => {
       updateData.level = levelNum;
     }
 
-    // If commandTemplates provided, expand them into updateData.commands
+    // If commandTemplates provided, store them directly (templates take precedence).
     if (Array.isArray(updateData.commandTemplates) && updateData.commandTemplates.length > 0) {
-      const expanded = await Promise.all(updateData.commandTemplates.map((c) => expandTemplate(c.templateId, c.values || {})));
-      const flat = [].concat(...expanded).filter(Boolean);
-      const merged = Array.isArray(updateData.commands) ? JSON.parse(JSON.stringify(updateData.commands)) : [];
-      updateData.commands = merged.concat(flat);
-      delete updateData.commandTemplates;
+      updateData.commandTemplates = updateData.commandTemplates.map((c) => ({ templateId: c.templateId, values: c.values || {} }));
+      // prefer templates: clear explicit commands to avoid duplication
+      updateData.commands = [];
     }
 
     // If updating level number, check for conflicts
@@ -514,12 +539,52 @@ exports.executeCTFCommand = async (req, res, next) => {
     }
 
     const commands = Array.isArray(lvl.commands) ? lvl.commands : [];
+    const storedTemplates = Array.isArray(lvl.commandTemplates) ? lvl.commandTemplates : [];
 
-    // Try to find exact command match (name) or full-string match
+    // Parse incoming
     const parts = command.trim().split(/\s+/);
     const cmdName = parts[0];
 
-    const matched = commands.find((c) => c.name === command || c.name === cmdName);
+    // Debug: log incoming request and available commands/templates briefly for this level
+    try {
+      console.debug('CTF execute - request body:', { level, command, currentPath });
+      console.debug(`CTF execute - level=${lvl.level} incoming='${command}' cmdName='${cmdName}' commandsCount=${commands.length} templatesCount=${storedTemplates.length}`);
+    } catch (e) {}
+
+    const full = String(command).trim();
+    const base = String(cmdName).trim();
+
+    let matched = null;
+
+    // Priority: if templates are stored for this level, use them (do not mix with commands)
+    if (storedTemplates && storedTemplates.length > 0) {
+      for (const tRef of storedTemplates) {
+        try {
+          const expanded = await expandTemplate(tRef.templateId, tRef.values || {});
+          const flat = [].concat(...(expanded || [])).filter(Boolean);
+          for (const c of flat) {
+            const stored = c && c.name ? String(c.name).trim() : '';
+            const tplBase = c && c.templateSnapshot && c.templateSnapshot.baseCommand ? String(c.templateSnapshot.baseCommand).trim() : null;
+            if (stored === full || stored === base || (tplBase && (tplBase === full || tplBase === base))) {
+              matched = c;
+              console.debug('CTF execute - matched via commandTemplates expansion', { templateId: tRef.templateId, matchedName: stored || tplBase });
+              break;
+            }
+          }
+          if (matched) break;
+        } catch (err) {
+          try { console.debug('CTF execute - template expansion error', err); } catch (e) {}
+        }
+      }
+    }
+
+    // If no templates or none matched, fall back to explicit commands stored on the level
+    if (!matched && Array.isArray(commands) && commands.length > 0) {
+      matched = commands.find((c) => {
+        const stored = (c && c.name) ? String(c.name).trim() : '';
+        return stored === full || stored === base;
+      });
+    }
     if (!matched) {
       // No custom command defined for this level
       return res.status(200).json({ success: false, output: `${cmdName}: command not found` });
@@ -539,8 +604,23 @@ exports.executeCTFCommand = async (req, res, next) => {
       if (!ok) return res.status(200).json({ success: false, output: 'Permission denied' });
     }
 
+    // Normalize output to a string for safety and log unexpected types
+    let outVal = matched.output;
+    if (outVal === undefined || outVal === null) outVal = '';
+    if (typeof outVal !== 'string') {
+      try {
+        console.debug('CTF execute - matched.output is not a string, serializing', { type: typeof outVal });
+        outVal = JSON.stringify(outVal);
+      } catch (e) {
+        outVal = String(outVal);
+      }
+    }
+
+    // Log matched command for debugging (full object)
+    try { console.debug('CTF execute - matched command full:', matched); } catch (e) {}
+
     // Passed validation — return configured output
-    return res.status(200).json({ success: true, output: matched.output || '' });
+    return res.status(200).json({ success: true, output: outVal });
   } catch (error) {
     next(error);
   }
