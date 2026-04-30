@@ -36,7 +36,14 @@ import {
 function LinuxDesktop() {
   // URL parameters for CTF mode
   const [searchParams] = useSearchParams();
-  const levelParam = searchParams.get('level');
+  // Support both normal query and hash-based routing (e.g. #/linux?level=1)
+  let levelParam = searchParams.get('level');
+  if (!levelParam) {
+    try {
+      const m = window.location.hash.match(/[?&]level=(\d+)/);
+      if (m) levelParam = m[1];
+    } catch (e) {}
+  }
   const levelNumber = Number(levelParam);
   const isCTFMode = Number.isInteger(levelNumber) && levelNumber > 0;
   const [currentLevel, setCurrentLevel] = useState<number>(isCTFMode ? levelNumber : 0);
@@ -79,6 +86,29 @@ function LinuxDesktop() {
     };
     initializeChallenges();
   }, []);
+
+  // Listen for CTF updates (created/updated/deleted) and reload challenges
+  useEffect(() => {
+    const onCTFUpdated = async () => {
+      try {
+        await loadChallengesFromBackend();
+        const loaded = getChallenges();
+        setLoadedChallenges(loaded);
+        if (isCTFMode && levelNumber) {
+          if (loaded[levelNumber]) {
+            setChallengeDescription(loaded[levelNumber].description);
+            setHint(loaded[levelNumber].hint);
+            setFs(getCTFFS(levelNumber, loaded || undefined));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to refresh challenges after CTF update:', error);
+      }
+    };
+
+    window.addEventListener('ctf:updated', onCTFUpdated as EventListener);
+    return () => window.removeEventListener('ctf:updated', onCTFUpdated as EventListener);
+  }, [isCTFMode, levelNumber]);
 
   // Load CTF challenge data when CTF mode is enabled
   useEffect(() => {

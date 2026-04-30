@@ -1,6 +1,7 @@
 import React from 'react';
 import { FileSystem, resolvePath, USERNAME, HOSTNAME } from './filesystem';
 import { challenges as defaultChallenges } from './ctfLevels';
+import { ctfService } from '../api/ctfService';
 
 export interface TerminalLine {
   type: string;
@@ -57,25 +58,35 @@ export function createTerminalEngine(initialCwd = '/home/user', challengesParam?
       // When in CTF mode, delegate execution to backend (single source of truth)
       if (isCTFMode) {
         try {
-          // Import ctfService lazily to avoid circular deps
-          // Use the API to execute this command on backend with current path
-          // @ts-ignore - dynamic import resolved at build
-          const { ctfService } = require('../api/ctfService');
+          // Use the API client to execute this command on backend with current path
           const resp = await ctfService.executeCTFCommand(currentLevel, trimmed, cwd, {});
+          console.log('CTF execute response:', resp);
           if (resp && resp.output !== undefined) {
             if (resp.success) return output([{ type: 'output', text: String(resp.output) }]);
             return err(String(resp.output));
           }
-        } catch (e) {
-          return err('Execution failed');
+        } catch (e: any) {
+          // Show detailed error when available to help debugging
+          try {
+            const msg = e?.response?.data?.message || e?.response?.data?.output || e?.message || 'Execution failed';
+            console.log('CTF execute error:', e);
+            return err(String(msg));
+          } catch (inner) {
+            return err('Execution failed');
+          }
         }
       }
 
       // If not in CTF backend mode but the challenge defines custom commands (templates), use them.
       const levelCmds = challenges[currentLevel] && challenges[currentLevel].commands ? challenges[currentLevel].commands : null;
       if (!isCTFMode && Array.isArray(levelCmds) && levelCmds.length > 0) {
-        // Try to match either full command or base name
-        const matched = levelCmds.find((c: any) => (c.name === trimmed) || (c.name === command));
+        // Try to match either full command or base name; trim stored names to tolerate stray spaces
+        const matched = levelCmds.find((c: any) => {
+          const stored = (c && c.name) ? String(c.name).trim() : '';
+          const full = trimmed;
+          const base = command;
+          return stored === full || stored === base;
+        });
         if (matched) {
           const allowed = Array.isArray(matched.allowedPaths) ? matched.allowedPaths : undefined;
           const blocked = Array.isArray(matched.blockedPaths) ? matched.blockedPaths : undefined;
