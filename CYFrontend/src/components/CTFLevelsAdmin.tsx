@@ -42,6 +42,9 @@ const CTFLevelsAdmin: React.FC = () => {
   const [templates, setTemplates] = useState<Array<any>>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [showTemplates, setShowTemplates] = useState(false);
+  const [debugDumpOpen, setDebugDumpOpen] = useState(false);
+  const [debugJson, setDebugJson] = useState('');
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     level: '',
     title: '',
@@ -86,6 +89,13 @@ const CTFLevelsAdmin: React.FC = () => {
     e.preventDefault();
     if (submitting) return; // Prevent multiple submissions
     setSubmitting(true);
+    console.debug('Submitting CTF level, formData:', formData);
+    // Client-side validation to avoid server 400
+    if ((!formData.commands || formData.commands.length === 0) && (!formData.commandTemplates || formData.commandTemplates.length === 0)) {
+      alert('Please add at least one command or add from a template before saving the level.');
+      setSubmitting(false);
+      return;
+    }
     try {
       if (editingLevel) {
         await ctfService.updateCTFLevel(editingLevel.id, formData);
@@ -150,6 +160,7 @@ const CTFLevelsAdmin: React.FC = () => {
       difficulty: 'easy',
       isActive: true,
       commands: [],
+      commandTemplates: [],
       requiredCommandSequence: [],
       successCondition: '',
       initialDirectory: '/home/user',
@@ -184,18 +195,66 @@ const CTFLevelsAdmin: React.FC = () => {
   };
 
   const addCommandFromTemplate = (templateId: string) => {
-    const tmpl = templates.find((t: any) => t.templateId === templateId);
-    const values = {
-      name: tmpl?.baseCommand || tmpl?.name || '',
-      output: tmpl?.defaultOutput || '',
-      allowedPaths: [],
-      blockedPaths: [],
-    };
-    setFormData({
-      ...formData,
-      commandTemplates: [...formData.commandTemplates, { templateId, values }],
-    });
+    try {
+      const tmpl = templates.find((t: any) => t.templateId === templateId);
+      if (!tmpl) throw new Error('Template not found');
+      const values: any = {
+        name: tmpl?.baseCommand || tmpl?.name || '',
+        output: tmpl?.defaultOutput || '',
+        allowedPaths: [],
+        blockedPaths: [],
+      };
+      if (Array.isArray(tmpl.commands) && tmpl.commands.length > 0) {
+        values.commands = JSON.parse(JSON.stringify(tmpl.commands));
+      }
+      console.debug('Adding command from template:', templateId, values);
+      setFormData((prev) => ({
+        ...prev,
+        commandTemplates: [...(prev.commandTemplates || []), { templateId, values }],
+      }));
+      // clear selection so user sees action taken
+      setSelectedTemplateId('');
+      // show transient action message
+      setActionMessage(`Added ${Array.isArray(values.commands) && values.commands.length > 0 ? values.commands.length : 1} command(s) from template "${tmpl.name}"`);
+      setTimeout(() => setActionMessage(null), 3000);
+
+      // Also expand locally into commands for immediate visibility
+      if (Array.isArray(values.commands) && values.commands.length > 0) {
+        const expanded = values.commands.map((c: any) => ({
+          name: c.name || c.baseCommand || tmpl.baseCommand || tmpl.name,
+          output: c.output !== undefined ? c.output : (c.defaultOutput || tmpl.defaultOutput || ''),
+          description: c.description || '',
+          allowedPaths: Array.isArray(c.allowedPaths) ? c.allowedPaths : [],
+          blockedPaths: Array.isArray(c.blockedPaths) ? c.blockedPaths : [],
+          sourceTemplateId: tmpl.id,
+          sourceTemplateVersion: tmpl.version || 1,
+        }));
+        setFormData((prev) => ({ ...prev, commands: [...(prev.commands || []), ...expanded] }));
+      } else {
+        setFormData((prev) => ({ ...prev, commands: [...(prev.commands || []), { name: values.name, output: values.output, description: '' }] }));
+      }
+    } catch (err: any) {
+      console.error('addCommandFromTemplate failed:', err);
+      alert('Failed to add template: ' + (err?.message || String(err)));
+    }
   };
+
+  const handleAddButton = () => {
+    // immediate feedback so users without DevTools see the click
+    if (!selectedTemplateId) {
+      setActionMessage('Adding blank command');
+      setTimeout(() => setActionMessage(null), 2000);
+      return addCommand();
+    }
+    setActionMessage(`Adding from template: ${selectedTemplateId}`);
+    setTimeout(() => setActionMessage(null), 2000);
+    addCommandFromTemplate(selectedTemplateId);
+  };
+
+  useEffect(() => {
+    // Log when commandTemplates array changes for easier debugging
+    console.debug('commandTemplates changed, count=', (formData.commandTemplates || []).length, formData.commandTemplates);
+  }, [formData.commandTemplates]);
 
   const updateCommand = (index: number, field: keyof Command, value: any) => {
     const updatedCommands = [...formData.commands];
@@ -253,6 +312,10 @@ const CTFLevelsAdmin: React.FC = () => {
             <h3 className="text-xl font-bold text-white mb-4">
               {editingLevel ? 'Edit CTF Level' : 'Create New CTF Level'}
             </h3>
+
+            {actionMessage && (
+              <div className="mb-3 p-2 bg-green-900/20 border border-green-600/40 rounded text-sm text-green-200">{actionMessage}</div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -371,12 +434,19 @@ const CTFLevelsAdmin: React.FC = () => {
                         <option key={t.templateId} value={t.templateId}>{t.name}</option>
                       ))}
                     </select>
+                    {/* Show count of commands in selected template for clarity */}
+                    {selectedTemplateId && (() => {
+                      const sel = templates.find(t => t.templateId === selectedTemplateId);
+                      const cnt = sel && Array.isArray(sel.commands) ? sel.commands.length : 0;
+                      return (
+                        <div className="ml-2 px-2 py-1 bg-zinc-700 text-xs text-gray-200 rounded">
+                          {cnt} command{cnt !== 1 ? 's' : ''}
+                        </div>
+                      );
+                    })()}
                     <button
                       type="button"
-                      onClick={() => {
-                        if (!selectedTemplateId) return addCommand();
-                        addCommandFromTemplate(selectedTemplateId);
-                      }}
+                      onClick={handleAddButton}
                       className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
                     >
                       <Plus size={16} />
@@ -508,7 +578,12 @@ const CTFLevelsAdmin: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4">
+              <div className="flex justify-end gap-3 pt-4 items-center">
+                <div className="mr-auto text-sm text-gray-300 flex items-center gap-4">
+                  <div>Commands: <span className="font-mono">{(formData.commands || []).length}</span></div>
+                  <div>Templates: <span className="font-mono">{(formData.commandTemplates || []).length}</span></div>
+                  <button type="button" onClick={() => { setDebugJson(JSON.stringify(formData, null, 2)); setDebugDumpOpen(true); }} className="px-2 py-1 bg-zinc-700 text-white rounded">Dump formData</button>
+                </div>
                 <button
                   type="button"
                   onClick={resetForm}
@@ -530,6 +605,19 @@ const CTFLevelsAdmin: React.FC = () => {
       )}
 
       {showTemplates && <CommandTemplatesAdmin onClose={() => setShowTemplates(false)} />}
+
+      {/* Debug Dump Modal (for users without DevTools) */}
+      {debugDumpOpen && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-zinc-900 p-4 rounded max-w-3xl w-full max-h-[80vh] overflow-auto border border-zinc-700">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="text-white">formData Dump</h4>
+              <button onClick={() => setDebugDumpOpen(false)} className="px-2 py-1 bg-zinc-700 text-white rounded">Close</button>
+            </div>
+            <pre className="text-xs text-gray-200 whitespace-pre-wrap break-words bg-zinc-800 p-3 rounded">{debugJson}</pre>
+          </div>
+        </div>
+      )}
 
       {/* Levels List */}
       <div className="bg-zinc-950/50 rounded-xl border border-red-900/20 overflow-hidden">
