@@ -544,12 +544,72 @@ exports.executeCTFCommand = async (req, res, next) => {
     // Parse incoming
     const parts = command.trim().split(/\s+/);
     const cmdName = parts[0];
+    const args = parts.slice(1);
 
     // Debug: log incoming request and available commands/templates briefly for this level
     try {
       console.debug('CTF execute - request body:', { level, command, currentPath });
       console.debug(`CTF execute - level=${lvl.level} incoming='${command}' cmdName='${cmdName}' commandsCount=${commands.length} templatesCount=${storedTemplates.length}`);
     } catch (e) {}
+
+    // ════════════════════════════════════════════════════════════════
+    // SPECIAL HANDLING FOR cd COMMAND (Navigation)
+    // ════════════════════════════════════════════════════════════════
+    if (cmdName === 'cd') {
+      try {
+        console.debug('CTF execute - processing cd command', { args, currentPath });
+        
+        // Helper function to resolve path (identical to frontend logic)
+        const resolvePath = (current, target) => {
+          if (!target) return current;
+          let parts;
+          let base;
+          if (target.startsWith('/')) {
+            base = '/';
+            parts = target.split('/').filter(Boolean);
+          } else {
+            base = current;
+            parts = target.split('/').filter(Boolean);
+          }
+          let path = base === '/' ? '' : base;
+          for (const p of parts) {
+            if (p === '.') continue;
+            if (p === '..') {
+              const segs = path.split('/').filter(Boolean);
+              segs.pop();
+              path = '/' + segs.join('/');
+              if (path === '/') path = '';
+            } else {
+              path = path + '/' + p;
+            }
+          }
+          return path === '' ? '/' : path;
+        };
+
+        const cwd = currentPath || lvl.initialDirectory || '/home/user';
+        const target = args[0] || '/home/user';
+        const newPath = resolvePath(cwd, target);
+
+        console.debug('CTF execute - cd resolved path', { cwd, target, newPath });
+
+        // For now, we assume the path is valid
+        // (In a real system, we'd validate against a filesystem structure)
+        // Return navigation response without output text
+        return res.status(200).json({ 
+          success: true, 
+          output: '', // Empty output for cd command
+          isNavigation: true, 
+          newPath: newPath 
+        });
+      } catch (e) {
+        console.error('CTF execute - cd command error', e);
+        return res.status(200).json({ success: false, output: 'cd: invalid path' });
+      }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // NORMAL COMMAND HANDLING
+    // ════════════════════════════════════════════════════════════════
 
     const full = String(command).trim();
     const base = String(cmdName).trim();

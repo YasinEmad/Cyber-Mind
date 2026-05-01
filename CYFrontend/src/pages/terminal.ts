@@ -61,6 +61,16 @@ export function createTerminalEngine(initialCwd = '/home/user', challengesParam?
           // Use the API client to execute this command on backend with current path
           const resp = await ctfService.executeCTFCommand(currentLevel, trimmed, cwd, {});
           console.log('CTF execute response:', resp);
+          
+          // SPECIAL HANDLING FOR cd COMMAND (Navigation)
+          if (resp && resp.isNavigation && resp.newPath) {
+            // Update the current working directory without any output
+            cwd = resp.newPath;
+            const newPromptPath = cwd.replace('/home/user', '~');
+            const newPrompt = `${USERNAME}@${HOSTNAME}:${newPromptPath}$ ${cmd}`;
+            return [{ type: 'prompt', text: newPrompt }];
+          }
+          
           if (resp && resp.output !== undefined) {
             if (resp.success) return output([{ type: 'output', text: String(resp.output) }]);
             return err(String(resp.output));
