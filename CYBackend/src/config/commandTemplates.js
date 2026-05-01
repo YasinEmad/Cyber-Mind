@@ -39,6 +39,14 @@ const templates = [
     fields: ['output', 'blockedPaths'],
     description: 'Return permission denied when in blocked path',
   },
+  {
+    templateId: 'cd_navigation',
+    name: 'Change Directory Command',
+    baseCommand: 'cd',
+    defaultOutput: '',
+    fields: ['allowedPaths', 'blockedPaths'],
+    description: 'Navigate to directories (special navigation command)',
+  },
 ];
 
 function addTemplate(t) {
