@@ -168,6 +168,8 @@ exports.getCommandTemplates = async (req, res, next) => {
       baseCommand: t.baseCommand,
       defaultOutput: t.defaultOutput,
       fields: t.fields,
+      allowedPaths: t.allowedPaths,
+      blockedPaths: t.blockedPaths,
       commands: t.commands,
       description: t.description,
     }));
@@ -190,7 +192,7 @@ exports.getCommandTemplateById = async (req, res, next) => {
 
 exports.createCommandTemplate = async (req, res, next) => {
   try {
-    const { name, baseCommand, defaultOutput, fields, description, commands } = req.body;
+    const { name, baseCommand, defaultOutput, fields, description, commands, allowedPaths, blockedPaths } = req.body;
     // Generate templateId automatically - no longer required in request
     const templateId = generateTemplateId();
     
@@ -206,6 +208,12 @@ exports.createCommandTemplate = async (req, res, next) => {
     if (commands && !Array.isArray(commands)) {
       return res.status(400).json({ success: false, message: 'commands must be an array' });
     }
+    if (allowedPaths && !Array.isArray(allowedPaths)) {
+      return res.status(400).json({ success: false, message: 'allowedPaths must be an array' });
+    }
+    if (blockedPaths && !Array.isArray(blockedPaths)) {
+      return res.status(400).json({ success: false, message: 'blockedPaths must be an array' });
+    }
 
     const created = await CommandTemplate.create({ 
       templateId, 
@@ -213,6 +221,8 @@ exports.createCommandTemplate = async (req, res, next) => {
       baseCommand, 
       defaultOutput, 
       fields: fields || [], 
+      allowedPaths: allowedPaths || [],
+      blockedPaths: blockedPaths || [],
       description, 
       commands: commands || [] 
     });
@@ -234,12 +244,18 @@ exports.updateCommandTemplate = async (req, res, next) => {
     if (updateData.commands && !Array.isArray(updateData.commands)) {
       return res.status(400).json({ success: false, message: 'commands must be an array' });
     }
+    if (updateData.allowedPaths && !Array.isArray(updateData.allowedPaths)) {
+      return res.status(400).json({ success: false, message: 'allowedPaths must be an array' });
+    }
+    if (updateData.blockedPaths && !Array.isArray(updateData.blockedPaths)) {
+      return res.status(400).json({ success: false, message: 'blockedPaths must be an array' });
+    }
     if (updateData.templateId && updateData.templateId !== tmpl.templateId) {
       const exists = await CommandTemplate.findOne({ where: { templateId: updateData.templateId } });
       if (exists) return res.status(409).json({ success: false, message: 'templateId already exists' });
     }
     // If significant template fields changed, bump version
-    const significant = ['templateId', 'name', 'baseCommand', 'defaultOutput', 'fields', 'commands', 'description'];
+    const significant = ['templateId', 'name', 'baseCommand', 'defaultOutput', 'fields', 'commands', 'description', 'allowedPaths', 'blockedPaths'];
     const willChangeVersion = significant.some((k) => {
       if (updateData[k] === undefined) return false;
       const oldVal = tmpl[k];
@@ -291,9 +307,23 @@ async function expandTemplate(templateIdOrId, values = {}) {
     baseCommand: tpl.baseCommand,
     defaultOutput: tpl.defaultOutput,
     fields: Array.isArray(tpl.fields) ? [...tpl.fields] : [],
+    allowedPaths: Array.isArray(tpl.allowedPaths) ? [...tpl.allowedPaths] : [],
+    blockedPaths: Array.isArray(tpl.blockedPaths) ? [...tpl.blockedPaths] : [],
     description: tpl.description,
     commands: Array.isArray(tpl.commands) ? JSON.parse(JSON.stringify(tpl.commands)) : [],
     version: tpl.version || 1,
+  };
+
+  const resolveAllowedPaths = (valueAllowedPaths) => {
+    if (Array.isArray(valueAllowedPaths)) return valueAllowedPaths;
+    if (valueAllowedPaths) return [String(valueAllowedPaths)];
+    return Array.isArray(snapshotTemplate.allowedPaths) ? snapshotTemplate.allowedPaths : [];
+  };
+
+  const resolveBlockedPaths = (valueBlockedPaths) => {
+    if (Array.isArray(valueBlockedPaths)) return valueBlockedPaths;
+    if (valueBlockedPaths) return [String(valueBlockedPaths)];
+    return Array.isArray(snapshotTemplate.blockedPaths) ? snapshotTemplate.blockedPaths : [];
   };
 
   // If template defines multiple commands, expand each one
@@ -310,6 +340,12 @@ async function expandTemplate(templateIdOrId, values = {}) {
         sourceTemplateVersion: snapshotTemplate.version,
         templateSnapshot: snapshotTemplate,
       });
+      if (snapshotTemplate.fields.includes('allowedPaths') || snapshotTemplate.allowedPaths.length > 0 || Array.isArray(v.allowedPaths)) {
+        cmd.allowedPaths = resolveAllowedPaths(v.allowedPaths);
+      }
+      if (snapshotTemplate.fields.includes('blockedPaths') || snapshotTemplate.blockedPaths.length > 0 || Array.isArray(v.blockedPaths)) {
+        cmd.blockedPaths = resolveBlockedPaths(v.blockedPaths);
+      }
       return cmd;
     });
     return cmds;
@@ -324,11 +360,11 @@ async function expandTemplate(templateIdOrId, values = {}) {
     templateSnapshot: snapshotTemplate,
   };
 
-  if (snapshotTemplate.fields.includes('allowedPaths')) {
-    cmd.allowedPaths = Array.isArray(values.allowedPaths) ? values.allowedPaths : (values.allowedPaths ? [values.allowedPaths] : []);
+  if (snapshotTemplate.fields.includes('allowedPaths') || snapshotTemplate.allowedPaths.length > 0) {
+    cmd.allowedPaths = resolveAllowedPaths(values.allowedPaths);
   }
-  if (snapshotTemplate.fields.includes('blockedPaths')) {
-    cmd.blockedPaths = Array.isArray(values.blockedPaths) ? values.blockedPaths : (values.blockedPaths ? [values.blockedPaths] : []);
+  if (snapshotTemplate.fields.includes('blockedPaths') || snapshotTemplate.blockedPaths.length > 0) {
+    cmd.blockedPaths = resolveBlockedPaths(values.blockedPaths);
   }
 
   snapshotTemplate.fields.forEach((f) => {

@@ -39,6 +39,16 @@ const CommandTemplate = sequelize.define('CommandTemplate', {
     allowNull: false,
     defaultValue: [],
   },
+  allowedPaths: {
+    type: DataTypes.JSON,
+    allowNull: false,
+    defaultValue: [],
+  },
+  blockedPaths: {
+    type: DataTypes.JSON,
+    allowNull: false,
+    defaultValue: [],
+  },
   description: {
     type: DataTypes.TEXT,
     allowNull: true,
