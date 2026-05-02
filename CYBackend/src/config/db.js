@@ -60,6 +60,26 @@ const connectDB = async () => {
           });
           console.log(`DB Migration: column 'version' added to ${tableName}`);
         }
+        // Add `allowedPaths` JSON column if missing (safe-guard)
+        if (!Object.prototype.hasOwnProperty.call(tableDesc, 'allowedPaths')) {
+          console.log(`DB Migration: adding missing column 'allowedPaths' to ${tableName}`);
+          await qi.addColumn(tableName, 'allowedPaths', {
+            type: require('sequelize').DataTypes.JSON,
+            allowNull: false,
+            defaultValue: [],
+          });
+          console.log(`DB Migration: column 'allowedPaths' added to ${tableName}`);
+        }
+        // Add `blockedPaths` JSON column if missing (safe-guard)
+        if (!Object.prototype.hasOwnProperty.call(tableDesc, 'blockedPaths')) {
+          console.log(`DB Migration: adding missing column 'blockedPaths' to ${tableName}`);
+          await qi.addColumn(tableName, 'blockedPaths', {
+            type: require('sequelize').DataTypes.JSON,
+            allowNull: false,
+            defaultValue: [],
+          });
+          console.log(`DB Migration: column 'blockedPaths' added to ${tableName}`);
+        }
       }
     } catch (migrationErr) {
       console.error('DB Migration Error:', migrationErr.message || migrationErr);

@@ -3,6 +3,13 @@ import { ctfService } from '../api/ctfService';
 import axiosInstance from '../api/axios';
 import { Plus, Edit, Trash2, Check, AlertCircle } from 'lucide-react';
 
+interface CommandEntry {
+  name?: string;
+  output?: string;
+  allowedPaths?: string[];
+  blockedPaths?: string[];
+}
+
 interface Template {
   id?: number;
   templateId: string;
@@ -10,8 +17,10 @@ interface Template {
   baseCommand: string;
   defaultOutput?: string;
   fields: string[];
+  allowedPaths?: string[];
+  blockedPaths?: string[];
   description?: string;
-  commands?: Array<{ name?: string; output?: string }>;
+  commands?: Array<CommandEntry>;
 }
 
 interface AdminStatus {
@@ -28,7 +37,7 @@ const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) =
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Template | null>(null);
-  const [form, setForm] = useState<Template>({ templateId: '', name: '', baseCommand: '', defaultOutput: '', fields: [], description: '', commands: [] });
+  const [form, setForm] = useState<Template>({ templateId: '', name: '', baseCommand: '', defaultOutput: '', fields: [], allowedPaths: [], blockedPaths: [], description: '', commands: [] });
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string, generatedId?: string } | null>(null);
   const [adminStatus, setAdminStatus] = useState<AdminStatus | null>(null);
   const [checkingStatus, setCheckingStatus] = useState(true);
@@ -120,7 +129,7 @@ const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) =
     } finally { setLoading(false); }
   };
 
-  const openCreate = () => { setEditing(null); setForm({ templateId: '', name: '', baseCommand: '', defaultOutput: '', fields: [], description: '', commands: [] }); setShowForm(true); };
+  const openCreate = () => { setEditing(null); setForm({ templateId: '', name: '', baseCommand: '', defaultOutput: '', fields: [], allowedPaths: [], blockedPaths: [], description: '', commands: [] }); setShowForm(true); };
 
   const openEdit = (t: any) => openEditEnhanced(t);
 
@@ -133,6 +142,8 @@ const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) =
       baseCommand: t.baseCommand,
       defaultOutput: t.defaultOutput || '',
       fields: t.fields || [],
+      allowedPaths: Array.isArray(t.allowedPaths) ? t.allowedPaths : [],
+      blockedPaths: Array.isArray(t.blockedPaths) ? t.blockedPaths : [],
       description: t.description || '',
       commands: t.commands || [],
     });
@@ -327,11 +338,17 @@ const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) =
                   <div className="space-y-2 mt-2">
                     {(form.commands || []).map((c, idx) => (
                       <div key={idx} className="grid grid-cols-12 gap-2 items-center">
-                        <input className="col-span-4 px-2 py-2 bg-zinc-900 text-white rounded" placeholder="command (eg. ls)" value={c.name || ''} onChange={(e)=>{
+                        <input className="col-span-3 px-2 py-2 bg-zinc-900 text-white rounded" placeholder="command (eg. ls)" value={c.name || ''} onChange={(e)=>{
                           const cmds = JSON.parse(JSON.stringify(form.commands || [])); cmds[idx] = { ...cmds[idx], name: e.target.value }; setForm({ ...form, commands: cmds });
                         }} />
-                        <input className="col-span-7 px-2 py-2 bg-zinc-900 text-white rounded" placeholder="output" value={c.output || ''} onChange={(e)=>{
+                        <input className="col-span-3 px-2 py-2 bg-zinc-900 text-white rounded" placeholder="output" value={c.output || ''} onChange={(e)=>{
                           const cmds = JSON.parse(JSON.stringify(form.commands || [])); cmds[idx] = { ...cmds[idx], output: e.target.value }; setForm({ ...form, commands: cmds });
+                        }} />
+                        <input className="col-span-3 px-2 py-2 bg-zinc-900 text-white rounded" placeholder="Allowed paths (comma separated)" value={(c.allowedPaths || []).join(', ')} onChange={(e)=>{
+                          const cmds = JSON.parse(JSON.stringify(form.commands || [])); cmds[idx] = { ...cmds[idx], allowedPaths: e.target.value.split(',').map((s:string)=>s.trim()).filter(Boolean) }; setForm({ ...form, commands: cmds });
+                        }} />
+                        <input className="col-span-2 px-2 py-2 bg-zinc-900 text-white rounded" placeholder="Blocked paths" value={(c.blockedPaths || []).join(', ')} onChange={(e)=>{
+                          const cmds = JSON.parse(JSON.stringify(form.commands || [])); cmds[idx] = { ...cmds[idx], blockedPaths: e.target.value.split(',').map((s:string)=>s.trim()).filter(Boolean) }; setForm({ ...form, commands: cmds });
                         }} />
                         <button className="col-span-1 text-red-400" onClick={()=>{
                           const cmds = JSON.parse(JSON.stringify(form.commands || [])); cmds.splice(idx,1); setForm({ ...form, commands: cmds });
@@ -340,7 +357,7 @@ const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) =
                     ))}
                     <div>
                       <button className="px-2 py-1 bg-zinc-700 text-white rounded" onClick={()=>{
-                        const cmds = JSON.parse(JSON.stringify(form.commands || [])); cmds.push({ name: '', output: '' }); setForm({ ...form, commands: cmds });
+                        const cmds = JSON.parse(JSON.stringify(form.commands || [])); cmds.push({ name: '', output: '', allowedPaths: [], blockedPaths: [] }); setForm({ ...form, commands: cmds });
                       }}>Add command</button>
                     </div>
                   </div>
