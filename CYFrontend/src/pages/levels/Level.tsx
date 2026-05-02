@@ -3,10 +3,11 @@ import PageWrapper from '../../components/PageWrapper';
 import { motion } from 'framer-motion';
 import { ShieldCheck, ChevronRight, Lightbulb, Play, Loader, AlertCircle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ctfService } from '../../api/ctfService';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '../../redux/store';
+import { fetchCTFChallenge } from '../../redux/slices/ctfSlice';
 import ctfInfo from '../../utils/ctfinfo';
 
-// 1. تعريف واجهة البيانات لضمان التوافق مع TypeScript
 interface LevelData {
   title: string;
   description: string;
@@ -15,51 +16,39 @@ interface LevelData {
 
 const Level: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
   const { levelId } = useParams<{ levelId: string }>();
   const levelNumber = parseInt(levelId || '1', 10);
-  
-  const [levelData, setLevelData] = useState<LevelData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  const challenge = useSelector((state: RootState) => state.ctf.selectedChallenge);
+  const status = useSelector((state: RootState) => state.ctf.challengeStatus);
+  const ctfError = useSelector((state: RootState) => state.ctf.error);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const fallbackData = !challenge && status === 'failed'
+    ? ctfInfo.levels.find((l: any) => l.level === levelNumber)
+    : null;
+  const displayChallenge = challenge || (fallbackData ? {
+    title: fallbackData.name,
+    description: fallbackData.description,
+    hints: fallbackData.hints,
+  } : null);
 
   useEffect(() => {
-    const fetchLevelData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // جلب البيانات من الـ API (تأكد من تشغيل السيرفر على 8080)
-        const data = await ctfService.getCTFChallenge(levelNumber);
-        setLevelData(data);
-      } catch (err) {
-        console.warn('Backend unavailable, using fallback:', err);
-        
-        // التحويل للبيانات المحلية في حال فشل السيرفر
-        const localData = ctfInfo.levels.find((l: any) => l.level === levelNumber);
-        if (localData) {
-          setLevelData({
-            title: localData.name,
-            description: localData.description,
-            hints: localData.hints,
-          });
-          setError('تعمل الآن على النسخة الاحتياطية (Offline Mode)');
-        } else {
-          setError('لم يتم العثور على بيانات لهذا المستوى');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLevelData();
-  }, [levelNumber]);
+    setLocalError(null);
+    dispatch(fetchCTFChallenge(levelNumber))
+      .unwrap()
+      .catch((err: string) => setLocalError(err));
+  }, [dispatch, levelNumber]);
 
   const startCtf = () => {
     navigate(`/linux?level=${levelNumber}`);
   };
 
   // 2. واجهة حالة التحميل (Loading UI)
-  if (loading) {
+  const isLoading = status === 'loading';
+
+  if (isLoading) {
     return (
       <PageWrapper>
         <div className="h-[calc(100vh-8rem)] flex items-center justify-center">
@@ -88,24 +77,23 @@ const Level: React.FC = () => {
               <div className="flex items-center gap-2 text-red-500 mb-6">
                 <ShieldCheck className="w-5 h-5" />
                 <span className="text-[10px] font-mono font-bold tracking-[0.2em] uppercase">
-                  {error ? 'Status.Offline' : 'Auth.Session.Active'}
+                  {status === 'failed' ? 'Status.Offline' : 'Auth.Session.Active'}
                 </span>
               </div>
               
               <h1 className="text-3xl font-black text-white mb-3 tracking-tight">
-                {levelData?.title}
+                {displayChallenge?.title}
               </h1>
-              
               <div className="h-1 w-12 bg-red-600 mb-6" />
 
               <p className="text-zinc-400 text-sm leading-relaxed mb-4 font-medium">
-                {levelData?.description}
+                {displayChallenge?.description}
               </p>
 
-              {error && (
+              {(ctfError || localError) && (
                 <div className="flex items-center gap-2 text-orange-500/80 text-[10px] font-mono italic">
                   <AlertCircle className="w-3 h-3" />
-                  {error}
+                  {localError || ctfError}
                 </div>
               )}
             </div>
@@ -133,8 +121,8 @@ const Level: React.FC = () => {
             
             <div className="flex-grow p-8 bg-black/20 relative overflow-y-auto">
                <div className="grid grid-cols-1 gap-4 relative z-10">
-                 {levelData?.hints && levelData.hints.length > 0 ? (
-                   levelData.hints.map((hint, index) => (
+                 {displayChallenge?.hints && displayChallenge.hints.length > 0 ? (
+                   displayChallenge.hints.map((hint: string, index: number) => (
                      <div key={index} className="p-4 border border-zinc-800 bg-zinc-900/50 rounded-md">
                        <p className="text-[11px] font-mono text-red-500 mb-1 uppercase tracking-tighter">
                          Hint #{String(index + 1).padStart(2, '0')}

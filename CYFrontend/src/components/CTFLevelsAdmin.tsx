@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { ctfService } from '../api/ctfService';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '../redux/store';
+import {
+  fetchAllCTFLevels,
+  fetchTemplates,
+  createCTFLevel,
+  updateCTFLevel,
+  deleteCTFLevel,
+  toggleCTFLevelStatus,
+} from '../redux/slices/ctfSlice';
 import { clearChallengeCache } from '../pages/ctfChallenges';
 import { Plus, Edit, Trash2, Eye, EyeOff, Search } from 'lucide-react';
 import CommandTemplatesAdmin from './CommandTemplatesAdmin';
@@ -34,13 +43,14 @@ interface Command {
 }
 
 const CTFLevelsAdmin: React.FC = () => {
-  const [levels, setLevels] = useState<CTFLevel[]>([]);
+  const dispatch = useDispatch<AppDispatch>();
+  const levels = useSelector((state: RootState) => state.ctf.adminLevels);
+  const templates = useSelector((state: RootState) => state.ctf.templates);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingLevel, setEditingLevel] = useState<CTFLevel | null>(null);
-  const [templates, setTemplates] = useState<Array<any>>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [showTemplates, setShowTemplates] = useState(false);
   const [debugDumpOpen, setDebugDumpOpen] = useState(false);
@@ -62,14 +72,24 @@ const CTFLevelsAdmin: React.FC = () => {
   });
 
   useEffect(() => {
-    loadLevels();
-    loadTemplates();
-  }, []);
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        await dispatch(fetchAllCTFLevels()).unwrap();
+        await dispatch(fetchTemplates()).unwrap();
+      } catch (error) {
+        console.error('Error loading CTF admin data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [dispatch]);
 
   const loadLevels = async () => {
+    setLoading(true);
     try {
-      const data = await ctfService.getAllCTFLevels();
-      setLevels(data);
+      await dispatch(fetchAllCTFLevels()).unwrap();
     } catch (error) {
       console.error('Error loading CTF levels:', error);
     } finally {
@@ -79,8 +99,7 @@ const CTFLevelsAdmin: React.FC = () => {
 
   const loadTemplates = async () => {
     try {
-      const data = await ctfService.getTemplates();
-      setTemplates(data || []);
+      await dispatch(fetchTemplates()).unwrap();
     } catch (error) {
       console.error('Error loading templates:', error);
     }
@@ -99,9 +118,9 @@ const CTFLevelsAdmin: React.FC = () => {
     }
     try {
       if (editingLevel) {
-        await ctfService.updateCTFLevel(editingLevel.id, formData);
+        await dispatch(updateCTFLevel({ id: editingLevel.id, levelData: formData })).unwrap();
       } else {
-        await ctfService.createCTFLevel(formData);
+        await dispatch(createCTFLevel(formData)).unwrap();
       }
       // Clear frontend challenge cache and notify other pages to reload
       clearChallengeCache();
@@ -137,7 +156,7 @@ const CTFLevelsAdmin: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this CTF level?')) {
       try {
-        await ctfService.deleteCTFLevel(id);
+        await dispatch(deleteCTFLevel(id)).unwrap();
         clearChallengeCache();
         window.dispatchEvent(new Event('ctf:updated'));
         await loadLevels();
@@ -149,7 +168,7 @@ const CTFLevelsAdmin: React.FC = () => {
 
   const handleToggleStatus = async (id: number) => {
     try {
-      await ctfService.toggleCTFLevelStatus(id);
+      await dispatch(toggleCTFLevelStatus(id)).unwrap();
       clearChallengeCache();
       window.dispatchEvent(new Event('ctf:updated'));
       await loadLevels();

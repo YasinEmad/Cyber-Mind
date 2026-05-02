@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { ctfService } from '../api/ctfService';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '../redux/store';
+import { fetchTemplates, createTemplate, updateTemplate, deleteTemplate } from '../redux/slices/ctfSlice';
 import axiosInstance from '../api/axios';
 import { Plus, Edit, Trash2, Check, AlertCircle } from 'lucide-react';
 
@@ -33,7 +35,8 @@ interface AdminStatus {
 }
 
 const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const dispatch = useDispatch<AppDispatch>();
+  const templates = useSelector((state: RootState) => state.ctf.templates);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Template | null>(null);
@@ -42,10 +45,10 @@ const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) =
   const [adminStatus, setAdminStatus] = useState<AdminStatus | null>(null);
   const [checkingStatus, setCheckingStatus] = useState(true);
 
-  useEffect(() => { 
+  useEffect(() => {
     checkAdminStatus();
     load();
-  }, []);
+  }, [load]);
 
   // Check if user is actually admin in database
   const checkAdminStatus = async () => {
@@ -86,11 +89,10 @@ const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) =
     }
   }, [notification]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await ctfService.getTemplates();
-      setTemplates(data || []);
+      await dispatch(fetchTemplates()).unwrap();
       // Clear any authentication errors when load succeeds
       if (notification?.type === 'error' && (notification.message.includes('authorized') || notification.message.includes('role'))) {
         setNotification(null);
@@ -127,7 +129,7 @@ const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) =
         return;
       }
     } finally { setLoading(false); }
-  };
+  }, [adminStatus, dispatch, notification]);
 
   const openCreate = () => { setEditing(null); setForm({ templateId: '', name: '', baseCommand: '', defaultOutput: '', fields: [], allowedPaths: [], blockedPaths: [], description: '', commands: [] }); setShowForm(true); };
 
@@ -153,10 +155,10 @@ const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) =
   const save = async () => {
     try {
       if (editing && editing.id) {
-        await ctfService.updateTemplate(editing.id, form);
+        await dispatch(updateTemplate({ id: editing.id, templateData: form })).unwrap();
         setNotification({ type: 'success', message: 'Template updated successfully' });
       } else {
-        const createdTemplate = await ctfService.createTemplate(form);
+        const createdTemplate = await dispatch(createTemplate(form)).unwrap();
         setNotification({ 
           type: 'success', 
           message: 'Template created successfully', 
@@ -192,7 +194,7 @@ const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) =
   const remove = async (id?: number) => {
     if (!id) return;
     if (!confirm('Delete this template?')) return;
-    try { await ctfService.deleteTemplate(id); await load(); } catch (err) { console.error(err); }
+    try { await dispatch(deleteTemplate(id)).unwrap(); await load(); } catch (err) { console.error(err); }
   };
 
   return (
