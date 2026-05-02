@@ -101,11 +101,11 @@ export function createTerminalEngine(initialCwd = '/home/user', challengesParam?
           const allowed = Array.isArray(matched.allowedPaths) ? matched.allowedPaths : undefined;
           const blocked = Array.isArray(matched.blockedPaths) ? matched.blockedPaths : undefined;
           // Blocked precedence
-          if (Array.isArray(blocked) && blocked.some((p: string) => cwd === p || cwd.startsWith(p + '/'))) {
+          if (Array.isArray(blocked) && blocked.some((p: string) => cwd === p)) {
             return err('Permission denied');
           }
           if (Array.isArray(allowed) && allowed.length > 0) {
-            const ok = allowed.some((p: string) => cwd === p || cwd.startsWith(p + '/'));
+            const ok = allowed.some((p: string) => cwd === p);
             if (!ok) return err('Permission denied');
           }
           const out = matched.output || '';

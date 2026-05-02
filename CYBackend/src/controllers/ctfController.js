@@ -652,17 +652,44 @@ exports.executeCTFCommand = async (req, res, next) => {
 
     const allowed = Array.isArray(matched.allowedPaths) ? matched.allowedPaths : undefined;
     const blocked = Array.isArray(matched.blockedPaths) ? matched.blockedPaths : undefined;
+    // IMPORTANT: Use currentPath sent from Frontend, not a cached/old path
+    // This is critical for proper permission checks after `cd` command
     const cwd = currentPath || lvl.initialDirectory || '/home/user';
 
-    // Blocked takes precedence
-    if (Array.isArray(blocked) && blocked.some((p) => cwd === p || cwd.startsWith(p + '/'))) {
-      return res.status(200).json({ success: false, output: 'Permission denied' });
+    console.debug('CTF execute - permission validation', {
+      command: cmdName,
+      sentPath: currentPath,
+      resolvedCwd: cwd,
+      allowedPaths: allowed,
+      blockedPaths: blocked,
+    });
+
+    // Blocked takes precedence - check if current path is exactly blocked
+    if (Array.isArray(blocked) && blocked.length > 0) {
+      const isBlocked = blocked.some((p) => cwd === p);
+      if (isBlocked) {
+        console.warn('CTF execute - PERMISSION DENIED (path is blocked)', {
+          command: cmdName,
+          cwd: cwd,
+          blockedPaths: blocked,
+        });
+        return res.status(200).json({ success: false, output: 'Permission denied' });
+      }
     }
 
+    // If allowedPaths is specified, check if current path is exactly allowed
     if (Array.isArray(allowed) && allowed.length > 0) {
-      const ok = allowed.some((p) => cwd === p || cwd.startsWith(p + '/'));
-      if (!ok) return res.status(200).json({ success: false, output: 'Permission denied' });
+      const isAllowed = allowed.some((p) => cwd === p);
+      if (!isAllowed) {
+        console.warn('CTF execute - PERMISSION DENIED (path not in allowed list)', {
+          command: cmdName,
+          cwd: cwd,
+          allowedPaths: allowed,
+        });
+        return res.status(200).json({ success: false, output: 'Permission denied' });
+      }
     }
+    // If allowedPaths is empty or not specified, command is allowed (unless blocked)
 
     // Normalize output to a string for safety and log unexpected types
     let outVal = matched.output;
