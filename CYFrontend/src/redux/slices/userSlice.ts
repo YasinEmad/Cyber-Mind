@@ -8,6 +8,7 @@ interface Profile {
   flags: number;
   totalScore: number;
   globalRank: number;
+  solvedPuzzles?: number[];
 }
 
 interface User {
