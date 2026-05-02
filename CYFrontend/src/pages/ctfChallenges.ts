@@ -1,6 +1,8 @@
-import { ctfService } from '../api/ctfService';
+import axiosInstance from '../api/axios';
 import type { Challenge } from './ctfLevels';
 import { challenges as localChallenges } from './ctfLevels';
+
+const API_BASE_URL = 'ctf';
 
 /**
  * Hybrid challenges object that merges backend API data with local fsMods functions
@@ -22,7 +24,8 @@ export async function loadChallengesFromBackend(): Promise<Record<number, Challe
 
   try {
     // Fetch all available levels from backend
-    const availableLevels = await ctfService.getAvailableLevels();
+    const levelsResponse = await axiosInstance.get(`${API_BASE_URL}/levels/available`)
+    const availableLevels = levelsResponse.data.data;
     
     // Create challenges object by merging backend data with local fsMods
     const mergedChallenges: Record<number, Challenge> = {};
@@ -32,7 +35,8 @@ export async function loadChallengesFromBackend(): Promise<Record<number, Challe
       const localChallenge = localChallenges[level];
       
       // Fetch detailed challenge data from backend
-      const backendChallenge = await ctfService.getCTFChallenge(level);
+      const backendResponse = await axiosInstance.get(`${API_BASE_URL}/challenge/${level}`)
+      const backendChallenge = backendResponse.data.data;
 
       // Merge: use backend data but keep local fsMods
       mergedChallenges[level] = {
@@ -86,7 +90,8 @@ export function clearChallengeCache(): void {
  */
 export async function preloadChallenge(level: number): Promise<Challenge> {
   try {
-    const backendChallenge = await ctfService.getCTFChallenge(level);
+    const backendResponse = await axiosInstance.get(`${API_BASE_URL}/challenge/${level}`)
+    const backendChallenge = backendResponse.data.data;
     const localChallenge = localChallenges[level];
     
     const challenge: Challenge = {

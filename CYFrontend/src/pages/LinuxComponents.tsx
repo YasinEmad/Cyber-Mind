@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../redux/store';
+import { executeCTFCommand } from '../redux/slices/ctfSlice';
 import { 
   WindowState, 
   OSAction, 
@@ -220,7 +223,7 @@ export function WindowFrame({ win, dispatch, children, isActive }: {
 export function TerminalApp() {
   const context = useContext(OSContext) as OSContextType;
   if (!context) throw new Error('OSContext not found');
-  const { fs, setFs, isCTFMode, currentLevel, setCtfNotification, challenges } = context;
+  const { fs, isCTFMode, currentLevel, challenges } = context;
   const [lines, setLines] = useState<TerminalLine[]>([
     { type: 'output', text: `Ubuntu ${VERSION} (simulated)` },
     { type: 'output', text: `Welcome to Ubuntu! Type 'help' for available commands.` },
@@ -228,7 +231,11 @@ export function TerminalApp() {
   ]);
   const [input, setInput] = useState('');
   const [histIdx, setHistIdx] = useState(-1);
-  const engineRef = useRef(createTerminalEngine('/home/user', challenges));
+  const dispatch = useDispatch<AppDispatch>();
+  const ctfExecute = useCallback(async (level: number, command: string, currentPath: string, sessionState: any) => {
+    return dispatch(executeCTFCommand({ level, command, currentPath, sessionState })).unwrap();
+  }, [dispatch]);
+  const engineRef = useRef(createTerminalEngine('/home/user', challenges, ctfExecute));
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fsRef = useRef(fs);
@@ -238,11 +245,11 @@ export function TerminalApp() {
   useEffect(() => {
     try {
       const prevCwd = engineRef.current?.getCwd ? engineRef.current.getCwd() : '/home/user';
-      engineRef.current = createTerminalEngine(prevCwd, challenges);
+      engineRef.current = createTerminalEngine(prevCwd, challenges, ctfExecute);
     } catch (e) {
       // ignore
     }
-  }, [challenges]);
+  }, [challenges, ctfExecute]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [lines]);
   useEffect(() => { inputRef.current?.focus(); }, []);
@@ -250,7 +257,7 @@ export function TerminalApp() {
   const run = async (cmd: string) => {
     const engine = engineRef.current;
     console.log('Terminal run:', { cmd, isCTFMode, currentLevel });
-    const result = await engine.execute(cmd, fsRef.current, setFs, isCTFMode, currentLevel, setCtfNotification);
+    const result = await engine.execute(cmd, isCTFMode, currentLevel);
     if (result.some((r: TerminalLine) => r.type === 'clear')) { setLines([]); }
     else { setLines(prev => [...prev, ...result]); }
     setInput('');

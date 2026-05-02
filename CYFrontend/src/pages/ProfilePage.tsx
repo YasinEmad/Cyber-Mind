@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import axios from '@/api/axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Edit, LogOut, BarChart, CheckSquare, Trophy, 
-  Puzzle, Flag, Shield, Zap, Activity,  User as UserIcon,
-  Clock, Target
+  Edit, LogOut, CheckSquare, Trophy, 
+  Puzzle, Flag, Shield, Zap, Activity,
+  Target
 } from 'lucide-react';
 import { clearUser, selectUser, setUser } from '../redux/slices/userSlice';
 
@@ -54,12 +54,12 @@ const ProfilePage: React.FC = () => {
       try {
         const lastSolvedIds = solvedIds.slice(-5).reverse();
         const responses = await Promise.allSettled(
-          lastSolvedIds.map((id) => axios.get(`/puzzles/${id}`))
+          lastSolvedIds.map((id: number) => axios.get(`/puzzles/${id}`))
         );
 
         const puzzles = responses
-          .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
-          .map((result) => result.value.data);
+          .filter((result: PromiseSettledResult<any>): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
+          .map((result: PromiseFulfilledResult<any>) => result.value.data);
 
         if (responses.some((result) => result.status === 'rejected')) {
           console.warn('One or more solved puzzle fetches failed, showing available puzzles only.');
