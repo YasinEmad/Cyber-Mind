@@ -12,14 +12,16 @@ const {
   updateCTFLevel,
   deleteCTFLevel,
   toggleCTFLevelStatus,
-} = require('../controllers/ctfController');
+} = require('../controllers/ctfLevelController');
 const {
   getCommandTemplates,
   getCommandTemplateById,
   createCommandTemplate,
   updateCommandTemplate,
   deleteCommandTemplate,
-} = require('../controllers/ctfController');
+} = require('../controllers/commandTemplateController');
+
+const { executeCTFCommand } = require('../controllers/ctfExecutionController');
 
 const { authAdmin } = require('../middlewares/auth');
 
@@ -53,6 +55,6 @@ router.post('/templates', authAdmin, createCommandTemplate);
 router.put('/templates/:id', authAdmin, updateCommandTemplate);
 router.delete('/templates/:id', authAdmin, deleteCommandTemplate);
 // Execute a command in CTF mode (path-aware, backend-controlled)
-router.post('/execute', require('../controllers/ctfController').executeCTFCommand);
+router.post('/execute', executeCTFCommand);
 
 module.exports = router;
