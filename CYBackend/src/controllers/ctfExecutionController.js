@@ -15,6 +15,7 @@ exports.executeCTFCommand = async (req, res, next) => {
     }
 
     const commands = Array.isArray(lvl.commands) ? lvl.commands : [];
+    const customCommands = Array.isArray(lvl.customCommands) ? lvl.customCommands : [];
     const storedTemplates = Array.isArray(lvl.commandTemplates) ? lvl.commandTemplates : [];
 
     // Parse incoming
@@ -121,8 +122,16 @@ exports.executeCTFCommand = async (req, res, next) => {
         return stored === full || stored === base;
       });
     }
+
+    // Finally allow customCommands as additional level commands
+    if (!matched && Array.isArray(customCommands) && customCommands.length > 0) {
+      matched = customCommands.find((c) => {
+        const stored = (c && c.name) ? String(c.name).trim() : '';
+        return stored === full || stored === base;
+      });
+    }
+
     if (!matched) {
-      // No custom command defined for this level
       return res.status(200).json({ success: false, output: `${cmdName}: command not found` });
     }
 

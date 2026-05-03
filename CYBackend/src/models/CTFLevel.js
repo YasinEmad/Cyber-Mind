@@ -44,6 +44,11 @@ const CTFLevel = sequelize.define('CTFLevel', {
     allowNull: false,
     defaultValue: [],
   },
+  customCommands: {
+    type: DataTypes.JSON,
+    allowNull: false,
+    defaultValue: [],
+  },
   commandTemplates: {
     type: DataTypes.JSON,
     allowNull: false,
