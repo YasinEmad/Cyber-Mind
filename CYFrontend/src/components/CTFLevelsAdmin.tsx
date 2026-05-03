@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../redux/store';
 import {
@@ -68,6 +68,8 @@ const CTFLevelsAdmin: React.FC = () => {
   const [debugJson, setDebugJson] = useState('');
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [templateCommands, setTemplateCommands] = useState<TemplateCommand[]>([]);
+  const templateOutputRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
+  const customOutputRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
   const [formData, setFormData] = useState({
     level: '',
     title: '',
@@ -221,6 +223,18 @@ const CTFLevelsAdmin: React.FC = () => {
   const removeHint = (index: number) => {
     const updatedHints = formData.hints.filter((_, i) => i !== index);
     setFormData({ ...formData, hints: updatedHints });
+  };
+
+  const insertFlagIntoOutput = (textarea: HTMLTextAreaElement | null, currentValue: string, updateFunction: (value: string) => void) => {
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const newValue = currentValue.slice(0, start) + formData.flag + currentValue.slice(end);
+    updateFunction(newValue);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + formData.flag.length, start + formData.flag.length);
+    }, 0);
   };
 
   const addCommand = () => {
@@ -590,13 +604,25 @@ const CTFLevelsAdmin: React.FC = () => {
                         />
                       </div>
                       <div className="col-span-3">
-                        <input
-                          type="text"
-                          placeholder="Output"
-                          value={command.output}
-                          onChange={(e) => updateTemplateCommand(index, 'output', e.target.value)}
-                          className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg text-white"
-                        />
+                        <div className="relative">
+                          <textarea
+                            placeholder="Output"
+                            value={command.output}
+                            onChange={(e) => updateTemplateCommand(index, 'output', e.target.value)}
+                            className="w-full pr-10 px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg text-white resize-none"
+                            rows={2}
+                            ref={(el) => { templateOutputRefs.current[index] = el; }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => insertFlagIntoOutput(templateOutputRefs.current[index], command.output, (value) => updateTemplateCommand(index, 'output', value))}
+                            className="absolute top-2 right-2 h-7 w-7 rounded bg-green-600 hover:bg-green-700 text-white flex items-center justify-center text-xs"
+                            title="Insert Flag"
+                            aria-label="Insert level flag into output"
+                          >
+                            +
+                          </button>
+                        </div>
                       </div>
                       <div className="col-span-3">
                         <input
@@ -657,13 +683,25 @@ const CTFLevelsAdmin: React.FC = () => {
                         />
                       </div>
                       <div className="flex-1">
-                        <input
-                          type="text"
-                          placeholder="Output"
-                          value={command.output}
-                          onChange={(e) => updateCustomCommand(index, 'output', e.target.value)}
-                          className="w-full px-3 py-2 bg-zinc-800 border border-red-900/40 rounded-lg text-white focus:outline-none focus:border-red-500"
-                        />
+                        <div className="relative">
+                          <textarea
+                            placeholder="Output"
+                            value={command.output}
+                            onChange={(e) => updateCustomCommand(index, 'output', e.target.value)}
+                            className="w-full pr-10 px-3 py-2 bg-zinc-800 border border-red-900/40 rounded-lg text-white focus:outline-none focus:border-red-500 resize-none"
+                            rows={2}
+                            ref={(el) => { customOutputRefs.current[index] = el; }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => insertFlagIntoOutput(customOutputRefs.current[index], command.output, (value) => updateCustomCommand(index, 'output', value))}
+                            className="absolute top-2 right-2 h-7 w-7 rounded bg-green-600 hover:bg-green-700 text-white flex items-center justify-center text-xs"
+                            title="Insert Flag"
+                            aria-label="Insert level flag into output"
+                          >
+                            +
+                          </button>
+                        </div>
                       </div>
                       <div className="flex-1">
                         <input
