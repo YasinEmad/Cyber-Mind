@@ -112,7 +112,7 @@ function LevelGrid({ show, category }: { show: boolean; category: string }) {
   const getCategoryIcon = (cat: string) => {
     switch (cat) {
       case 'Linux': return <Terminal className="w-4 h-4" />;
-      case 'Windows': return <Shield className="w-4 h-4" />;
+      case 'Offensive Security': return <Shield className="w-4 h-4" />;
       case 'Network': return <Zap className="w-4 h-4" />;
       case 'Web Security': return <Target className="w-4 h-4" />;
       default: return <Lock className="w-4 h-4" />;
@@ -300,7 +300,7 @@ function LevelGrid({ show, category }: { show: boolean; category: string }) {
 }
 
 export default function CTFMindWelcome() {
-  const [phase, setPhase] = useState(0);
+  const [phase, setPhase] = useState(6);
   const [activeCategory, setActiveCategory] = useState("Linux");
   const [showStats, setShowStats] = useState(false);
 
@@ -314,11 +314,11 @@ export default function CTFMindWelcome() {
       difficulty: "Beginner to Intermediate"
     },
     { 
-      name: "Windows", 
+      name: "Offensive Security", 
       count: 10, 
-      color: "#3b82f6",
+      color: "#ef4444",
       icon: <Shield className="w-5 h-5" />,
-      description: "Explore Windows security and Active Directory",
+      description: "Practice offensive security techniques and exploit development",
       difficulty: "Intermediate"
     },
     { 
@@ -345,21 +345,13 @@ export default function CTFMindWelcome() {
       total: levels.length,
       completed: Math.floor(Math.random() * levels.length), // Mock data
       difficulty: categories.find(c => c.name === category)?.difficulty || "Unknown",
-      estimatedTime: category === "Linux" ? "2-3 weeks" : category === "Windows" ? "3-4 weeks" : category === "Network" ? "4-5 weeks" : "2-3 weeks"
+      estimatedTime: category === "Linux" ? "2-3 weeks" : category === "Offensive Security" ? "3-4 weeks" : category === "Network" ? "4-5 weeks" : "2-3 weeks"
     };
   };
 
   useEffect(() => {
-    const timers = [
-      setTimeout(() => setPhase(1), 400),
-      setTimeout(() => setPhase(2), 1200),
-      setTimeout(() => setPhase(3), 2200),
-      setTimeout(() => setPhase(4), 3000),
-      setTimeout(() => setPhase(5), 3800),
-      setTimeout(() => setPhase(6), 4800),
-      setTimeout(() => setShowStats(true), 5500),
-    ];
-    return () => timers.forEach(clearTimeout);
+    const timer = setTimeout(() => setShowStats(true), 300);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
@@ -427,24 +419,6 @@ export default function CTFMindWelcome() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            {/* Status bar */}
-            <motion.div 
-              className="inline-flex items-center gap-4 mb-6 px-6 py-3 bg-gradient-to-r from-gray-900/80 to-gray-800/80 backdrop-blur-sm border border-red-500/20 rounded-full"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.3, type: "spring" }}
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                <span className="text-sm text-green-400 font-mono">SYSTEM ONLINE</span>
-              </div>
-              <div className="w-px h-4 bg-gray-600" />
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-blue-400" />
-                <span className="text-sm text-blue-400 font-mono">1,247 ACTIVE USERS</span>
-              </div>
-            </motion.div>
-
             <motion.h1 
               className="text-5xl md:text-6xl font-bold mb-4 tracking-tight"
               initial={{ opacity: 0, scale: 0.8 }}
@@ -537,7 +511,7 @@ export default function CTFMindWelcome() {
                             <motion.div 
                               className={`h-1 rounded-full bg-gradient-to-r ${
                                 cat.name === 'Linux' ? 'from-red-500 to-red-400' :
-                                cat.name === 'Windows' ? 'from-blue-500 to-blue-400' :
+                                cat.name === 'Offensive Security' ? 'from-blue-500 to-blue-400' :
                                 cat.name === 'Network' ? 'from-green-500 to-green-400' :
                                 'from-yellow-500 to-yellow-400'
                               }`}
@@ -557,7 +531,7 @@ export default function CTFMindWelcome() {
                         <motion.div
                           className={`absolute inset-0 rounded-2xl ${
                             cat.name === 'Linux' ? 'bg-red-500/5' :
-                            cat.name === 'Windows' ? 'bg-blue-500/5' :
+                            cat.name === 'Offensive Security' ? 'bg-blue-500/5' :
                             cat.name === 'Network' ? 'bg-green-500/5' :
                             'bg-yellow-500/5'
                           }`}

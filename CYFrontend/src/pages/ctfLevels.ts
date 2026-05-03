@@ -1,4 +1,4 @@
-import type { FileSystem } from './filesystem';
+import type { FileSystem } from '../lib/filesystem';
 
 // NOTE: The authoritative CTF levels are now stored in the backend at CYBackend/src/data/ctfLevels.js
 // This file is kept on the frontend for local execution of filesystem modifications (fsMods)

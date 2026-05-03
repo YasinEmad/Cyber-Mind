@@ -1,4 +1,4 @@
-import { challenges as defaultChallenges } from './ctfLevels';
+import { challenges as defaultChallenges } from '../pages/ctfLevels';
 
 // ─── TYPES & INTERFACES ──────────────────────────────────────────────────────
 export interface FileSystemNode {

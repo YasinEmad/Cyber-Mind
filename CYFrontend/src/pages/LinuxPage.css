@@ -46,7 +46,6 @@
   background-attachment: fixed;
 }
 
-
 .glass {
   background: rgba(30, 30, 30, 0.85);
   backdrop-filter: blur(20px);
@@ -69,7 +68,90 @@
   background: linear-gradient(to right, #4b2a39 0%, #3a1f2d 100%);
   border-bottom: 1px solid rgba(255,255,255,0.05);
 }
-.terminal-bg { background: #1a1a1a; }
+.terminal-bg {
+  background: radial-gradient(circle at top left, rgba(79, 38, 57, 0.95), rgba(18, 18, 18, 1) 55%);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: inset 0 0 30px rgba(0,0,0,0.4);
+}
+.terminal-app {
+  border-radius: 1.5rem;
+  overflow: hidden;
+}
+.terminal-output {
+  min-height: 0;
+}
+.terminal-prompt {
+  padding: 0.4rem 0.25rem 0.3rem;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+.files-app {
+  gap: 12px;
+}
+.files-sidebar {
+  padding: 0.75rem 0.5rem;
+  box-shadow: inset -2px 0 30px rgba(0,0,0,0.35);
+}
+.files-main {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(28,28,28,0.95), rgba(18,18,18,1));
+}
+.files-toolbar {
+  background: rgba(35,35,35,0.95);
+}
+.files-breadcrumb {
+  background: rgba(255,255,255,0.02);
+}
+.files-content {
+  background: rgba(255,255,255,0.02);
+}
+.file-card {
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.file-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255,255,255,0.09);
+}
+.file-row {
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.file-row:hover {
+  background: rgba(255,255,255,0.06);
+  transform: translateX(2px);
+}
+.file-item.selected {
+  background: linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.1));
+  border-color: rgba(212,175,55,0.4);
+  box-shadow: 0 12px 30px rgba(212,175,55,0.08);
+}
+.settings-app {
+  background: linear-gradient(180deg, rgba(28,28,28,0.95), rgba(18,18,18,1));
+}
+.settings-tab.active {
+  background: rgba(212,175,55,0.18);
+  border-left: 3px solid #d4af37;
+}
+.settings-tab:hover {
+  background: rgba(255,255,255,0.05);
+}
+.about-app {
+  background: linear-gradient(135deg, rgba(35,35,35,0.95), rgba(16,16,16,1));
+}
+.terminal-output div {
+  word-break: break-word;
+}
+.terminal-output .text-blue-300 {
+  color: #7fb1ff;
+}
+.terminal-output .text-gray-200 {
+  color: #e5e7eb;
+}
+.terminal-output .text-green-400 {
+  color: #7fed72;
+}
+
 .ubuntu-orange { color: #d4af37; }
 .ubuntu-orange-bg { background: #d4af37; }
 .selection-highlight { background: rgba(212, 175, 55, 0.3); }
