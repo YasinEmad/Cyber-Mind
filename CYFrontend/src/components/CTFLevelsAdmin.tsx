@@ -27,6 +27,12 @@ interface CTFLevel {
     output: string;
     description: string;
   }>;
+  customCommands?: Array<{
+    name: string;
+    output: string;
+    description: string;
+  }>;
+  commandTemplates?: Array<{ templateId: string; values: any }>;
   requiredCommandSequence?: string[];
   successCondition?: string;
   initialDirectory?: string;
@@ -40,6 +46,11 @@ interface Command {
   description: string;
   allowedPaths?: string[];
   blockedPaths?: string[];
+}
+
+interface TemplateCommand extends Command {
+  sourceTemplateId?: string;
+  sourceCommandIndex?: number;
 }
 
 const CTFLevelsAdmin: React.FC = () => {
@@ -56,6 +67,7 @@ const CTFLevelsAdmin: React.FC = () => {
   const [debugDumpOpen, setDebugDumpOpen] = useState(false);
   const [debugJson, setDebugJson] = useState('');
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [templateCommands, setTemplateCommands] = useState<TemplateCommand[]>([]);
   const [formData, setFormData] = useState({
     level: '',
     title: '',
@@ -65,6 +77,7 @@ const CTFLevelsAdmin: React.FC = () => {
     difficulty: 'easy' as 'easy' | 'medium' | 'hard',
     isActive: true,
     commands: [] as Command[],
+    customCommands: [] as Command[],
     commandTemplates: [] as Array<{ templateId: string; values: any }>,
     requiredCommandSequence: [] as string[],
     successCondition: '',
@@ -97,22 +110,14 @@ const CTFLevelsAdmin: React.FC = () => {
     }
   };
 
-  const loadTemplates = async () => {
-    try {
-      await dispatch(fetchTemplates()).unwrap();
-    } catch (error) {
-      console.error('Error loading templates:', error);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submitting) return; // Prevent multiple submissions
     setSubmitting(true);
     console.debug('Submitting CTF level, formData:', formData);
     // Client-side validation to avoid server 400
-    if ((!formData.commands || formData.commands.length === 0) && (!formData.commandTemplates || formData.commandTemplates.length === 0)) {
-      alert('Please add at least one command or add from a template before saving the level.');
+    if ((!formData.commands || formData.commands.length === 0) && (!formData.commandTemplates || formData.commandTemplates.length === 0) && (!formData.customCommands || formData.customCommands.length === 0)) {
+      alert('Please add at least one command or add from a template or add custom commands before saving the level.');
       setSubmitting(false);
       return;
     }
@@ -135,6 +140,7 @@ const CTFLevelsAdmin: React.FC = () => {
   };
 
   const handleEdit = (level: CTFLevel) => {
+    const parsedCommandTemplates = Array.isArray(level.commandTemplates) ? level.commandTemplates : [];
     setEditingLevel(level);
     setFormData({
       level: level.level.toString(),
@@ -144,12 +150,14 @@ const CTFLevelsAdmin: React.FC = () => {
       flag: level.flag,
       difficulty: level.difficulty,
       isActive: level.isActive,
-      commands: level.commands || [],
-      commandTemplates: [],
+      commands: [], // Will be loaded from templates
+      customCommands: level.customCommands || [],
+      commandTemplates: parsedCommandTemplates,
       requiredCommandSequence: level.requiredCommandSequence || [],
       successCondition: level.successCondition || '',
       initialDirectory: level.initialDirectory || '/home/user',
     });
+    loadTemplateCommands(parsedCommandTemplates);
     setShowForm(true);
   };
 
@@ -187,6 +195,7 @@ const CTFLevelsAdmin: React.FC = () => {
       difficulty: 'easy',
       isActive: true,
       commands: [],
+      customCommands: [],
       commandTemplates: [],
       requiredCommandSequence: [],
       successCondition: '',
@@ -221,6 +230,43 @@ const CTFLevelsAdmin: React.FC = () => {
     });
   };
 
+  const updateTemplateCommand = (index: number, field: keyof Command, value: any) => {
+    setTemplateCommands((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+
+      setFormData((prevFormData) => {
+        const nextTemplates = prevFormData.commandTemplates.map((ct) => {
+          const templateId = String(ct.templateId);
+          const commandsForTemplate = updated
+            .filter((cmd) => String(cmd.sourceTemplateId) === templateId)
+            .sort((a, b) => (a.sourceCommandIndex ?? 0) - (b.sourceCommandIndex ?? 0))
+            .map((cmd) => ({
+              name: cmd.name,
+              output: cmd.output,
+              description: cmd.description,
+              allowedPaths: cmd.allowedPaths || [],
+              blockedPaths: cmd.blockedPaths || [],
+            }));
+
+          return {
+            ...ct,
+            values: {
+              ...ct.values,
+              commands: commandsForTemplate,
+            },
+          };
+        });
+        return {
+          ...prevFormData,
+          commandTemplates: nextTemplates,
+        };
+      });
+
+      return updated;
+    });
+  };
+
   const addCommandFromTemplate = (templateId: string) => {
     try {
       const tmpl = templates.find((t: any) => String(t.templateId) === String(templateId) || String(t.id) === String(templateId));
@@ -248,9 +294,10 @@ const CTFLevelsAdmin: React.FC = () => {
         values.commands = [{ name: values.name, output: values.output, description: '' }];
       }
       console.debug('Adding command from template:', templateId, values);
+      const sourceTemplateId = tmpl.templateId ?? String(tmpl.id);
       setFormData((prev) => ({
         ...prev,
-        commandTemplates: [...(prev.commandTemplates || []), { templateId: tmpl.templateId ?? String(tmpl.id), values }],
+        commandTemplates: [...(prev.commandTemplates || []), { templateId: sourceTemplateId, values }],
       }));
       // clear selection so user sees action taken
       setSelectedTemplateId('');
@@ -258,19 +305,18 @@ const CTFLevelsAdmin: React.FC = () => {
       setActionMessage(`Added ${Array.isArray(values.commands) && values.commands.length > 0 ? values.commands.length : 1} command(s) from template "${tmpl.name}"`);
       setTimeout(() => setActionMessage(null), 3000);
 
-      // Also expand locally into commands for immediate visibility
-      // Expand normalized commands into visible `formData.commands`
+      // Also expand locally into editable template command entries
       if (Array.isArray(values.commands) && values.commands.length > 0) {
-        const expanded = values.commands.map((c: any) => ({
+        const expanded: TemplateCommand[] = values.commands.map((c: any, idx: number) => ({
           name: c.name,
           output: c.output,
           description: c.description || '',
           allowedPaths: Array.isArray(c.allowedPaths) ? c.allowedPaths : [],
           blockedPaths: Array.isArray(c.blockedPaths) ? c.blockedPaths : [],
-          sourceTemplateId: tmpl.templateId ?? String(tmpl.id),
-          sourceTemplateVersion: tmpl.version || 1,
+          sourceTemplateId,
+          sourceCommandIndex: idx,
         }));
-        setFormData((prev) => ({ ...prev, commands: [...(prev.commands || []), ...expanded] }));
+        setTemplateCommands((prev) => [...prev, ...expanded]);
       }
     } catch (err: any) {
       console.error('addCommandFromTemplate failed:', err, { templateId });
@@ -295,17 +341,54 @@ const CTFLevelsAdmin: React.FC = () => {
     console.debug('commandTemplates changed, count=', (formData.commandTemplates || []).length, formData.commandTemplates);
   }, [formData.commandTemplates]);
 
-  const updateCommand = (index: number, field: keyof Command, value: any) => {
-    const updatedCommands = [...formData.commands];
-    updatedCommands[index] = { ...updatedCommands[index], [field]: value } as Command;
-    setFormData({ ...formData, commands: updatedCommands });
-  };
-
-  const removeCommand = (index: number) => {
+  const addCustomCommand = () => {
     setFormData({
       ...formData,
-      commands: formData.commands.filter((_, i) => i !== index),
+      customCommands: [...formData.customCommands, { name: '', output: '', description: '', allowedPaths: [], blockedPaths: [] } as Command],
     });
+  };
+
+  const updateCustomCommand = (index: number, field: keyof Command, value: any) => {
+    const updatedCommands = [...formData.customCommands];
+    updatedCommands[index] = { ...updatedCommands[index], [field]: value } as Command;
+    setFormData({ ...formData, customCommands: updatedCommands });
+  };
+
+  const removeCustomCommand = (index: number) => {
+    setFormData({
+      ...formData,
+      customCommands: formData.customCommands.filter((_, i) => i !== index),
+    });
+  };
+
+  const loadTemplateCommands = async (commandTemplates: Array<{ templateId: string; values: any }>) => {
+    if (commandTemplates.length === 0) {
+      setTemplateCommands([]);
+      return;
+    }
+    try {
+      // For simplicity, assume we can expand locally if templates are loaded
+      let expanded: Command[] = [];
+      for (const ct of commandTemplates) {
+        const tmpl = templates.find(t => String(t.templateId) === String(ct.templateId) || String(t.id) === String(ct.templateId));
+        if (tmpl && Array.isArray(tmpl.commands)) {
+          const cmds = tmpl.commands.map((c: any, idx: number) => ({
+            name: c.name || tmpl.baseCommand,
+            output: c.output || tmpl.defaultOutput || '',
+            description: c.description || '',
+            allowedPaths: c.allowedPaths || [],
+            blockedPaths: c.blockedPaths || [],
+            sourceTemplateId: String(ct.templateId),
+            sourceCommandIndex: idx,
+          }));
+          expanded = [...expanded, ...cmds];
+        }
+      }
+      setTemplateCommands(expanded);
+    } catch (error) {
+      console.error('Error loading template commands:', error);
+      setTemplateCommands([]);
+    }
   };
 
   const filteredLevels = levels.filter(level =>
@@ -461,7 +544,7 @@ const CTFLevelsAdmin: React.FC = () => {
               <div>
 
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-medium text-gray-300">Terminal Commands</label>
+                  <label className="block text-sm font-medium text-gray-300">Template Commands (from selected templates)</label>
                   <div className="flex items-center gap-2">
                     <select
                       value={selectedTemplateId}
@@ -495,14 +578,81 @@ const CTFLevelsAdmin: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  {formData.commands.map((command, index) => (
-                    <div key={`cmd-${index}`} className="flex gap-2 items-end">
+                  {templateCommands.map((command, index) => (
+                    <div key={`tmpl-cmd-${index}`} className="grid grid-cols-12 gap-2 items-end bg-zinc-800 p-2 rounded">
+                      <div className="col-span-2">
+                        <input
+                          type="text"
+                          placeholder="Command name"
+                          value={command.name}
+                          onChange={(e) => updateTemplateCommand(index, 'name', e.target.value)}
+                          className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg text-white"
+                        />
+                      </div>
+                      <div className="col-span-3">
+                        <input
+                          type="text"
+                          placeholder="Output"
+                          value={command.output}
+                          onChange={(e) => updateTemplateCommand(index, 'output', e.target.value)}
+                          className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg text-white"
+                        />
+                      </div>
+                      <div className="col-span-3">
+                        <input
+                          type="text"
+                          placeholder="Description"
+                          value={command.description}
+                          onChange={(e) => updateTemplateCommand(index, 'description', e.target.value)}
+                          className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg text-white"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <input
+                          type="text"
+                          placeholder="Allowed paths"
+                          value={(command.allowedPaths || []).join(', ')}
+                          onChange={(e) => updateTemplateCommand(index, 'allowedPaths', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))}
+                          className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg text-white"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <input
+                          type="text"
+                          placeholder="Blocked paths"
+                          value={(command.blockedPaths || []).join(', ')}
+                          onChange={(e) => updateTemplateCommand(index, 'blockedPaths', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))}
+                          className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg text-white"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Commands Section */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-medium text-gray-300">Custom Commands (additional for this level)</label>
+                  <button
+                    type="button"
+                    onClick={addCustomCommand}
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex items-center gap-1"
+                  >
+                    <Plus size={16} />
+                    Add Custom Command
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {formData.customCommands.map((command, index) => (
+                    <div key={`custom-cmd-${index}`} className="flex gap-2 items-end bg-blue-900/20 p-2 rounded border border-blue-600/40">
                       <div className="flex-1">
                         <input
                           type="text"
                           placeholder="Command name"
                           value={command.name}
-                          onChange={(e) => updateCommand(index, 'name', e.target.value)}
+                          onChange={(e) => updateCustomCommand(index, 'name', e.target.value)}
                           className="w-full px-3 py-2 bg-zinc-800 border border-red-900/40 rounded-lg text-white focus:outline-none focus:border-red-500"
                         />
                       </div>
@@ -511,7 +661,7 @@ const CTFLevelsAdmin: React.FC = () => {
                           type="text"
                           placeholder="Output"
                           value={command.output}
-                          onChange={(e) => updateCommand(index, 'output', e.target.value)}
+                          onChange={(e) => updateCustomCommand(index, 'output', e.target.value)}
                           className="w-full px-3 py-2 bg-zinc-800 border border-red-900/40 rounded-lg text-white focus:outline-none focus:border-red-500"
                         />
                       </div>
@@ -520,62 +670,7 @@ const CTFLevelsAdmin: React.FC = () => {
                           type="text"
                           placeholder="Description"
                           value={command.description}
-                          onChange={(e) => updateCommand(index, 'description', e.target.value)}
-                          className="w-full px-3 py-2 bg-zinc-800 border border-red-900/40 rounded-lg text-white focus:outline-none focus:border-red-500"
-                        />
-                      </div>
-                          <div className="flex-1">
-                            <input
-                              type="text"
-                              placeholder="Allowed paths (comma separated)"
-                              value={(command.allowedPaths || []).join(', ')}
-                              onChange={(e) => updateCommand(index, 'allowedPaths', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                              className="w-full px-3 py-2 bg-zinc-800 border border-red-900/40 rounded-lg text-white focus:outline-none focus:border-red-500"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <input
-                              type="text"
-                              placeholder="Blocked paths (comma separated)"
-                              value={(command.blockedPaths || []).join(', ')}
-                              onChange={(e) => updateCommand(index, 'blockedPaths', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                              className="w-full px-3 py-2 bg-zinc-800 border border-red-900/40 rounded-lg text-white focus:outline-none focus:border-red-500"
-                            />
-                          </div>
-                      <button
-                        type="button"
-                        onClick={() => removeCommand(index)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
-                  {formData.commandTemplates.map((ct, index) => (
-                    <div key={`tmpl-${index}`} className="flex gap-2 items-end border border-zinc-800 p-2 rounded">
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          placeholder="Command name"
-                          value={ct.values.name}
-                          onChange={(e) => {
-                            const updated = [...formData.commandTemplates];
-                            updated[index] = { ...updated[index], values: { ...updated[index].values, name: e.target.value } };
-                            setFormData({ ...formData, commandTemplates: updated });
-                          }}
-                          className="w-full px-3 py-2 bg-zinc-800 border border-red-900/40 rounded-lg text-white focus:outline-none focus:border-red-500"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          placeholder="Output"
-                          value={ct.values.output}
-                          onChange={(e) => {
-                            const updated = [...formData.commandTemplates];
-                            updated[index] = { ...updated[index], values: { ...updated[index].values, output: e.target.value } };
-                            setFormData({ ...formData, commandTemplates: updated });
-                          }}
+                          onChange={(e) => updateCustomCommand(index, 'description', e.target.value)}
                           className="w-full px-3 py-2 bg-zinc-800 border border-red-900/40 rounded-lg text-white focus:outline-none focus:border-red-500"
                         />
                       </div>
@@ -583,12 +678,8 @@ const CTFLevelsAdmin: React.FC = () => {
                         <input
                           type="text"
                           placeholder="Allowed paths (comma separated)"
-                          value={(ct.values.allowedPaths || []).join(', ')}
-                          onChange={(e) => {
-                            const updated = [...formData.commandTemplates];
-                            updated[index] = { ...updated[index], values: { ...updated[index].values, allowedPaths: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } };
-                            setFormData({ ...formData, commandTemplates: updated });
-                          }}
+                          value={(command.allowedPaths || []).join(', ')}
+                          onChange={(e) => updateCustomCommand(index, 'allowedPaths', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
                           className="w-full px-3 py-2 bg-zinc-800 border border-red-900/40 rounded-lg text-white focus:outline-none focus:border-red-500"
                         />
                       </div>
@@ -596,18 +687,14 @@ const CTFLevelsAdmin: React.FC = () => {
                         <input
                           type="text"
                           placeholder="Blocked paths (comma separated)"
-                          value={(ct.values.blockedPaths || []).join(', ')}
-                          onChange={(e) => {
-                            const updated = [...formData.commandTemplates];
-                            updated[index] = { ...updated[index], values: { ...updated[index].values, blockedPaths: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } };
-                            setFormData({ ...formData, commandTemplates: updated });
-                          }}
+                          value={(command.blockedPaths || []).join(', ')}
+                          onChange={(e) => updateCustomCommand(index, 'blockedPaths', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
                           className="w-full px-3 py-2 bg-zinc-800 border border-red-900/40 rounded-lg text-white focus:outline-none focus:border-red-500"
                         />
                       </div>
                       <button
                         type="button"
-                        onClick={() => setFormData({ ...formData, commandTemplates: formData.commandTemplates.filter((_, i) => i !== index) })}
+                        onClick={() => removeCustomCommand(index)}
                         className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded"
                       >
                         <Trash2 size={16} />
@@ -619,8 +706,8 @@ const CTFLevelsAdmin: React.FC = () => {
 
               <div className="flex justify-end gap-3 pt-4 items-center">
                 <div className="mr-auto text-sm text-gray-300 flex items-center gap-4">
-                  <div>Commands: <span className="font-mono">{(formData.commands || []).length}</span></div>
-                  <div>Templates: <span className="font-mono">{(formData.commandTemplates || []).length}</span></div>
+                  <div>Template Commands: <span className="font-mono">{templateCommands.length}</span></div>
+                  <div>Custom Commands: <span className="font-mono">{formData.customCommands.length}</span></div>
                   <button type="button" onClick={() => { setDebugJson(JSON.stringify(formData, null, 2)); setDebugDumpOpen(true); }} className="px-2 py-1 bg-zinc-700 text-white rounded">Dump formData</button>
                 </div>
                 <button

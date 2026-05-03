@@ -18,6 +18,8 @@ export interface CTFChallenge {
   flag?: string
   difficulty: string
   commands?: any[]
+  templateCommands?: any[]
+  customCommands?: any[]
   requiredCommandSequence?: string[]
   successCondition?: string
   initialDirectory?: string
@@ -34,6 +36,7 @@ export interface CTFLevelAdmin {
   difficulty: 'easy' | 'medium' | 'hard'
   isActive: boolean
   commands: any[]
+  customCommands?: any[]
   requiredCommandSequence?: string[]
   successCondition?: string
   initialDirectory?: string
@@ -52,6 +55,7 @@ export interface CTFTemplate {
   blockedPaths?: string[]
   description?: string
   commands?: any[]
+  version?: number
 }
 
 export interface CTFCommandExecutionResult {

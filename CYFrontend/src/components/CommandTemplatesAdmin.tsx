@@ -45,13 +45,7 @@ const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) =
   const [adminStatus, setAdminStatus] = useState<AdminStatus | null>(null);
   const [checkingStatus, setCheckingStatus] = useState(true);
 
-  useEffect(() => {
-    checkAdminStatus();
-    load();
-  }, [load]);
-
-  // Check if user is actually admin in database
-  const checkAdminStatus = async () => {
+  const checkAdminStatus = useCallback(async () => {
     setCheckingStatus(true);
     try {
       const response = await axiosInstance.get('/users/me/admin-status');
@@ -80,56 +74,54 @@ const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) =
     } finally {
       setCheckingStatus(false);
     }
-  };
-
-  useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => setNotification(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       await dispatch(fetchTemplates()).unwrap();
-      // Clear any authentication errors when load succeeds
-      if (notification?.type === 'error' && (notification.message.includes('authorized') || notification.message.includes('role'))) {
-        setNotification(null);
-      }
     } catch (err: any) {
       console.error('Error loading templates:', err);
-      
-      // Admin is verified but API still failing - likely token/session issue
+
       if (adminStatus?.isAdmin) {
         console.log('Admin is verified but template API failed:', {
           status: err?.response?.status,
           message: err?.response?.data?.message
         });
-        
-        setNotification({ 
-          type: 'error', 
+
+        setNotification({
+          type: 'error',
           message: 'Template API error (session issue) - Try refreshing the page or logging out and back in'
         });
         return;
       }
-      
-      // No admin status yet - might still be checking
+
       if (!adminStatus) {
         setNotification({ type: 'error', message: 'Still verifying permissions...' });
         return;
       }
-      
-      // User is confirmed NOT admin
+
       if (!adminStatus.isAdmin) {
-        setNotification({ 
-          type: 'error', 
+        setNotification({
+          type: 'error',
           message: `Your role is "${adminStatus.role}" but "admin" is required to view templates`
         });
         return;
       }
-    } finally { setLoading(false); }
-  }, [adminStatus, dispatch, notification]);
+    } finally {
+      setLoading(false);
+    }
+  }, [adminStatus, dispatch]);
+
+  useEffect(() => {
+    checkAdminStatus();
+  }, [checkAdminStatus]);
+
+  useEffect(() => {
+    if (adminStatus?.isAdmin) {
+      load();
+    }
+  }, [adminStatus, load]);
 
   const openCreate = () => { setEditing(null); setForm({ templateId: '', name: '', baseCommand: '', defaultOutput: '', fields: [], allowedPaths: [], blockedPaths: [], description: '', commands: [] }); setShowForm(true); };
 
