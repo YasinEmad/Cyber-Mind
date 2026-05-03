@@ -27,7 +27,7 @@ import {
   SettingsApp,
   AboutApp,
   BrowserApp,
-} from './LinuxComponents';
+} from '../components/LinuxComponents';
 
 // ─── Context Provider ───────────────────────────────────────────────────────
 // OSContext is now exported from LinuxOS.ts

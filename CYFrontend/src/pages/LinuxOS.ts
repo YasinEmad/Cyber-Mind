@@ -1,16 +1,16 @@
 // Re-export everything from modular files
 
 // From filesystem.ts
-export type { FileSystemNode, FileSystem } from './filesystem';
-export { USERNAME, HOSTNAME, VERSION, initialFS, resolvePath, getCTFFS } from './filesystem';
+export type { FileSystemNode, FileSystem } from '../lib/filesystem';
+export { USERNAME, HOSTNAME, VERSION, initialFS, resolvePath, getCTFFS } from '../lib/filesystem';
 
 // From terminal.ts
 export type { TerminalLine } from './terminal';
 export { createTerminalEngine } from './terminal';
 
 // From os.ts
-export type { WindowState, OSState, OSAction, OSContextType } from './os';
-export { OSContext, appDefaults, appMeta, osReducer } from './os';
+export type { WindowState, OSState, OSAction, OSContextType } from '../lib/os';
+export { OSContext, appDefaults, appMeta, osReducer } from '../lib/os';
 
 // From ctfLevels.ts (local fallback)
 export type { Challenge } from './ctfLevels';

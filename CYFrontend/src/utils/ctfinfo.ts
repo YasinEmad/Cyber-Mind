@@ -88,61 +88,61 @@ export default {
       "level": 11,
       "name": "Windows File System",
       "description": "Navigate Windows file systems and find hidden files.",
-      "category": "Windows"
+      "category": "Offensive Security"
     },
     {
       "level": 12,
       "name": "Windows Registry",
       "description": "Extract sensitive data from Windows registry keys.",
-      "category": "Windows"
+      "category": "Offensive Security"
     },
     {
       "level": 13,
       "name": "Windows Services",
       "description": "Analyze and exploit Windows service vulnerabilities.",
-      "category": "Windows"
+      "category": "Offensive Security"
     },
     {
       "level": 14,
       "name": "Windows Event Logs",
       "description": "Search Windows event logs for security information.",
-      "category": "Windows"
+      "category": "Offensive Security"
     },
     {
       "level": 15,
       "name": "Windows User Accounts",
       "description": "Manage and exploit Windows user account configurations.",
-      "category": "Windows"
+      "category": "Offensive Security"
     },
     {
       "level": 16,
       "name": "Windows Group Policy",
       "description": "Understand and bypass Windows Group Policy restrictions.",
-      "category": "Windows"
+      "category": "Offensive Security"
     },
     {
       "level": 17,
       "name": "Windows Scheduled Tasks",
       "description": "Analyze Windows Task Scheduler for hidden tasks.",
-      "category": "Windows"
+      "category": "Offensive Security"
     },
     {
       "level": 18,
       "name": "Windows DLL Hijacking",
       "description": "Exploit DLL loading vulnerabilities in Windows.",
-      "category": "Windows"
+      "category": "Offensive Security"
     },
     {
       "level": 19,
       "name": "Windows Firewall",
       "description": "Bypass Windows firewall configurations.",
-      "category": "Windows"
+      "category": "Offensive Security"
     },
     {
       "level": 20,
       "name": "Windows PowerShell",
       "description": "Use PowerShell for system enumeration and exploitation.",
-      "category": "Windows"
+      "category": "Offensive Security"
     },
     {
       "level": 21,

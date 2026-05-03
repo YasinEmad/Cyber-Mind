@@ -125,8 +125,6 @@ const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) =
 
   const openCreate = () => { setEditing(null); setForm({ templateId: '', name: '', baseCommand: '', defaultOutput: '', fields: [], allowedPaths: [], blockedPaths: [], description: '', commands: [] }); setShowForm(true); };
 
-  const openEdit = (t: any) => openEditEnhanced(t);
-
   // Enhanced edit to include commands
   const openEditEnhanced = (t: any) => {
     setEditing(t);

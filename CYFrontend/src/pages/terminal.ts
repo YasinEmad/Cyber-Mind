@@ -1,4 +1,4 @@
-import { USERNAME, HOSTNAME } from './filesystem';
+import { USERNAME, HOSTNAME } from '../lib/filesystem';
 import { challenges as defaultChallenges } from './ctfLevels';
 
 export interface TerminalLine {

@@ -129,8 +129,14 @@ const ChallengeView = () => {
       challengeDetails: formData.challengeDetails || formData.description
     };
 
+    const challengeId = editingChallenge.id?.toString() || editingChallenge._id;
+    if (!challengeId) {
+      toast.error('Invalid challenge ID');
+      return;
+    }
+
     try {
-      await dispatch(updateChallenge({ id: editingChallenge.id || editingChallenge._id, challengeData })).unwrap();
+      await dispatch(updateChallenge({ id: challengeId, challengeData })).unwrap();
       toast.success('Challenge updated successfully!');
       setIsEditModalOpen(false);
       setEditingChallenge(null);
@@ -149,8 +155,14 @@ const ChallengeView = () => {
   const confirmDelete = async () => {
     if (!deleteConfirm.challenge) return;
 
+    const deleteId = deleteConfirm.challenge.id?.toString() || deleteConfirm.challenge._id;
+    if (!deleteId) {
+      toast.error('Invalid challenge ID');
+      return;
+    }
+
     try {
-      await dispatch(deleteChallenge(deleteConfirm.challenge.id || deleteConfirm.challenge._id)).unwrap();
+      await dispatch(deleteChallenge(deleteId)).unwrap();
       toast.success('Challenge deleted successfully!');
       setDeleteConfirm({ isOpen: false, challenge: null });
       dispatch(fetchChallenges());
