@@ -96,7 +96,7 @@ exports.getCTFChallenge = async (req, res, next) => {
         title: challenge.title,
         description: challenge.description,
         hints: challenge.hint,
-        flag: challenge.flag,
+        // flag: challenge.flag,  // ❌ لا نرسل الـ flag للـ frontend لأسباب أمنية
         difficulty: challenge.difficulty,
         commands: allCommands, // for backward compatibility
         templateCommands,
@@ -148,7 +148,7 @@ exports.getCTFChallengeWithFS = async (req, res, next) => {
         title: challenge.title,
         description: challenge.description,
         hints: challenge.hint,
-        flag: challenge.flag,
+        // flag: challenge.flag,  // ❌ لا نرسل الـ flag للـ frontend لأسباب أمنية
         difficulty: challenge.difficulty,
         commands: allCommands, // for backward compatibility
         templateCommands,

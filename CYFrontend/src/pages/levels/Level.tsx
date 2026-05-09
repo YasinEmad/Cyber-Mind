@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import PageWrapper from '../../components/PageWrapper';
+import FlagSubmissionPanel from '../../components/FlagSubmissionPanel';
 import { motion } from 'framer-motion';
 import { ShieldCheck, ChevronRight, Lightbulb, Play, Loader, AlertCircle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -45,6 +46,11 @@ const Level: React.FC = () => {
     navigate(`/linux?level=${levelNumber}`);
   };
 
+  const handleFlagSuccess = useCallback(() => {
+    // Refresh challenge data to show updated completion status
+    dispatch(fetchCTFChallenge(levelNumber));
+  }, [dispatch, levelNumber]);
+
   // 2. واجهة حالة التحميل (Loading UI)
   const isLoading = status === 'loading';
 
@@ -65,7 +71,8 @@ const Level: React.FC = () => {
 
   return (
     <PageWrapper>
-      <div className="h-[calc(100vh-8rem)] flex items-center justify-center p-4 lg:p-8">
+      <div className="h-full flex flex-col items-center justify-center p-4 lg:p-8 gap-8">
+        {/* Challenge Info Section */}
         <motion.div 
           className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-12 gap-px bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden shadow-2xl"
           initial={{ opacity: 0, y: 20 }}
@@ -139,6 +146,12 @@ const Level: React.FC = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* Flag Submission Section */}
+        <FlagSubmissionPanel 
+          level={levelNumber}
+          onSuccess={handleFlagSuccess}
+        />
       </div>
     </PageWrapper>
   );

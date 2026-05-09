@@ -5,6 +5,7 @@ const Puzzle = require('./Puzzle');
 const Challenge = require('./Challenge');
 const CTFLevel = require('./CTFLevel');
 const CommandTemplate = require('./CommandTemplate');
+const CTFLevelCompletion = require('./CTFLevelCompletion');
 
 // Define associations
 User.hasOne(Profile, { foreignKey: 'userId', as: 'profile' });
@@ -21,4 +22,5 @@ module.exports = {
   Challenge,
   CTFLevel,
   CommandTemplate,
+  CTFLevelCompletion,
 };

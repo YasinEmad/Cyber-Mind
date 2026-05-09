@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Terminal, 
@@ -303,6 +305,7 @@ export default function CTFMindWelcome() {
   const [phase, setPhase] = useState(6);
   const [activeCategory, setActiveCategory] = useState("Linux");
   const [showStats, setShowStats] = useState(false);
+  const completedLevels = useSelector((state: RootState) => state.ctf.completedLevels);
 
   const categories = [
     { 
@@ -341,9 +344,10 @@ export default function CTFMindWelcome() {
 
   const getCategoryStats = (category: string) => {
     const levels = ctfInfo.levels.filter(level => level.category === category);
+    const completed = levels.filter(level => completedLevels.includes(level.level)).length;
     return {
       total: levels.length,
-      completed: Math.floor(Math.random() * levels.length), // Mock data
+      completed: completed,
       difficulty: categories.find(c => c.name === category)?.difficulty || "Unknown",
       estimatedTime: category === "Linux" ? "2-3 weeks" : category === "Offensive Security" ? "3-4 weeks" : category === "Network" ? "4-5 weeks" : "2-3 weeks"
     };

@@ -4,6 +4,7 @@ import { useDispatch } from "react-redux";
 import { GoogleAuthProvider, GithubAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../firebase";
 import { setUser } from "../redux/slices/userSlice";
+import { syncUserProgressFromProfile } from '../redux/slices/ctfSlice';
 import axios from "@/api/axios";
 import Lottie from "lottie-react";
 import { Chrome, Github, ShieldCheck, Zap } from "lucide-react";
@@ -33,6 +34,10 @@ const LoginPage: React.FC = () => {
       const endpoint = '/users/auth/google';
       const { data } = await axios.post(endpoint, { token });
       dispatch(setUser(data.data));
+      dispatch(syncUserProgressFromProfile({
+        solvedCTFLevels: data.data.profile?.solvedCTFLevels,
+        solvedChallenges: data.data.solvedChallenges,
+      }));
       navigate(decodeURIComponent(returnUrl));
     } catch (err: any) {
       const apiMessage = err?.response?.data?.message;

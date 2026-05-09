@@ -8,31 +8,33 @@ interface ProfileSidebarProps {
 }
 
 const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ user, onEdit, onLogout }) => (
-  <aside className="w-80 h-full bg-neutral-900/50 border-r border-neutral-800 flex flex-col items-center py-10 px-6 relative z-20">
-    <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-red-600 via-orange-500 to-transparent opacity-50" />
+  <aside className="w-72 h-full bg-gradient-to-b from-neutral-900 via-neutral-900 to-black border-r border-neutral-700 flex flex-col items-center py-8 px-6 relative z-20">
+    <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-red-600 via-orange-500 to-transparent opacity-30" />
 
-    <div className="mb-12 flex items-center gap-3">
-      <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center shadow-[0_0_20px_rgba(220,38,38,0.4)]">
+    <div className="mb-10 flex items-center gap-3">
+      <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-orange-600 rounded-lg flex items-center justify-center shadow-[0_0_20px_rgba(220,38,38,0.3)]">
         <Zap className="text-white" size={20} fill="currentColor" />
       </div>
-      <span className="font-black text-xl tracking-tighter text-white uppercase">Cyber-Mind</span>
+      <span className="font-black text-lg tracking-tighter text-white uppercase">Cyber-Mind</span>
     </div>
 
-    <div className="flex flex-col items-center mb-10">
-      <div className="relative group cursor-pointer" onClick={onEdit}>
-        <div className="absolute -inset-1 bg-gradient-to-tr from-red-600 to-orange-500 rounded-full blur opacity-20 group-hover:opacity-60 transition duration-500" />
+    <div className="flex flex-col items-center mb-10 w-full">
+      <div className="relative group cursor-pointer mb-4" onClick={onEdit}>
+        <div className="absolute -inset-1 bg-gradient-to-tr from-red-600 to-orange-500 rounded-full blur opacity-30 group-hover:opacity-60 transition duration-500" />
         <img
           src={user?.photoURL || 'https://picsum.photos/id/239/200/200'}
           alt="User"
-          className="relative w-28 h-28 rounded-full border-2 border-neutral-800 object-cover"
+          className="relative w-24 h-24 rounded-full border-2 border-neutral-700 object-cover group-hover:border-red-600/50 transition-colors"
         />
-        <div className="absolute bottom-0 right-0 bg-red-600 p-2 rounded-full border-4 border-neutral-900 group-hover:scale-110 transition-transform">
-          <Edit size={12} className="text-white" />
+        <div className="absolute bottom-1 right-1 bg-red-600 p-2 rounded-full border-3 border-neutral-900 group-hover:scale-110 transition-transform shadow-lg">
+          <Edit size={11} className="text-white" />
         </div>
       </div>
-      <h2 className="mt-4 text-xl font-bold text-white tracking-tight">{user?.name || 'Agent'}</h2>
-      <span className="text-neutral-500 text-xs font-mono uppercase tracking-[0.2em] mt-1">Lvl 4 Operator</span>
+      <h2 className="text-lg font-bold text-white tracking-tight text-center">{user?.name || 'Agent'}</h2>
+      <span className="text-neutral-500 text-xs font-mono uppercase tracking-[0.2em] mt-2 px-3 py-1 bg-neutral-800/50 rounded-full border border-neutral-700">Lvl 4 Operator</span>
     </div>
+
+    <div className="w-full h-px bg-gradient-to-r from-transparent via-neutral-700 to-transparent mb-6"></div>
 
     <nav className="w-full space-y-2 flex-1">
       <NavItem icon={<Activity size={18} />} label="Overview" active />
@@ -40,7 +42,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ user, onEdit, onLogout 
 
     <button
       onClick={onLogout}
-      className="w-full flex items-center gap-3 px-4 py-3 text-neutral-500 hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all group"
+      className="w-full flex items-center gap-3 px-4 py-3 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all group border border-transparent hover:border-red-500/30"
     >
       <LogOut size={18} className="group-hover:translate-x-1 transition-transform" />
       <span className="font-bold text-sm uppercase tracking-widest">Terminate</span>
@@ -49,7 +51,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ user, onEdit, onLogout 
 );
 
 const NavItem = ({ icon, label, active = false }: { icon: React.ReactElement; label: string; active?: boolean }) => (
-  <div className={`flex items-center gap-4 px-4 py-3.5 rounded-xl cursor-pointer transition-all ${active ? 'bg-red-600 text-white shadow-lg shadow-red-900/20' : 'text-neutral-500 hover:bg-neutral-800 hover:text-neutral-200'}`}>
+  <div className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer transition-all border ${active ? 'bg-red-600/10 text-red-400 border-red-600/30' : 'text-neutral-500 hover:bg-neutral-800/50 hover:text-neutral-300 border-transparent hover:border-neutral-700'}`}>
     {icon}
     <span className="text-sm font-bold uppercase tracking-widest">{label}</span>
   </div>

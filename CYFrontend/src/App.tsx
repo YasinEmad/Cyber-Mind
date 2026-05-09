@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast';
 import axios from '@/api/axios';
 import AnimatedRoutes from './router/routes';
 import { setUser, clearUser } from './redux/slices/userSlice';
+import { syncUserProgressFromProfile } from './redux/slices/ctfSlice';
 
 export default function App() {
   const dispatch = useDispatch();
@@ -16,6 +17,10 @@ export default function App() {
         const { data } = await axios.get('/users/me');
         if (data.success) {
           dispatch(setUser(data.data));
+          dispatch(syncUserProgressFromProfile({
+            solvedCTFLevels: data.data.profile?.solvedCTFLevels,
+            solvedChallenges: data.data.solvedChallenges,
+          }));
         } else {
           dispatch(clearUser());
         }

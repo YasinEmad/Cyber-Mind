@@ -21,9 +21,14 @@ const {
   deleteCommandTemplate,
 } = require('../controllers/commandTemplateController');
 
-const { executeCTFCommand } = require('../controllers/ctfExecutionController');
+const { 
+  executeCTFCommand,
+  verifyFlag,
+  getUserLevelProgress,
+  getUserCompletedLevels,
+} = require('../controllers/ctfExecutionController');
 
-const { authAdmin } = require('../middlewares/auth');
+const { authAdmin, protect } = require('../middlewares/auth');
 
 // Get all CTF level information
 router.get('/info', getCTFInfo);
@@ -56,5 +61,14 @@ router.put('/templates/:id', authAdmin, updateCommandTemplate);
 router.delete('/templates/:id', authAdmin, deleteCommandTemplate);
 // Execute a command in CTF mode (path-aware, backend-controlled)
 router.post('/execute', executeCTFCommand);
+
+// Verify flag submission (requires authentication)
+router.post('/verify-flag/:level', protect, verifyFlag);
+
+// Get user progress for a specific level (requires authentication)
+router.get('/user-progress/:level', protect, getUserLevelProgress);
+
+// Get all completed levels for user (requires authentication)
+router.get('/user-completed-levels', protect, getUserCompletedLevels);
 
 module.exports = router;

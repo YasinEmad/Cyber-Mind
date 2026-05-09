@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
 import axiosInstance from '@/api/axios'
 
 export interface AvailableLevel {
@@ -15,7 +15,7 @@ export interface CTFChallenge {
   description: string
   hints?: string[]
   hint?: string
-  flag?: string
+  // flag?: string  // لا نتلقى الـ flag من الـ frontend لأسباب أمنية
   difficulty: string
   commands?: any[]
   templateCommands?: any[]
@@ -65,6 +65,31 @@ export interface CTFCommandExecutionResult {
   newPath?: string
 }
 
+interface FlagVerificationResult {
+  success: boolean
+  message: string
+  isCorrect: boolean
+  isCompleted?: boolean
+  pointsAwarded?: number
+  attempts?: number
+  // New fields for state sync
+  updatedProfile?: {
+    flags: number
+    totalScore: number
+    globalRank: number
+    solvedCTFLevels?: Array<{
+      levelId: number
+      level: number
+      title: string
+      difficulty: string
+      pointsAwarded: number
+      completedAt: string
+    }>
+  }
+  completedLevels?: number[]
+  userProgress?: Record<number, { isCompleted: boolean; attempts: number; pointsAwarded: number; completedAt?: string }>
+}
+
 interface CTFState {
   availableLevels: AvailableLevel[]
   availableLevelsStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
@@ -76,6 +101,10 @@ interface CTFState {
   templatesStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
   commandResult: CTFCommandExecutionResult | null
   commandStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
+  flagVerificationResult: FlagVerificationResult | null
+  flagVerificationStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
+  completedLevels: number[] // Array of completed level numbers
+  userProgress: Record<number, { isCompleted: boolean; attempts: number; pointsAwarded: number; completedAt?: string }> // Level progress tracking
   error: string | null
 }
 
@@ -90,6 +119,10 @@ const initialState: CTFState = {
   templatesStatus: 'idle',
   commandResult: null,
   commandStatus: 'idle',
+  flagVerificationResult: null,
+  flagVerificationStatus: 'idle',
+  completedLevels: [],
+  userProgress: {},
   error: null,
 }
 
@@ -242,6 +275,18 @@ export const executeCTFCommand = createAsyncThunk<CTFCommandExecutionResult, { l
   }
 )
 
+export const verifyFlagSubmission = createAsyncThunk<FlagVerificationResult, { level: number; flag: string }>(
+  'ctf/verifyFlagSubmission',
+  async ({ level, flag }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post(`ctf/verify-flag/${level}`, { level, flag })
+      return response.data
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to verify flag')
+    }
+  }
+)
+
 const slice = createSlice({
   name: 'ctf',
   initialState,
@@ -254,6 +299,42 @@ const slice = createSlice({
     clearCommandResult: (state) => {
       state.commandResult = null
       state.commandStatus = 'idle'
+    },
+    clearFlagVerificationResult: (state) => {
+      state.flagVerificationResult = null
+      state.flagVerificationStatus = 'idle'
+    },
+    syncUserProgressFromProfile: (state, action: PayloadAction<{ solvedCTFLevels?: any[]; solvedChallenges?: number[] }>) => {
+      const solvedCTFLevels = Array.isArray(action.payload.solvedCTFLevels)
+        ? action.payload.solvedCTFLevels
+        : [];
+      const solvedChallenges = Array.isArray(action.payload.solvedChallenges)
+        ? action.payload.solvedChallenges
+        : [];
+
+      if (solvedCTFLevels.length > 0) {
+        const completed = [...new Set(
+          solvedCTFLevels
+            .map((level) => Number(level.level))
+            .filter((n) => !Number.isNaN(n))
+        )];
+
+        state.completedLevels = completed;
+        state.userProgress = solvedCTFLevels.reduce((progress, item) => {
+          const levelNum = Number(item.level);
+          if (!Number.isNaN(levelNum)) {
+            progress[levelNum] = {
+              isCompleted: true,
+              attempts: item.attempts || 1,
+              pointsAwarded: item.pointsAwarded || 0,
+              completedAt: item.completedAt,
+            };
+          }
+          return progress;
+        }, {} as typeof state.userProgress);
+      } else if (solvedChallenges.length > 0) {
+        state.completedLevels = [...new Set(solvedChallenges.map((level) => Number(level)).filter((n) => !Number.isNaN(n)))];
+      }
     },
   },
   extraReducers: (builder) => {
@@ -354,8 +435,48 @@ const slice = createSlice({
         state.commandResult = null
         state.error = (action.payload as string) || action.error.message || 'Failed to execute command'
       })
+
+      .addCase(verifyFlagSubmission.pending, (state) => {
+        state.flagVerificationStatus = 'loading'
+        state.error = null
+      })
+      .addCase(verifyFlagSubmission.fulfilled, (state, action) => {
+        state.flagVerificationStatus = 'succeeded'
+        state.flagVerificationResult = action.payload
+        
+        // Update completed levels and user progress when flag is correct
+        if (action.payload.isCorrect && action.payload.isCompleted) {
+          const levelNum = state.selectedChallenge?.level
+          
+          // Update from backend response (most reliable)
+          if (action.payload.completedLevels) {
+            state.completedLevels = action.payload.completedLevels
+          } else if (levelNum && !state.completedLevels.includes(levelNum)) {
+            // Fallback: add current level if backend didn't provide full list
+            state.completedLevels.push(levelNum)
+          }
+          
+          // Update user progress with backend data
+          if (action.payload.userProgress) {
+            state.userProgress = action.payload.userProgress
+          } else if (levelNum) {
+            // Fallback: update just current level
+            state.userProgress[levelNum] = {
+              isCompleted: true,
+              attempts: action.payload.attempts || 1,
+              pointsAwarded: action.payload.pointsAwarded || 0,
+              completedAt: new Date().toISOString(),
+            }
+          }
+        }
+      })
+      .addCase(verifyFlagSubmission.rejected, (state, action) => {
+        state.flagVerificationStatus = 'failed'
+        state.flagVerificationResult = null
+        state.error = (action.payload as string) || action.error.message || 'Failed to verify flag'
+      })
   },
 })
 
-export const { clearSelectedChallenge, clearCommandResult } = slice.actions
+export const { clearSelectedChallenge, clearCommandResult, clearFlagVerificationResult, syncUserProgressFromProfile } = slice.actions
 export default slice.reducer

@@ -1,5 +1,15 @@
-const { CTFLevel } = require('../models');
+const { CTFLevel, CTFLevelCompletion, User, Profile } = require('../models');
 const { expandTemplate } = require('./commandTemplateController');
+
+// Helper function to calculate points based on difficulty
+const calculatePoints = (difficulty) => {
+  const pointMap = {
+    easy: 10,
+    medium: 25,
+    hard: 50,
+  };
+  return pointMap[difficulty] || 10;
+};
 
 // Execute a command for a given level (path-aware)
 exports.executeCTFCommand = async (req, res, next) => {
@@ -193,6 +203,272 @@ exports.executeCTFCommand = async (req, res, next) => {
 
     // Passed validation — return configured output
     return res.status(200).json({ success: true, output: outVal });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Verify flag submission
+exports.verifyFlag = async (req, res, next) => {
+  try {
+    const { level, flag } = req.body;
+    const userId = req.user?.id;
+
+    // Validate input
+    if (level === undefined || !flag) {
+      return res.status(400).json({
+        success: false,
+        message: 'Level and flag are required',
+      });
+    }
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated',
+      });
+    }
+
+    // Get level data
+    const levelData = await CTFLevel.findOne({
+      where: { level: parseInt(level, 10), isActive: true },
+    });
+
+    if (!levelData) {
+      return res.status(404).json({
+        success: false,
+        message: `CTF level ${level} not found`,
+      });
+    }
+
+    // Get or create completion record
+    let completion = await CTFLevelCompletion.findOne({
+      where: { userId, level: parseInt(level, 10) },
+    });
+
+    if (!completion) {
+      completion = await CTFLevelCompletion.create({
+        userId,
+        level: parseInt(level, 10),
+        attempts: 0,
+        flagSubmissions: [],
+      });
+    }
+
+    // Increment attempts
+    completion.attempts += 1;
+
+    // Add submission record
+    const submission = {
+      flag: flag.substring(0, 50), // Store only first 50 chars for privacy
+      timestamp: new Date(),
+      isCorrect: false,
+    };
+
+    completion.flagSubmissions = Array.isArray(completion.flagSubmissions)
+      ? completion.flagSubmissions
+      : [];
+    completion.flagSubmissions.push(submission);
+
+    // Verify flag
+    const isCorrect = flag.trim() === (levelData.flag || '').trim();
+
+    if (isCorrect && !completion.isCompleted) {
+      // Flag is correct and level not yet completed
+      completion.isCompleted = true;
+      completion.completedAt = new Date();
+
+      // Calculate and award points
+      const points = calculatePoints(levelData.difficulty);
+      completion.pointsAwarded = points;
+
+      // Update submission record
+      submission.isCorrect = true;
+      completion.flagSubmissions[completion.flagSubmissions.length - 1] = submission;
+
+      // Update user profile
+      const user = await User.findByPk(userId);
+      let profile = await Profile.findOne({ where: { userId } });
+
+      if (user && profile) {
+        // Add to solvedChallenges if not already there
+        if (!Array.isArray(user.solvedChallenges)) {
+          user.solvedChallenges = [];
+        }
+        if (!user.solvedChallenges.includes(levelData.id)) {
+          user.solvedChallenges.push(levelData.id);
+        }
+
+        // Add to solvedCTFLevels in User model
+        if (!Array.isArray(user.solvedCTFLevels)) {
+          user.solvedCTFLevels = [];
+        }
+        if (!user.solvedCTFLevels.includes(levelData.level)) {
+          user.solvedCTFLevels.push(levelData.level);
+        }
+        
+        await user.save();
+
+        // Update profile stats - Award flags and points for CTF solve
+        profile.flags = (profile.flags || 0) + 1;  // Increment flags counter
+        profile.totalScore = (profile.totalScore || 0) + points;  // Award points based on difficulty
+        profile.globalRank = Math.max(0, (profile.globalRank || 0) - 1);  // Improve rank
+        
+        // Add to solvedCTFLevels with level information (prevent duplicates)
+        let solvedCTFLevels = profile.solvedCTFLevels;
+        if (!Array.isArray(solvedCTFLevels)) {
+          solvedCTFLevels = [];
+        }
+        
+        const levelExists = solvedCTFLevels.some(l => l.levelId === levelData.id);
+        if (!levelExists) {
+          solvedCTFLevels.push({
+            levelId: levelData.id,
+            level: levelData.level,
+            title: levelData.title,
+            difficulty: levelData.difficulty,
+            pointsAwarded: points,  // Award points based on difficulty
+            completedAt: new Date().toISOString(),
+          });
+        }
+        
+        profile.solvedCTFLevels = solvedCTFLevels;
+        profile.changed('solvedCTFLevels', true); // Mark field as changed for Sequelize
+        await profile.save();
+        
+        // Reload profile to ensure we have fresh data from DB
+        profile = await Profile.findByPk(profile.id);
+      }
+
+      // Save completion
+      await completion.save();
+
+      // Get all completed levels and user progress for frontend sync
+      const allCompletions = await CTFLevelCompletion.findAll({
+        where: { userId },
+        attributes: ['level', 'isCompleted', 'attempts', 'pointsAwarded', 'completedAt'],
+      });
+
+      // Build completed levels array and progress map
+      const completedLevels = allCompletions
+        .filter(c => c.isCompleted)
+        .map(c => c.level);
+
+      const userProgress = {};
+      allCompletions.forEach(c => {
+        userProgress[c.level] = {
+          isCompleted: c.isCompleted,
+          attempts: c.attempts,
+          pointsAwarded: c.pointsAwarded,
+          completedAt: c.completedAt?.toISOString() || null,
+        };
+      });
+
+      // Convert profile to JSON to ensure fresh data
+      const profileJSON = profile.toJSON();
+
+      // Return comprehensive response
+      return res.status(200).json({
+        success: true,
+        message: '🎉 Flag صحيح! تم إكمال المستوى بنجاح',
+        isCorrect: true,
+        isCompleted: true,
+        pointsAwarded: points,  // Return actual points awarded based on difficulty
+        attempts: completion.attempts,
+        // Additional data for frontend state sync
+        updatedProfile: {
+          flags: profileJSON.flags,
+          totalScore: profileJSON.totalScore,
+          globalRank: profileJSON.globalRank,
+          solvedCTFLevels: Array.isArray(profileJSON.solvedCTFLevels) ? profileJSON.solvedCTFLevels : [],
+        },
+        completedLevels: completedLevels,
+        userProgress: userProgress,
+      });
+    } else if (isCorrect && completion.isCompleted) {
+      // Flag is correct but level already completed
+      submission.isCorrect = true;
+      completion.flagSubmissions[completion.flagSubmissions.length - 1] = submission;
+      await completion.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Flag صحيح! لكن هذا المستوى قد تم إكماله بالفعل',
+        isCorrect: true,
+        isCompleted: completion.isCompleted,
+        pointsAwarded: 0,  // Don't award points for already-completed levels
+        attempts: completion.attempts,
+      });
+    } else {
+      // Flag is incorrect
+      await completion.save();
+
+      return res.status(200).json({
+        success: false,
+        message: '❌ Flag غير صحيح. حاول مرة أخرى!',
+        isCorrect: false,
+        attempts: completion.attempts,
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get user progress for a level
+exports.getUserLevelProgress = async (req, res, next) => {
+  try {
+    const { level } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated',
+      });
+    }
+
+    const completion = await CTFLevelCompletion.findOne({
+      where: { userId, level: parseInt(level, 10) },
+      attributes: ['isCompleted', 'attempts', 'pointsAwarded', 'completedAt'],
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: completion || {
+        isCompleted: false,
+        attempts: 0,
+        pointsAwarded: 0,
+        completedAt: null,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get all completed levels for user
+exports.getUserCompletedLevels = async (req, res, next) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated',
+      });
+    }
+
+    const completions = await CTFLevelCompletion.findAll({
+      where: { userId, isCompleted: true },
+      attributes: ['level', 'attempts', 'pointsAwarded', 'completedAt'],
+      order: [['completedAt', 'DESC']],
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: completions,
+    });
   } catch (error) {
     next(error);
   }

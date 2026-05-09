@@ -35,6 +35,11 @@ const User = sequelize.define('User', {
     type: DataTypes.ARRAY(DataTypes.INTEGER),
     defaultValue: [],
   },
+  solvedCTFLevels: {
+    type: DataTypes.ARRAY(DataTypes.INTEGER),
+    defaultValue: [],
+    comment: 'Array of CTF level IDs that user has completed',
+  },
   createdAt: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,

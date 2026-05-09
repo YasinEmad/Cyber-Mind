@@ -61,12 +61,45 @@ exports.logout = (req, res) => {
   res.status(200).json({ success: true, data: {} });
 };
 
-exports.getMe = (req, res) => {
-  const user = req.user.toJSON ? req.user.toJSON() : req.user;
-  if (!Array.isArray(user.solvedPuzzles) && Array.isArray(user.profile?.solvedPuzzles)) {
-    user.solvedPuzzles = user.profile.solvedPuzzles;
+// controllers/userController.js
+
+exports.getMe = async (req, res, next) => {
+  try {
+    // بدلاً من الاعتماد على req.user فقط، سنقوم بجلب اليوزر مع البروفايل من القاعدة
+    const user = await User.findByPk(req.user.id, {
+      include: [
+        { 
+          model: Profile, 
+          as: 'profile' // تأكد أن هذا الاسم يطابق التعريف في Associations
+        }
+      ]
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // تحويل البيانات لـ JSON
+    let userData = user.toJSON();
+
+    // تأكد من وجود solvedCTFLevels في البروفايل
+    if (userData.profile && !Array.isArray(userData.profile.solvedCTFLevels)) {
+      userData.profile.solvedCTFLevels = [];
+    }
+
+    // التأكد من توافق المصفوفات (نفس المنطق الذي وضعته أنت سابقاً)
+    if (!Array.isArray(userData.solvedPuzzles) && Array.isArray(userData.profile?.solvedPuzzles)) {
+      userData.solvedPuzzles = userData.profile.solvedPuzzles;
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      data: userData 
+    });
+  } catch (error) {
+    console.error('getMe Error:', error);
+    next(error);
   }
-  res.status(200).json({ success: true, data: user });
 };
 
 exports.updateMe = async (req, res, next) => {
