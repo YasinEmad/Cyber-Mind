@@ -7,7 +7,15 @@ interface ProfileSidebarProps {
   onLogout: () => void;
 }
 
-const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ user, onEdit, onLogout }) => (
+const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ user, onEdit, onLogout }) => {
+  const getAvatarUrl = () => {
+    if (user?.profile?.avatar) {
+      return `http://localhost:8080/uploads/${user.profile.avatar}`;
+    }
+    return user?.photoURL || 'https://picsum.photos/id/239/200/200';
+  };
+
+  return (
   <aside className="w-72 h-full bg-gradient-to-b from-neutral-900 via-neutral-900 to-black border-r border-neutral-700 flex flex-col items-center py-8 px-6 relative z-20">
     <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-red-600 via-orange-500 to-transparent opacity-30" />
 
@@ -22,7 +30,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ user, onEdit, onLogout 
       <div className="relative group cursor-pointer mb-4" onClick={onEdit}>
         <div className="absolute -inset-1 bg-gradient-to-tr from-red-600 to-orange-500 rounded-full blur opacity-30 group-hover:opacity-60 transition duration-500" />
         <img
-          src={user?.photoURL || 'https://picsum.photos/id/239/200/200'}
+          src={getAvatarUrl()}
           alt="User"
           className="relative w-24 h-24 rounded-full border-2 border-neutral-700 object-cover group-hover:border-red-600/50 transition-colors"
         />
@@ -49,6 +57,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ user, onEdit, onLogout 
     </button>
   </aside>
 );
+
+};
 
 const NavItem = ({ icon, label, active = false }: { icon: React.ReactElement; label: string; active?: boolean }) => (
   <div className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer transition-all border ${active ? 'bg-red-600/10 text-red-400 border-red-600/30' : 'text-neutral-500 hover:bg-neutral-800/50 hover:text-neutral-300 border-transparent hover:border-neutral-700'}`}>

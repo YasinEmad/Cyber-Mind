@@ -9,7 +9,7 @@ import Lottie from 'lottie-react';
 import heroAnimationJson from '/home/yasin/Cyber-Mind/CYFrontend/public/assets/Untitled file.json';
 import puzzleAnimation from '/home/yasin/Cyber-Mind/CYFrontend/public/assets/puzzle.json';
 import challingAnimation from '/home/yasin/Cyber-Mind/CYFrontend/public/assets/security code challinging.json';
-import gameAnimation from '/home/yasin/Cyber-Mind/CYFrontend/public/assets/game.json';
+import gameAnimation from '/home/yasin/Cyber-Mind/CYFrontend/public/assets/ctf.json';
 
 // --- ANIMATION VARIANTS ---
 const containerVariants: Variants = {
@@ -322,10 +322,10 @@ const HomePage: React.FC = () => {
               />
               <FeatureItem 
                 animationData={gameAnimation}
-                title="Mini Games"
-                desc="Quick-fire reflex tests and cognitive drills designed to sharpen your cyber instincts."
-                btnText="Play Games"
-                link="/game"
+                title="CTF"
+                desc="Compete in Capture The Flag events. Apply your skills in realistic challinging"
+                btnText="Start CTF"
+                link="/ctf"
                 index={2}
               />
             </motion.div>

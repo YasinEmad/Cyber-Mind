@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface ProfileEditModalProps {
@@ -10,6 +10,8 @@ interface ProfileEditModalProps {
   onFormNameChange: (value: string) => void;
   onFormPhotoChange: (value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
+  onAvatarUpload: (file: File) => void;
+  previewAvatar: string | null;
 }
 
 const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
@@ -21,7 +23,23 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
   onFormNameChange,
   onFormPhotoChange,
   onSubmit,
-}) => (
+  onAvatarUpload,
+  previewAvatar,
+}) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onAvatarUpload(file);
+    }
+  };
+
+  const getAvatarUrl = () => {
+    return previewAvatar || formPhoto || 'https://picsum.photos/id/239/200/200';
+  };
+
+  return (
   <AnimatePresence>
     {isEditing && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
@@ -35,7 +53,35 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
           <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-8">Override Identity</h2>
           <form onSubmit={onSubmit} className="space-y-6">
             <InputGroup label="Alias" value={formName} onChange={onFormNameChange} />
-            <InputGroup label="Avatar URL" value={formPhoto} onChange={onFormPhotoChange} />
+            
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 ml-1">Avatar</label>
+              <div className="flex items-center gap-4">
+                <img
+                  src={getAvatarUrl()}
+                  alt="Avatar preview"
+                  className="w-16 h-16 rounded-full border-2 border-neutral-700 object-cover"
+                />
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full py-3 bg-neutral-800 text-white font-bold rounded-xl border border-neutral-700 hover:border-red-600 transition-colors"
+                  >
+                    Choose Image
+                  </button>
+                  <p className="text-xs text-neutral-500 mt-1">JPG, PNG, WebP up to 5MB</p>
+                </div>
+              </div>
+            </div>
+            
             <div className="flex gap-4 pt-4">
               <button
                 type="button"
@@ -56,7 +102,8 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
       </div>
     )}
   </AnimatePresence>
-);
+  );
+};
 
 const InputGroup = ({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) => (
   <div className="space-y-2">

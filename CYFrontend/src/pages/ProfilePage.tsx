@@ -24,6 +24,8 @@ const ProfilePage: React.FC = () => {
   const [editLoading, setEditLoading] = useState(false);
   const [solvedPuzzles, setSolvedPuzzles] = useState<any[]>([]);
   const [loadingPuzzles, setLoadingPuzzles] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
 
   // --- Data Mapping ---
   // Per your UserSlice: solvedCTFLevels exists inside user.profile
@@ -103,21 +105,59 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  const handleAvatarUpload = (file: File) => {
+    // Validate file
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Only JPG, PNG, and WebP files are allowed!');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) { // 5MB
+      alert('File size must be less than 5MB!');
+      return;
+    }
+
+    setSelectedFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setPreviewAvatar(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const submitEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     setEditLoading(true);
 
     try {
-      const { data } = await axios.patch('/users/me', { 
-        name: formName, 
-        photoURL: formPhoto 
-      });
-      dispatch(setUser(data.data));
+      // First update name and photoURL if changed
+      if (formName !== user?.name || formPhoto !== user?.photoURL) {
+        const { data } = await axios.patch('/users/me', { 
+          name: formName, 
+          photoURL: formPhoto 
+        });
+        dispatch(setUser(data.data));
+      }
+
+      // Then upload avatar if selected
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append('avatar', selectedFile);
+        await axios.post('/users/me/avatar', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        // Refresh user data to get new avatar
+        const { data } = await axios.get('/users/me');
+        dispatch(setUser(data.data));
+      }
+
       dispatch(syncUserProgressFromProfile({
-        solvedCTFLevels: data.data.profile?.solvedCTFLevels,
-        solvedChallenges: data.data.solvedChallenges,
+        solvedCTFLevels: user?.profile?.solvedCTFLevels || [],
+        solvedChallenges: user?.solvedChallenges || [],
       }));
       setIsEditing(false);
+      setSelectedFile(null);
+      setPreviewAvatar(null);
     } catch (err) {
       console.error('Update profile failed', err);
     } finally {
@@ -162,6 +202,8 @@ const ProfilePage: React.FC = () => {
         onFormNameChange={setFormName}
         onFormPhotoChange={setFormPhoto}
         onSubmit={submitEdit}
+        onAvatarUpload={handleAvatarUpload}
+        previewAvatar={previewAvatar}
       />
     </div>
   );

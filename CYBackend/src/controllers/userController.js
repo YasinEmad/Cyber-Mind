@@ -2,6 +2,9 @@ const admin = require('../config/firebaseAdmin');
 const { User, Profile } = require('../models');
 const userService = require('../services/userService');
 const { getPointsForLevel } = require('../utils/points');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 // Helper بسيط لإعداد الكوكيز
 const setAuthCookie = (res, token) => {
@@ -12,6 +15,72 @@ const setAuthCookie = (res, token) => {
   };
   res.cookie('token', token, options);
 };
+
+// Multer configuration for avatar uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'avatar-' + req.user.id + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = /jpeg|jpg|png|webp/;
+  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = allowedTypes.test(file.mimetype);
+
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    cb(new Error('Only image files (jpg, jpeg, png, webp) are allowed!'));
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: fileFilter
+});
+
+exports.uploadAvatar = [
+  upload.single('avatar'),
+  async (req, res, next) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'No file uploaded' });
+      }
+
+      const userId = req.user.id;
+      const profile = await Profile.findOne({ where: { userId } });
+      if (!profile) {
+        return res.status(404).json({ success: false, message: 'Profile not found' });
+      }
+
+      // Delete old avatar if exists
+      if (profile.avatar) {
+        const oldPath = path.join('uploads', profile.avatar);
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
+
+      // Update profile with new avatar filename
+      profile.avatar = req.file.filename;
+      await profile.save();
+
+      res.status(200).json({
+        success: true,
+        message: 'Avatar uploaded successfully',
+        data: { avatar: req.file.filename }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+];
 
 exports.handleGoogleSignIn = async (req, res, next) => {
   try {

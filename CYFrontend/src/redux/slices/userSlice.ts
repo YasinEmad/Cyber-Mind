@@ -30,6 +30,7 @@ const normalizeUser = (user: User): User => {
   return {
     ...user,
     profile: {
+      ...user.profile,
       rating: user.profile?.rating || 0,
       puzzlesDone: user.profile?.puzzlesDone || 0,
       challengesDone: user.profile?.challengesDone || 0,
@@ -50,6 +51,7 @@ interface Profile {
   flags: number;
   totalScore: number;
   globalRank: number;
+  avatar?: string;
   solvedPuzzles?: number[];
   solvedChallenges?: number[];
   solvedCTFLevels?: Array<{

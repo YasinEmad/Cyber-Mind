@@ -25,6 +25,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Serve uploaded files
+app.use('/uploads', express.static('uploads'));
+
 // المسارات (تأكد إن الملفات دي موجودة بالأسماء دي)
 app.use('/api/puzzles', require('./routes/puzzleRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));

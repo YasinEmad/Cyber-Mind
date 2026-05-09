@@ -5,7 +5,8 @@ const {
   logout, 
   getMe, 
   updateMe, 
-  addPoints 
+  addPoints,
+  uploadAvatar
 } = require('../controllers/userController');
 
 // التعديل هنا: غيرنا authUser لـ auth
@@ -21,6 +22,8 @@ router.use(protect);
 router.route('/me')
   .get(getMe)
   .patch(updateMe);
+
+router.post('/me/avatar', uploadAvatar);
 
 router.post('/me/add-points', addPoints);
 
