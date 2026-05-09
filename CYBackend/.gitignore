@@ -31,3 +31,5 @@ pnpm-debug.log*
 firebase-service-account.json
 
 
+
+/src/generated/prisma
