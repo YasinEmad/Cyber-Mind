@@ -128,6 +128,18 @@ export const deleteChallenge = createAsyncThunk<string, string>(
   }
 )
 
+export const deleteAllChallenges = createAsyncThunk<void>(
+  'challenges/deleteAll',
+  async (_, { rejectWithValue }) => {
+    try {
+      await challengesApi.deleteAllChallenges();
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to delete all challenges';
+      return rejectWithValue(errorMsg);
+    }
+  }
+)
+
 const slice = createSlice({
   name: 'challenges',
   initialState,
@@ -220,6 +232,17 @@ const slice = createSlice({
       .addCase(deleteChallenge.rejected, (state, action) => {
         state.status = 'failed'
         state.error = ((action.payload as string) || action.error.message) ?? 'Failed to delete challenge'
+      })
+      .addCase(deleteAllChallenges.pending, (state) => {
+        state.status = 'loading'
+      })
+      .addCase(deleteAllChallenges.fulfilled, (state) => {
+        state.status = 'succeeded'
+        state.challenges = []
+      })
+      .addCase(deleteAllChallenges.rejected, (state, action) => {
+        state.status = 'failed'
+        state.error = ((action.payload as string) || action.error.message) ?? 'Failed to delete all challenges'
       })
   }
 })

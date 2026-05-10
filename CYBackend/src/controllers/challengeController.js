@@ -116,3 +116,13 @@ exports.deleteChallenge = async (req, res, next) => {
     next(error); 
   }
 };
+
+// 6.5 حذف كل التحديات
+exports.deleteAllChallenges = async (req, res, next) => {
+  try {
+    const deletedRowsCount = await Challenge.destroy({ where: {} });
+    res.status(200).json({ success: true, message: `Removed ${deletedRowsCount} challenge(s).` });
+  } catch (error) {
+    next(error);
+  }
+};

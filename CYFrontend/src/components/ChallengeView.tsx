@@ -13,7 +13,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { createChallenge, fetchChallenges, updateChallenge, deleteChallenge } from '../redux/slices/challengeSlice';
+import { createChallenge, fetchChallenges, updateChallenge, deleteChallenge, deleteAllChallenges } from '../redux/slices/challengeSlice';
 import type { Challenge } from '../redux/slices/challengeSlice';
 import { AppDispatch, RootState } from '../redux/store';
 import toast from 'react-hot-toast';
@@ -172,6 +172,20 @@ const ChallengeView = () => {
     }
   };
 
+  const handleDeleteAllChallenges = async () => {
+    const confirmed = window.confirm('Delete all challenges? This cannot be undone.');
+    if (!confirmed) return;
+
+    try {
+      await dispatch(deleteAllChallenges()).unwrap();
+      toast.success('All challenges removed successfully.');
+      dispatch(fetchChallenges());
+    } catch (error) {
+      toast.error('Failed to delete all challenges');
+      console.error('Delete all challenges error:', error);
+    }
+  };
+
   // Reusable form input styling
   const inputClasses = "w-full bg-black border border-red-900/40 rounded-lg px-3 py-2 text-white focus:border-red-500 focus:outline-none transition-colors";
   const modalHeaderClasses = "p-6 border-b border-red-900/40 bg-black";
@@ -179,18 +193,28 @@ const ChallengeView = () => {
 
   return (
     <div className="animate-fade-in">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h2 className="text-3xl font-bold text-white">Challenge Management</h2>
           <p className="text-red-400 mt-1">Organize competitive challenges.</p>
         </div>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors shadow-lg"
-        >
-          <Plus size={20} />
-          Add New Challenge
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors shadow-lg"
+          >
+            <Plus size={20} />
+            Add New Challenge
+          </button>
+          <button
+            onClick={handleDeleteAllChallenges}
+            className="bg-zinc-900 hover:bg-red-950 text-red-400 border border-red-700 py-2 px-4 rounded-lg flex items-center gap-2 transition-colors"
+            title="Remove every challenge level"
+          >
+            <Trash2 size={20} />
+            Remove All Levels
+          </button>
+        </div>
       </div>
 
       {/* Add Challenge Modal */}

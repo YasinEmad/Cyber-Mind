@@ -325,7 +325,7 @@ const HomePage: React.FC = () => {
                 title="CTF"
                 desc="Compete in Capture The Flag events. Apply your skills in realistic challinging"
                 btnText="Start CTF"
-                link="/ctf"
+                link="/game"
                 index={2}
               />
             </motion.div>

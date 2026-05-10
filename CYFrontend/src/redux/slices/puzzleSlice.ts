@@ -121,6 +121,18 @@ export const deletePuzzle = createAsyncThunk<number, number>(
   }
 )
 
+export const deleteAllPuzzles = createAsyncThunk<void>(
+  'puzzles/deleteAll',
+  async (_, { rejectWithValue }) => {
+    try {
+      await axios.delete(API_URL)
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to delete all puzzles';
+      return rejectWithValue(errorMsg);
+    }
+  }
+)
+
 const puzzleSlice = createSlice({
   name: 'puzzles',
   initialState,
@@ -192,6 +204,17 @@ const puzzleSlice = createSlice({
       .addCase(deletePuzzle.rejected, (state, action) => {
         state.status = 'failed';
         state.error = ((action.payload as string) || action.error.message) ?? 'Failed to delete puzzle';
+      })
+      .addCase(deleteAllPuzzles.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(deleteAllPuzzles.fulfilled, (state) => {
+        state.status = 'succeeded';
+        state.puzzles = [];
+      })
+      .addCase(deleteAllPuzzles.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = ((action.payload as string) || action.error.message) ?? 'Failed to delete all puzzles';
       });
   },
 })

@@ -61,7 +61,8 @@ exports.submitChallengeAnswer = async (challengeId, user, userAnswer) => {
     alreadySolved = result.alreadySolved || false;
     
     if (!awarded && alreadySolved) {
-      message = feedback || 'Correct, but you have already earned points for this challenge.';
+      message = 'Your answer is right!';
+      pointsToAward = 0;  // Set points to 0 when already solved
       console.log(`[POINTS] User ${user.id} already solved Challenge #${challengeId} before`);
     } else if (!awarded) {
       message = feedback || 'Correct, but points could not be awarded.';
@@ -73,8 +74,10 @@ exports.submitChallengeAnswer = async (challengeId, user, userAnswer) => {
     message = feedback || 'Correct! Log in to save your progress and earn points.';
     console.log(`[INFO] Anonymous user solved Challenge #${challengeId} (no points awarded)`);
   } else if (!isCorrect) {
-    message = feedback || 'Incorrect answer. Try again!';
-    console.log(`[INFO] Incorrect answer for Challenge #${challengeId}`);
+    // Generate AI feedback for incorrect answers
+    const aiFeedback = await aiService.generateIncorrectFeedback(challenge, userAnswer);
+    message = feedback || aiFeedback;
+    console.log(`[INFO] Incorrect answer for Challenge #${challengeId}, AI feedback: ${aiFeedback}`);
   }
 
   return { success: isCorrect, awarded, alreadySolved, points: awarded ? pointsToAward : 0, message };

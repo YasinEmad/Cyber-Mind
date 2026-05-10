@@ -90,6 +90,16 @@ exports.deletePuzzle = async (req, res, next) => {
   }
 };
 
+// @desc    Delete all puzzles
+exports.deleteAllPuzzles = async (req, res, next) => {
+  try {
+    const deletedCount = await Puzzle.destroy({ where: {} });
+    res.json({ message: `Removed ${deletedCount} puzzle(s).` });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // @desc    Submit an answer
 exports.submitAnswer = async (req, res, next) => {
   try {

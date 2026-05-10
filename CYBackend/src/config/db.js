@@ -2,15 +2,27 @@
 
 const { Sequelize, DataTypes } = require('sequelize');
 
-const sequelize = new Sequelize(process.env.DATABASE_URL || 'postgresql://username:password@localhost:5432/cybermind', {
+const dbUrl = process.env.DATABASE_URL?.replace(
+  'postgresql://',
+  'postgres://'
+);
+const sequelize = new Sequelize(dbUrl, {
   dialect: 'postgres',
-  logging: false, 
+  logging: false,
+
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false,
+    },
+  },
+
   pool: {
-    max: 5,
+    max: 10,
     min: 0,
-    acquire: 30000,
-    idle: 10000
-  }
+    acquire: 60000,
+    idle: 10000,
+  },
 });
 
 const connectDB = async () => {

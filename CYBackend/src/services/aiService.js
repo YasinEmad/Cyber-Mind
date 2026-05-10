@@ -1,3 +1,15 @@
+exports.generateIncorrectFeedback = async (challengeData, userAnswer) => {
+  try {
+    const aiResult = await generateFeedbackWithAI(challengeData, userAnswer);
+    if (aiResult?.feedback) return aiResult.feedback;
+    if (typeof aiResult === 'string' && aiResult.trim()) return aiResult.trim();
+    return getFallbackIncorrectFeedback(challengeData);
+  } catch (error) {
+    console.error("AI feedback generation failed:", error);
+    return getFallbackIncorrectFeedback(challengeData);
+  }
+};
+
 exports.evaluateSecurityFix = async (challengeData, userCode) => {
   try {
     const aiResult = await evaluateWithAI(challengeData, userCode);
@@ -11,6 +23,20 @@ exports.evaluateSecurityFix = async (challengeData, userCode) => {
     };
   }
 };
+
+function getFallbackIncorrectFeedback(challengeData) {
+  const hints = challengeData.hints || [];
+  if (hints.length > 0) {
+    return hints[Math.floor(Math.random() * hints.length)];
+  }
+
+  if (challengeData.description) {
+    return `Review the challenge requirements and try again.`;
+  }
+
+  return 'Incorrect answer. Try again!';
+}
+
 
 // Extract relevant code lines to reduce token count
 function extractRelevantCode(code) {
@@ -83,14 +109,77 @@ async function evaluateWithAI(challengeData, userCode) {
     throw new Error("Empty response from Gemini");
   }
 
-  try {
-    const result = JSON.parse(text);
-    return result;
-  } catch (err) {
-    console.error("JSON PARSE FAILED");
-    console.error("RAW TEXT:", text);
-    console.error("ERROR:", err);
+  return parseAIResponse(text);
+}
 
-    throw new Error("JSON parsing failed");
+async function generateFeedbackWithAI(challengeData, userAnswer) {
+  const prompt = `Challenge: ${challengeData.title}
+Description: ${challengeData.description}
+Hints: ${challengeData.hints?.join(', ') || 'None'}
+User Answer: ${userAnswer}
+
+Generate a short, helpful feedback message (max 20 words) for why this answer is incorrect and a hint to guide the user.`;
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      systemInstruction: {
+        parts: [{
+          text: "You are a helpful tutor for coding challenges. Provide short, encouraging feedback for incorrect answers. Return ONLY valid JSON with 'feedback' field containing a string (max 20 words)."
+        }]
+      },
+      contents: [
+        {
+          parts: [{ text: prompt }]
+        }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        maxOutputTokens: 50
+      }
+    })
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || data.error) {
+    throw new Error(`API Error: ${data.error?.message || response.statusText}`);
+  }
+
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!text) {
+    throw new Error("Empty response from Gemini");
+  }
+
+  return parseAIResponse(text);
+}
+
+function parseAIResponse(text) {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    throw new Error("Empty text from AI response");
+  }
+
+  try {
+    return JSON.parse(trimmed);
+  } catch (firstErr) {
+    const jsonMatch = trimmed.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch (secondErr) {
+        console.error("JSON parsing failed on extracted substring", secondErr);
+      }
+    }
+
+    // If the AI returned a plain text message instead of JSON, use it directly.
+    return { feedback: trimmed };
   }
 }
+

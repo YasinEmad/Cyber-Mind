@@ -6,16 +6,18 @@ const {
   createPuzzle,
   updatePuzzle,
   deletePuzzle,
+  deleteAllPuzzles,
   submitAnswer
 } = require('../controllers/puzzleController');
 
 // التعديل هنا: بنستدعي optionalAuth من ملف auth الجديد
-const { optionalAuth } = require('../middlewares/auth');
+const { optionalAuth, authAdmin } = require('../middlewares/auth');
 
 // العمليات على المسار الرئيسي /api/puzzles
 router.route('/')
   .get(getPuzzles)
-  .post(createPuzzle); 
+  .post(createPuzzle)
+  .delete(authAdmin, deleteAllPuzzles);
 
 // العمليات على لغز محدد /api/puzzles/:id
 router.route('/:id')

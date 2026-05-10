@@ -7,13 +7,15 @@ const {
   submitAnswer,
   runCode,
   updateChallenge,
-  deleteChallenge
+  deleteChallenge,
+  deleteAllChallenges
 } = require('../controllers/challengeController');
 const { optionalAuth, authAdmin } = require('../middlewares/auth');
 
 router.route('/')
   .get(getAllChallenges)
-  .post(authAdmin, createChallenge); // الأدمن بس اللي يكريت
+  .post(authAdmin, createChallenge) // الأدمن بس اللي يكريت
+  .delete(authAdmin, deleteAllChallenges); // الأدمن بس اللي يمسح الكل
 
 router.route('/:id')
   .get(getChallengeById)

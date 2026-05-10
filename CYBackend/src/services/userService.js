@@ -38,6 +38,9 @@ exports.addPointsToUser = async (userId, points, itemId, itemType = 'puzzle') =>
   const solvedField = isPuzzle ? 'solvedPuzzles' : 'solvedChallenges';
   const counterField = isPuzzle ? 'puzzlesDone' : 'challengesDone';
 
+  // Coerce itemId to number to match stored IDs
+  const itemIdNum = Number(itemId);
+
   // 2. جلب المستخدم والبروفايل
   const user = await User.findByPk(userId);
   if (!user) throw new Error('User not found');
@@ -46,21 +49,21 @@ exports.addPointsToUser = async (userId, points, itemId, itemType = 'puzzle') =>
   if (!profile) throw new Error('Profile not found');
 
   // 3. التحقق من عدم حل هذا التحدي من قبل (من Profile)
-  if (profile[solvedField].includes(itemId)) {
+  if (profile[solvedField].includes(itemIdNum)) {
     return { awarded: false, alreadySolved: true };
   }
 
   // 4. تحديث Profile
   profile.totalScore += points;
   profile[counterField] += 1;
-  profile[solvedField] = [...profile[solvedField], itemId];
+  profile[solvedField] = [...profile[solvedField], itemIdNum];
   await profile.save();
 
   // 5. تحديث User ليكون متزامناً مع Profile
-  user[solvedField] = [...(user[solvedField] || []), itemId];
+  user[solvedField] = [...(user[solvedField] || []), itemIdNum];
   await user.save();
 
-  console.log(`✓ Points awarded to user ${userId}: +${points} for ${itemType} #${itemId}`);
+  console.log(`✓ Points awarded to user ${userId}: +${points} for ${itemType} #${itemIdNum}`);
 
   return { awarded: true, profile, user };
 };

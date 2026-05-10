@@ -17,6 +17,7 @@ import { AppDispatch, RootState } from '../redux/store';
 import {
   fetchPuzzles,
   deletePuzzle,
+  deleteAllPuzzles,
   createPuzzle,
   updatePuzzle,
   Puzzle
@@ -40,6 +41,19 @@ export const PuzzlesViewAdmin = () => {
   const handleDelete = (puzzle: Puzzle) => {
     setPuzzleToDelete(puzzle);
     setIsAlertOpen(true);
+  };
+
+  const handleDeleteAllPuzzles = async () => {
+    const confirmed = window.confirm('Delete all puzzles? This cannot be undone.');
+    if (!confirmed) return;
+
+    try {
+      await dispatch(deleteAllPuzzles()).unwrap();
+      setIsAlertOpen(false);
+      setPuzzleToDelete(null);
+    } catch (error) {
+      console.error('Failed to delete all puzzles', error);
+    }
   };
 
   const handleConfirmDelete = () => {
@@ -129,13 +143,22 @@ export const PuzzlesViewAdmin = () => {
           </h2>
           <p className="text-gray-500 mt-1 font-mono text-sm">Deploy and stabilize neural challenges.</p>
         </div>
-        <button
-          onClick={handleAdd}
-          className="bg-red-600 hover:bg-red-700 text-white font-black py-2.5 px-6 rounded-lg flex items-center gap-2 transition-all transform hover:scale-105 shadow-[0_0_15px_rgba(220,38,38,0.4)]"
-        >
-          <Plus size={20} />
-          NEW_DEPLOYMENT
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={handleAdd}
+            className="bg-red-600 hover:bg-red-700 text-white font-black py-2.5 px-6 rounded-lg flex items-center gap-2 transition-all transform hover:scale-105 shadow-[0_0_15px_rgba(220,38,38,0.4)]"
+          >
+            <Plus size={20} />
+            NEW_DEPLOYMENT
+          </button>
+          <button
+            onClick={handleDeleteAllPuzzles}
+            className="bg-zinc-900 hover:bg-red-950 text-red-400 border border-red-700 font-black py-2.5 px-6 rounded-lg flex items-center gap-2 transition-all"
+          >
+            <Trash2 size={20} />
+            REMOVE_ALL_LEVELS
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
