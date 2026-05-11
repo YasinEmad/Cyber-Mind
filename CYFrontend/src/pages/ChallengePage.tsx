@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PageWrapper from '@/components/PageWrapper';
 import { Challenge, ChallengeDifficulty } from '@/types';
 import ChallengeCard from '@/components/ChallengeCard';
@@ -8,18 +8,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
 import { fetchChallenges } from '@/redux/slices/challengeSlice';
 
-
-function mapToCard(ch: any): Challenge {
-  const lvl = ch.level || ch.difficulty || 'easy';
-  const difficulty = lvl.toLowerCase() === 'medium' ? ChallengeDifficulty.Medium : (lvl.toLowerCase() === 'hard' ? ChallengeDifficulty.Hard : ChallengeDifficulty.Easy);
-  return {
-    id: ch._id || ch.id,
-    title: ch.title,
-    description: ch.description,
-    difficulty,
-  };
-}
-
 const motivationalQuotes = [
   "EXCELLENCE IS NOT AN ACT, BUT A HABIT.",
   "PRECISION OVER SPEED. RESULTS OVER EXCUSES.",
@@ -28,13 +16,13 @@ const motivationalQuotes = [
   "THE HARDER THE BATTLE, THE SWEETER THE VICTORY."
 ];
 
-const MotivationalQuote: React.FC = () => {
+const MotivationalQuote: React.FC = React.memo(() => {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setIndex((prevIndex) => (prevIndex + 1) % motivationalQuotes.length);
-    }, 6000);
+    }, 8000); // Increased from 6s to 8s to reduce frequency
     return () => clearInterval(timer);
   }, []);
   
@@ -47,65 +35,83 @@ const MotivationalQuote: React.FC = () => {
           initial={{ opacity: 0, letterSpacing: "0.1em" }}
           animate={{ opacity: 1, letterSpacing: "0.2em" }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 1.2 }} // Slightly longer transition
         >
           {motivationalQuotes[index]}
         </motion.p>
       </AnimatePresence>
     </div>
   );
-};
+});
 
-const BackgroundParticle: React.FC = () => {
-  const randomPosition = () => ({
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-  });
-
-  const pos = randomPosition();
-
+const BackgroundParticle: React.FC<{ delay: number }> = React.memo(({ delay }) => {
   return (
     <motion.div
-      className="absolute w-[1px] h-[1px] bg-red-500 rounded-full shadow-[0_0_8px_#ef4444]"
-      initial={{ left: `${pos.x}%`, top: `${pos.y}%`, opacity: 0 }}
+      className="absolute w-[1px] h-[1px] bg-red-500/30 rounded-full"
+      style={{
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 100}%`,
+      }}
       animate={{
         y: [0, -100],
-        opacity: [0, 0.4, 0],
-        transition: {
-          duration: Math.random() * 5 + 5,
-          repeat: Infinity,
-          ease: "linear"
-        }
+        opacity: [0, 0.3, 0],
+      }}
+      transition={{
+        duration: Math.random() * 8 + 12, // Longer duration
+        repeat: Infinity,
+        delay: delay,
+        ease: "linear"
       }}
     />
   );
-};
+});
 
-const AnimatedBackground: React.FC = () => {
+const AnimatedBackground: React.FC = React.memo(() => {
+  // Generate particles once and memoize them
+  const particles = useMemo(() => 
+    Array.from({ length: 12 }, (_, i) => ({ id: i, delay: Math.random() * 10 })), // Reduced from 20 to 12
+    []
+  );
+
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
       <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-black" />
-      <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:40px_40px]" />
+      <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:50px_50px]" />
       
-      {[...Array(20)].map((_, i) => (
-        <BackgroundParticle key={i} />
+      {particles.map((particle) => (
+        <BackgroundParticle key={particle.id} delay={particle.delay} />
       ))}
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,black_90%)]" />
     </div>
   );
-};
+});
 
-const ChallengePage: React.FC = () => {
+const ChallengePage: React.FC = React.memo(() => {
   const dispatch = useDispatch<AppDispatch>();
   const storeChallenges = useSelector((state: RootState) => state.challenges.challenges);
   const status = useSelector((state: RootState) => state.challenges.status);
 
+  const mapToCard = useCallback((ch: any): Challenge => {
+    const lvl = ch.level || ch.difficulty || 'easy';
+    const difficulty = lvl.toLowerCase() === 'medium' ? ChallengeDifficulty.Medium : (lvl.toLowerCase() === 'hard' ? ChallengeDifficulty.Hard : ChallengeDifficulty.Easy);
+    return {
+      id: ch._id || ch.id,
+      title: ch.title,
+      description: ch.description,
+      difficulty,
+    };
+  }, []);
+
   useEffect(() => {
     if (status === 'idle') dispatch(fetchChallenges());
-  }, [dispatch]);
+  }, [dispatch, status]); // Added status to dependencies
 
-  const cards = storeChallenges.map(mapToCard);
+  // Memoize the cards to prevent unnecessary re-computations
+  const cards = useMemo(() => 
+    storeChallenges.map(mapToCard), 
+    [storeChallenges, mapToCard]
+  );
 
   return (
     <PageWrapper>
@@ -144,6 +150,6 @@ const ChallengePage: React.FC = () => {
       </div>
     </PageWrapper>
   );
-};
+});
 
 export default ChallengePage;

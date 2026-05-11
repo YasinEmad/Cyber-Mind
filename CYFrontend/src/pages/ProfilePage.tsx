@@ -30,7 +30,7 @@ const ProfilePage: React.FC = () => {
   // --- Data Mapping ---
   // Per your UserSlice: solvedCTFLevels exists inside user.profile
   const solvedCTFLevels = user?.profile?.solvedCTFLevels || user?.solvedCTFLevels || [];
-  const ctfSolvedCount = solvedCTFLevels.length || user?.solvedChallenges?.length || 0;
+  const ctfSolvedCount = solvedCTFLevels.length;
 
   // --- Effects ---
 
@@ -50,13 +50,8 @@ const ProfilePage: React.FC = () => {
       }
     };
 
-    // Always refetch on mount and periodically to stay in sync
+    // Fetch once on mount to populate profile data.
     fetchUserData();
-    
-    // Refetch every 5 seconds to stay in sync with server changes
-    const interval = setInterval(fetchUserData, 5000);
-    
-    return () => clearInterval(interval);
   }, [dispatch]);
 
   // 2. Fetch Detailed Data for the Puzzles Table

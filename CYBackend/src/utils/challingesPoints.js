@@ -1,13 +1,13 @@
 const difficultyToPoints = {
-  easy: 20,
-  medium: 40,
-  hard: 70,
+  easy: 10,
+  medium: 20,
+  hard: 30,
 };
 
 // بنعمل Export بنفس الاسم اللي الكنترولر مستنيه (CHALLENGE_POINTS)
 const CHALLENGE_POINTS = difficultyToPoints;
 
-const DEFAULT_POINTS = 20;
+const DEFAULT_POINTS = 10;
 
 const getPointsForDifficulty = (difficulty, opts = {}) => {
   if (typeof difficulty !== 'string') {

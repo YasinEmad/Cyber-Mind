@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Lock, Terminal, Eye, BrainCircuit, Lightbulb, Cpu, Sparkles, Zap, Award } from 'lucide-react';
+import { Lock, Terminal, Eye, BrainCircuit, Lightbulb, Cpu, Sparkles, Zap, Award, Clock } from 'lucide-react';
 import { getPointsForLevel } from '@/lib/points';
 
 interface Props {
@@ -13,6 +13,8 @@ interface Props {
   displayedScenario: string;
   revealedHintsCount: number;
   feedback: 'idle' | 'correct' | 'incorrect';
+  elapsedTime: number;
+  formatTime: (ms: number) => string;
 }
 
 const SolvePuzzleLeft: React.FC<Props> = ({
@@ -25,6 +27,8 @@ const SolvePuzzleLeft: React.FC<Props> = ({
   displayedScenario,
   revealedHintsCount,
   feedback,
+  elapsedTime,
+  formatTime,
 }) => {
   const levelPoints = getPointsForLevel(puzzle?.level);
   
@@ -129,13 +133,14 @@ const SolvePuzzleLeft: React.FC<Props> = ({
 
         {/* Stats Grid */}
         <motion.div 
-          className="grid grid-cols-3 gap-4" 
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4" 
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ delay: 0.4 }}
         >
           {[
             { icon: BrainCircuit, label: 'Level', value: puzzle?.level || 1, color: 'red', badge: 'ALV' },
+            { icon: Clock, label: 'Time', value: formatTime(elapsedTime), color: 'blue', badge: 'CLK' },
             { icon: Lightbulb, label: 'Hints', value: `${revealedHintsCount}/${puzzle?.hints?.length || 0}`, color: 'orange', badge: 'PKT' },
             { icon: Award, label: 'Reward', value: `+${levelPoints}`, color: 'green', badge: 'PTS' },
           ].map((stat, index) => (
@@ -152,7 +157,7 @@ const SolvePuzzleLeft: React.FC<Props> = ({
                 </div>
                 <div className="text-center">
                   <div className={`text-[10px] text-${stat.color}-600 font-mono tracking-wider mb-1 uppercase font-bold`}>{stat.label}</div>
-                  <div className={`text-lg font-black font-mono text-${stat.color}-400`}>{stat.value}</div>
+                  <div className={`text-lg font-black font-mono text-${stat.color}-400 ${stat.label === 'Time' ? 'text-sm' : ''}`}>{stat.value}</div>
                 </div>
                 <div className={`text-[7px] px-2 py-0.5 rounded bg-${stat.color}-900/40 text-${stat.color}-600 font-mono uppercase tracking-widest`}>
                   {stat.badge}

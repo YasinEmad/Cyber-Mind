@@ -1,7 +1,7 @@
 const levelToPoints = {
   1: 10,
-  2: 15,
-  3: 20,
+  2: 20,
+  3: 30,
 };
 
 const DEFAULT_POINTS = 10;

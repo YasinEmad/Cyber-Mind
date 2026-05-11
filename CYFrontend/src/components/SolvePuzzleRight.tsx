@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ArrowRight, CheckCircle, AlertCircle, Lightbulb, Lock, Zap } from 'lucide-react';
+import { ChevronRight, ArrowRight, CheckCircle, AlertCircle, Lightbulb, Lock, Zap, Keyboard } from 'lucide-react';
 
 interface Props {
   puzzle: any;
@@ -13,6 +13,8 @@ interface Props {
   visibleHints: string[];
   revealedHintsCount: number;
   handleRevealHint: () => void;
+  isFocused: boolean;
+  setIsFocused: (focused: boolean) => void;
 }
 
 const SolvePuzzleRight: React.FC<Props> = ({
@@ -26,6 +28,8 @@ const SolvePuzzleRight: React.FC<Props> = ({
   visibleHints,
   revealedHintsCount,
   handleRevealHint,
+  isFocused,
+  setIsFocused,
 }) => {
   return (
     <div className="flex flex-col p-8 lg:p-12 bg-gradient-to-b from-black via-zinc-950 to-black justify-center relative overflow-hidden h-full">
@@ -55,22 +59,42 @@ const SolvePuzzleRight: React.FC<Props> = ({
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Input Field */}
               <div className="relative group">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-red-600/20 to-orange-600/20 blur opacity-0 group-focus-within:opacity-100 transition-opacity duration-500 rounded-xl"></div>
+                <div className={`absolute -inset-0.5 bg-gradient-to-r from-red-600/20 to-orange-600/20 blur opacity-0 transition-opacity duration-500 rounded-xl ${isFocused ? 'opacity-100' : 'group-focus-within:opacity-100'}`}></div>
                 <div className="relative">
                   <input
                     type="text"
                     value={answer}
                     onChange={(e) => setAnswer(e.target.value)}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
                     placeholder="ENTER_KEY_"
-                    className="w-full bg-gradient-to-b from-zinc-900/80 to-black border border-zinc-700 text-white font-mono text-lg p-5 focus:outline-none focus:border-red-600/80 transition-all placeholder:text-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl"
+                    className={`w-full bg-gradient-to-b from-zinc-900/80 to-black border text-white font-mono text-lg p-5 focus:outline-none transition-all placeholder:text-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl ${
+                      isFocused 
+                        ? 'border-red-600/80 shadow-[0_0_20px_rgba(220,38,38,0.3)]' 
+                        : 'border-zinc-700 group-focus-within:border-red-600/80 group-focus-within:shadow-[0_0_20px_rgba(220,38,38,0.2)]'
+                    }`}
                     disabled={feedback === 'correct'}
                     autoComplete="off"
                     spellCheck="false"
                   />
-                  <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity duration-500 rounded-b-xl"></div>
+                  <div className={`absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent opacity-0 transition-opacity duration-500 rounded-b-xl ${isFocused ? 'opacity-100' : 'group-focus-within:opacity-100'}`}></div>
                   <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                    <ChevronRight className="text-zinc-600 group-focus-within:text-red-500 transition-colors" size={20} />
+                    <ChevronRight className={`transition-colors ${isFocused ? 'text-red-500' : 'text-zinc-600 group-focus-within:text-red-500'}`} size={20} />
                   </div>
+                  {/* Typing indicator */}
+                  {isFocused && answer.length > 0 && (
+                    <motion.div 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute right-12 top-1/2 transform -translate-y-1/2"
+                    >
+                      <div className="flex space-x-1">
+                        <div className="w-1 h-1 bg-red-500 rounded-full animate-pulse"></div>
+                        <div className="w-1 h-1 bg-orange-500 rounded-full animate-pulse" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-1 h-1 bg-red-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
               </div>
 
@@ -89,6 +113,19 @@ const SolvePuzzleRight: React.FC<Props> = ({
                   <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                 </div>
               </motion.button>
+
+              {/* Keyboard Shortcuts */}
+              <div className="flex items-center justify-center gap-4 text-[10px] text-zinc-600 font-mono">
+                <div className="flex items-center gap-1">
+                  <Keyboard size={10} />
+                  <span>Enter</span>
+                </div>
+                <span className="text-zinc-700">•</span>
+                <div className="flex items-center gap-1">
+                  <Lightbulb size={10} />
+                  <span>Ctrl+H</span>
+                </div>
+              </div>
             </form>
           </div>
 
@@ -160,6 +197,22 @@ const SolvePuzzleRight: React.FC<Props> = ({
             </div>
           </div>
 
+          {/* Progress Bar */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-[10px] text-zinc-600 font-mono">
+              <span>Hint Progress</span>
+              <span>{revealedHintsCount}/{puzzle?.hints?.length || 0}</span>
+            </div>
+            <div className="w-full bg-zinc-800/50 rounded-full h-2 overflow-hidden">
+              <motion.div 
+                className="h-full bg-gradient-to-r from-orange-600 to-red-600 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${(revealedHintsCount / (puzzle?.hints?.length || 1)) * 100}%` }}
+                transition={{ duration: 0.5 }}
+              />
+            </div>
+          </div>
+
           {/* Hints Display */}
           <div className="space-y-3 min-h-[150px] max-h-[280px] overflow-y-auto pr-2 custom-scrollbar">
             {visibleHints.length === 0 ? (
@@ -173,6 +226,18 @@ const SolvePuzzleRight: React.FC<Props> = ({
                 </div>
                 <span className="text-xs text-zinc-600 uppercase tracking-widest mb-2 font-bold">No Hints Revealed</span>
                 <span className="text-[10px] text-zinc-700">Click to request first data packet</span>
+                {puzzle?.hints?.length > 0 && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mt-4 p-3 bg-orange-900/10 border border-orange-600/20 rounded-lg"
+                  >
+                    <div className="text-[9px] text-orange-600 font-mono mb-1">PREVIEW:</div>
+                    <div className="text-[11px] text-zinc-400 italic">
+                      "{puzzle.hints[0].substring(0, 50)}{puzzle.hints[0].length > 50 ? '...' : ''}"
+                    </div>
+                  </motion.div>
+                )}
               </motion.div>
             ) : (
               <div className="space-y-3">
@@ -193,6 +258,19 @@ const SolvePuzzleRight: React.FC<Props> = ({
                     </div>
                   </motion.div>
                 ))}
+                {/* Next hint preview */}
+                {revealedHintsCount < (puzzle?.hints?.length || 0) && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-3 bg-zinc-900/30 border border-zinc-800/30 rounded-lg border-dashed"
+                  >
+                    <div className="text-[9px] text-zinc-600 font-mono mb-1">NEXT PACKET PREVIEW:</div>
+                    <div className="text-[11px] text-zinc-500 italic">
+                      "{puzzle.hints[revealedHintsCount].substring(0, 40)}{puzzle.hints[revealedHintsCount].length > 40 ? '...' : ''}"
+                    </div>
+                  </motion.div>
+                )}
               </div>
             )}
           </div>

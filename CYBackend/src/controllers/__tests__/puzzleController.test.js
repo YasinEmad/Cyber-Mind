@@ -116,7 +116,7 @@ describe('submitAnswer controller', () => {
 
     await submitAnswer(req, res);
 
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ correct: true, alreadySolved: false, awardedPoints: true, awardedPointsAmount: 15 }));
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ correct: true, alreadySolved: false, awardedPoints: true, awardedPointsAmount: 20 }));
     expect(fakeUser.solvedPuzzles).toContain('p2');
     expect(Profile.findById).toHaveBeenCalledWith('pr2');
     expect(fakeProfile.totalScore).toBe(15);
@@ -145,10 +145,10 @@ describe('submitAnswer controller', () => {
 
     await submitAnswer(req, res);
 
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ correct: true, alreadySolved: false, awardedPoints: true, awardedPointsAmount: 20 }));
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ correct: true, alreadySolved: false, awardedPoints: true, awardedPointsAmount: 30 }));
     expect(fakeUser.solvedPuzzles).toContain('p3');
     expect(Profile.findById).toHaveBeenCalledWith('pr3');
-    expect(fakeProfile.totalScore).toBe(20);
+    expect(fakeProfile.totalScore).toBe(30);
     expect(fakeProfile.puzzlesDone).toBe(1);
   });
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Editor from '@monaco-editor/react';
 // Cleaned up unused imports: Award and Beaker
@@ -27,17 +27,28 @@ const PlayChallengePage = () => {
   const [isFullScreenEditor, setIsFullScreenEditor] = useState(false);
   const [lastAction, setLastAction] = useState<'run' | 'test' | null>(null);
 
-  const passedTests = testResults.filter(t => t.passed).length;
+  const passedTests = useMemo(() => testResults.filter(t => t.passed).length, [testResults]);
   const totalTests = testResults.length;
 
-  const wrappedHandleRun = () => { setLastAction('run'); handleRun(); };
+  const wrappedHandleRun = useCallback(() => { 
+    setLastAction('run'); 
+    handleRun(); 
+  }, [handleRun]);
 
-  const LoadingIndicator = ({ text }: { text: string }) => (
+  const LoadingIndicator = useCallback(({ text }: { text: string }) => (
     <div className="flex flex-col items-center justify-center h-full text-white py-12">
       <Loader2 size={32} className="opacity-50 mb-3 animate-spin" />
       <p className="text-sm">{text}</p>
     </div>
-  );
+  ), []);
+
+  const toggleLeftPanel = useCallback(() => {
+    setIsLeftPanelCollapsed(prev => !prev);
+  }, []);
+
+  const toggleFullScreen = useCallback(() => {
+    setIsFullScreenEditor(prev => !prev);
+  }, []);
 
   return (
     <div className="flex flex-col h-screen w-screen bg-black text-white font-sans overflow-hidden">
@@ -72,17 +83,28 @@ const PlayChallengePage = () => {
       <div className="flex-1 flex overflow-hidden relative">
         <AnimatePresence>
           {!isLeftPanelCollapsed && (
-            <motion.div initial={{ width: 0, opacity: 0 }} animate={{ width: 420, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.3, ease: 'easeInOut' }}>
+            <motion.div 
+              initial={{ width: 0, opacity: 0 }} 
+              animate={{ width: 420, opacity: 1 }} 
+              exit={{ width: 0, opacity: 0 }} 
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+            >
               <ChallengeSidebar 
-                activeLeftTab={activeLeftTab} setActiveLeftTab={setActiveLeftTab}
-                chFromStore={chFromStore} hintsList={hintsList}
-                revealedHints={revealedHints} toggleHint={toggleHint}
+                activeLeftTab={activeLeftTab} 
+                setActiveLeftTab={setActiveLeftTab}
+                chFromStore={chFromStore} 
+                hintsList={hintsList}
+                revealedHints={revealedHints} 
+                toggleHint={toggleHint}
               />
             </motion.div>
           )}
         </AnimatePresence>
 
-        <button onClick={() => setIsLeftPanelCollapsed(!isLeftPanelCollapsed)} className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-black hover:bg-gray-700 p-2 rounded-r-lg border border-l-0 border-gray-700 transition-all">
+        <button 
+          onClick={toggleLeftPanel} 
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-black hover:bg-gray-700 p-2 rounded-r-lg border border-l-0 border-gray-700 transition-all"
+        >
           {isLeftPanelCollapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
         </button>
 
@@ -92,18 +114,33 @@ const PlayChallengePage = () => {
               <Code2 size={14} />
               <span className="text-xs font-mono">JavaScript / Node.js</span>
             </div>
-            <button onClick={() => setIsFullScreenEditor(!isFullScreenEditor)} className="p-2 text-white hover:bg-black rounded-lg border border-transparent hover:border-gray-700">
+            <button 
+              onClick={toggleFullScreen} 
+              className="p-2 text-white hover:bg-black rounded-lg border border-transparent hover:border-gray-700"
+            >
               {isFullScreenEditor ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
             </button>
           </div>
 
-
-
-          <motion.div animate={{ height: isFullScreenEditor ? '100%' : '60%' }} className="relative overflow-hidden border-b border-gray-700">
+          <motion.div 
+            animate={{ height: isFullScreenEditor ? '100%' : '60%' }} 
+            className="relative overflow-hidden border-b border-gray-700"
+          >
             <Editor
-              height="100%" defaultLanguage="javascript" value={code}
-              onChange={handleEditorChange} theme="vs-dark"
-              options={{ minimap: { enabled: false }, fontSize: 14, automaticLayout: true, wordWrap: 'on' }}
+              height="100%" 
+              defaultLanguage="javascript" 
+              value={code}
+              onChange={handleEditorChange} 
+              theme="vs-dark"
+              options={{ 
+                minimap: { enabled: false }, 
+                fontSize: 14, 
+                automaticLayout: true, 
+                wordWrap: 'on',
+                scrollBeyondLastLine: false,
+                smoothScrolling: true,
+                cursorBlinking: 'smooth'
+              }}
             />
           </motion.div>
 

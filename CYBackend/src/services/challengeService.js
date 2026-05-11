@@ -23,9 +23,9 @@ exports.submitChallengeAnswer = async (challengeId, user, userAnswer) => {
     isCorrect = evaluation.fixed;
     feedback = evaluation.feedback;
     
-    // Set points based on level for security challenges
-    const levelPoints = { easy: 100, medium: 200, hard: 300 };
-    pointsToAward = isCorrect ? (levelPoints[challenge.level] || 0) : 0;
+    // Set points based on difficulty for security challenges
+    const levelPoints = { easy: 10, medium: 20, hard: 30 };
+    pointsToAward = isCorrect ? (levelPoints[String(challenge.level).toLowerCase()] || 0) : 0;
   } else {
     // Original validation logic for non-security challenges
     if (!challenge.solution) {
@@ -46,7 +46,8 @@ exports.submitChallengeAnswer = async (challengeId, user, userAnswer) => {
     }
 
     // 3. لو الإجابة صح، نحدد النقط
-    pointsToAward = challenge.points || CHALLENGE_POINTS[challenge.level.toUpperCase()] || 0;
+    const challengeLevel = String(challenge.level || '').toLowerCase();
+    pointsToAward = CHALLENGE_POINTS[challengeLevel] || 0;
   }
 
   let awarded = false;

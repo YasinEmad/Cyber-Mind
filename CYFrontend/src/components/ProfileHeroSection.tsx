@@ -6,7 +6,7 @@ interface ProfileHeroSectionProps {
 }
 
 const ProfileHeroSection: React.FC<ProfileHeroSectionProps> = ({ user }) => {
-  const solvedCount = user?.profile?.solvedCTFLevels?.length || user?.solvedChallenges?.length || 0;
+  const solvedCount = user?.profile?.solvedCTFLevels?.length || 0;
   const globalRank = typeof user?.profile?.globalRank === 'number' ? user.profile.globalRank : null;
   const totalScore = user?.profile?.totalScore || 0;
 

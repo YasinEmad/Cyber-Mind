@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
@@ -110,40 +110,43 @@ export const usePlayChallenge = () => {
     }
   };
 
-  const handleTest = () => {
+  const handleTest = useCallback(() => {
     setIsRunning(true);
     setActiveBottomTab('tests');
     setTestResults([]);
     
-    setTimeout(() => {
-      const updatedCode = code.toLowerCase();
-      // Simulation of testing process (Security Checks)
-      const tests = [
-        { 
-          check: !updatedCode.includes('${username}') && !updatedCode.includes('${password}'),
-          message: "Prevent SQL String Interpolation",
-          severity: "high" as const,
-        },
-        {
-          check: updatedCode.includes('?') || updatedCode.includes('$1') || updatedCode.includes('params'),
-          message: "Use Parameterized Queries",
-          severity: "high" as const,
-        },
-        {
-          check: updatedCode.includes('try') && updatedCode.includes('catch'),
-          message: "Safe Error Handling",
-          severity: "medium" as const,
-        }
-      ];
+    // Use requestAnimationFrame instead of setTimeout for better performance
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const updatedCode = code.toLowerCase();
+        // Simulation of testing process (Security Checks)
+        const tests = [
+          { 
+            check: !updatedCode.includes('${username}') && !updatedCode.includes('${password}'),
+            message: "Prevent SQL String Interpolation",
+            severity: "high" as const,
+          },
+          {
+            check: updatedCode.includes('?') || updatedCode.includes('$1') || updatedCode.includes('params'),
+            message: "Use Parameterized Queries",
+            severity: "high" as const,
+          },
+          {
+            check: updatedCode.includes('try') && updatedCode.includes('catch'),
+            message: "Safe Error Handling",
+            severity: "medium" as const,
+          }
+        ];
 
-      setTestResults(tests.map(test => ({
-        passed: test.check,
-        message: test.message,
-        severity: test.severity
-      })));
-      setIsRunning(false);
-    }, 1000);
-  };
+        setTestResults(tests.map(test => ({
+          passed: test.check,
+          message: test.message,
+          severity: test.severity
+        })));
+        setIsRunning(false);
+      }, 800); // Slightly reduced from 1000ms
+    });
+  }, [code]);
 
   // --- Submit Logic ---
   // عند التسليم:

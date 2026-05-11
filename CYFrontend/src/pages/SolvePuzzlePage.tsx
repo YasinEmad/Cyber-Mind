@@ -26,6 +26,9 @@ const SolvePuzzlePage: React.FC = () => {
   const [awardedPointsAmount, setAwardedPointsAmount] = useState<number | null>(null);
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; color: string }>>([]);
   const [isHoveringTitle, setIsHoveringTitle] = useState(false);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [isFocused, setIsFocused] = useState(false);
 
   const [displayedTitle, setDisplayedTitle] = useState('');
   const titleIntervalRef = useRef<number | null>(null);
@@ -69,6 +72,8 @@ const SolvePuzzlePage: React.FC = () => {
       setRevealedHintsCount(0);
       setAnswer('');
       setFeedback('idle');
+      setStartTime(Date.now());
+      setElapsedTime(0);
       scrambleTitle();
 
       let index = 0;
@@ -87,6 +92,17 @@ const SolvePuzzlePage: React.FC = () => {
       };
     }
   }, [puzzle]);
+
+  // Timer effect
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (startTime && feedback === 'idle') {
+      timer = setInterval(() => {
+        setElapsedTime(Date.now() - startTime);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [startTime, feedback]);
 
   const handleRevealHint = () => {
     if (!puzzle || revealedHintsCount >= puzzle.hints.length) return;
@@ -173,6 +189,29 @@ const SolvePuzzlePage: React.FC = () => {
       setSubmissionMessage(err?.response?.data?.message ?? 'CONNECTION_ERROR');
       setTimeout(() => setFeedback('idle'), 2000);
     }
+  };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'h') {
+        e.preventDefault();
+        handleRevealHint();
+      }
+      if (e.key === 'Enter' && !e.shiftKey && answer.trim() !== '' && feedback === 'idle') {
+        handleSubmit(e as any);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [answer, feedback, handleRevealHint, handleSubmit]);
+
+  const formatTime = (ms: number) => {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    return `${hours.toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
   };
 
   const visibleHints = puzzle ? puzzle.hints.slice(0, revealedHintsCount) : [];
@@ -264,6 +303,32 @@ const SolvePuzzlePage: React.FC = () => {
         ))}
       </AnimatePresence>
 
+      {/* Success Animation Overlay */}
+      <AnimatePresence>
+        {feedback === 'correct' && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-40 pointer-events-none"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-green-900/20"></div>
+            <motion.div 
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 0.1 }}
+              transition={{ delay: 0.5, duration: 1 }}
+              className="absolute inset-0 border-4 border-green-500/30 rounded-full"
+            />
+            <motion.div 
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 2, opacity: 0 }}
+              transition={{ delay: 0.7, duration: 1.5 }}
+              className="absolute inset-0 border-2 border-green-400/20 rounded-full"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="relative min-h-screen grid lg:grid-cols-2">
         <SolvePuzzleLeft
           puzzle={puzzle}
@@ -275,6 +340,8 @@ const SolvePuzzlePage: React.FC = () => {
           displayedScenario={displayedScenario}
           revealedHintsCount={revealedHintsCount}
           feedback={feedback}
+          elapsedTime={elapsedTime}
+          formatTime={formatTime}
         />
 
         <SolvePuzzleRight
@@ -288,6 +355,8 @@ const SolvePuzzlePage: React.FC = () => {
           visibleHints={visibleHints}
           revealedHintsCount={revealedHintsCount}
           handleRevealHint={handleRevealHint}
+          isFocused={isFocused}
+          setIsFocused={setIsFocused}
         />
       </div>
     </PageWrapper>
