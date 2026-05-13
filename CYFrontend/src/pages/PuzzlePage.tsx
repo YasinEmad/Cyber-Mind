@@ -7,6 +7,8 @@ import PuzzleCard from '@/components/PuzzleCard'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Terminal, Cpu, Activity, Filter, SortAsc, Search } from 'lucide-react'
+import Lottie from 'lottie-react'
+import puzzlesAnimation from '/home/yasin/Cyber-Mind/CYFrontend/public/assets/Meditating Brain.json'
 
 const PuzzlePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
@@ -75,18 +77,29 @@ const PuzzlePage: React.FC = () => {
         <div className="relative z-10 max-w-7xl mx-auto px-6 py-12">
           
           {/* Tactical Header */}
-          <header className="mb-12 border-l-4 border-red-600 pl-6 space-y-3">
-            <div className="flex items-center gap-2 text-red-500 font-mono text-xs tracking-[0.3em] uppercase animate-pulse">
-              <Activity size={14} />
-              <span>Total Available: {puzzles.length}</span>
+          <section className="mb-12 grid gap-8 lg:grid-cols-[1.4fr_1fr] items-center border-l-4 border-red-600 pl-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-red-500 font-mono text-xs tracking-[0.3em] uppercase animate-pulse">
+                <Activity size={14} />
+                <span>Total Available: {puzzles.length}</span>
+              </div>
+              <h1 className="text-5xl font-black text-white uppercase tracking-tighter">
+                Neural <span className="bg-gradient-to-r from-red-500 via-orange-500 to-red-600 bg-clip-text text-transparent">Puzzles</span>
+              </h1>
+              <p className="text-neutral-400 font-medium max-w-2xl text-sm">
+                Engage the central processor. Solve high-latency logic gates and decrypt neural pathways to earn credits and climb the ranks.
+              </p>
             </div>
-            <h1 className="text-5xl font-black text-white uppercase tracking-tighter">
-              Neural <span className="bg-gradient-to-r from-red-500 via-orange-500 to-red-600 bg-clip-text text-transparent">Puzzles</span>
-            </h1>
-            <p className="text-neutral-400 font-medium max-w-2xl text-sm">
-              Engage the central processor. Solve high-latency logic gates and decrypt neural pathways to earn credits and climb the ranks.
-            </p>
-          </header>
+
+          <div className="relative w-full max-w-lg mx-auto">
+  <Lottie
+    animationData={puzzlesAnimation}
+    loop
+    autoplay
+    className="w-full h-72"
+  />
+</div>
+          </section>
 
           {/* Quick Stats */}
           {status === 'succeeded' && puzzles.length > 0 && (

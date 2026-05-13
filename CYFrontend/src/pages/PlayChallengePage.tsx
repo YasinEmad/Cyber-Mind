@@ -31,7 +31,6 @@ const PlayChallengePage: React.FC = () => {
 
   const dispatch = useDispatch<AppDispatch>();
   const chFromStore = useSelector((state: RootState) => state.challenges.challenge);
-  const chStatus = useSelector((state: RootState) => state.challenges.status);
 
   useEffect(() => {
     if (challengeId) dispatch(fetchChallengeById(challengeId));
@@ -338,7 +337,7 @@ const PlayChallengePage: React.FC = () => {
                 padding: { top: 20 },
               }}
             />
-          </motion.div>
+          </div>
 
           {/* Bottom Console Area */}
           <div className="h-[35%] flex flex-col border-t border-gray-800 bg-black">
