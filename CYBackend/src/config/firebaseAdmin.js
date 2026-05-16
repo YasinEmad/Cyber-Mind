@@ -14,14 +14,38 @@ const requiredFields = [
   'client_id'
 ];
 
+function stripQuotes(value) {
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
 function normalizePrivateKey(value) {
-  return typeof value === 'string' ? value.replace(/\\n/g, '\n') : value;
+  const stripped = stripQuotes(value);
+  return typeof stripped === 'string' ? stripped.replace(/\\n/g, '\n') : stripped;
+}
+
+function normalizeField(value) {
+  if (typeof value !== 'string') return value;
+  return stripQuotes(value);
+}
+
+function parseJsonEnv(value) {
+  const stripped = stripQuotes(value);
+  const parsed = JSON.parse(stripped);
+  if (typeof parsed === 'string') {
+    return JSON.parse(parsed);
+  }
+  return parsed;
 }
 
 function loadServiceAccountFromEnv() {
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     try {
-      const parsed = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      const parsed = parseJsonEnv(process.env.FIREBASE_SERVICE_ACCOUNT);
       if (parsed.private_key) {
         parsed.private_key = normalizePrivateKey(parsed.private_key);
       }
@@ -46,17 +70,17 @@ function loadServiceAccountFromEnv() {
   }
 
   return {
-    type: process.env.FIREBASE_TYPE,
-    project_id: process.env.FIREBASE_PROJECT_ID,
-    private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+    type: normalizeField(process.env.FIREBASE_TYPE),
+    project_id: normalizeField(process.env.FIREBASE_PROJECT_ID),
+    private_key_id: normalizeField(process.env.FIREBASE_PRIVATE_KEY_ID),
     private_key: normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY),
-    client_email: process.env.FIREBASE_CLIENT_EMAIL,
-    client_id: process.env.FIREBASE_CLIENT_ID,
-    auth_uri: process.env.FIREBASE_AUTH_URI || 'https://accounts.google.com/o/oauth2/auth',
-    token_uri: process.env.FIREBASE_TOKEN_URI || 'https://oauth2.googleapis.com/token',
-    auth_provider_x509_cert_url: process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL || 'https://www.googleapis.com/oauth2/v1/certs',
-    client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL || '',
-    universe_domain: process.env.FIREBASE_UNIVERSE_DOMAIN || 'googleapis.com'
+    client_email: normalizeField(process.env.FIREBASE_CLIENT_EMAIL),
+    client_id: normalizeField(process.env.FIREBASE_CLIENT_ID),
+    auth_uri: normalizeField(process.env.FIREBASE_AUTH_URI) || 'https://accounts.google.com/o/oauth2/auth',
+    token_uri: normalizeField(process.env.FIREBASE_TOKEN_URI) || 'https://oauth2.googleapis.com/token',
+    auth_provider_x509_cert_url: normalizeField(process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL) || 'https://www.googleapis.com/oauth2/v1/certs',
+    client_x509_cert_url: normalizeField(process.env.FIREBASE_CLIENT_X509_CERT_URL) || '',
+    universe_domain: normalizeField(process.env.FIREBASE_UNIVERSE_DOMAIN) || 'googleapis.com'
   };
 }
 
@@ -69,6 +93,12 @@ try {
     }
     serviceAccount = require(serviceAccountPath);
   }
+
+  requiredFields.forEach((field) => {
+    if (serviceAccount[field] && typeof serviceAccount[field] === 'string') {
+      serviceAccount[field] = normalizeField(serviceAccount[field]);
+    }
+  });
 
   const missingField = requiredFields.find(field => !serviceAccount[field]);
   if (missingField) {
