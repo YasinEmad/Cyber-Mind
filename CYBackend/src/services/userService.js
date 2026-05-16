@@ -1,30 +1,60 @@
-const { User, Profile } = require('../models');
+const { sequelize, User, Profile } = require('../models');
 const { Op } = require('sequelize');
 
 exports.findOrCreateGoogleUser = async (userData) => {
   const { uid, email, name, picture } = userData;
-  let user = await User.findOne({
-    where: {
-      [Op.or]: [{ uid }, { email }]
-    },
-    include: [{ model: Profile, as: 'profile' }]
-  });
 
-  if (user) {
-    let changed = false;
-    if (name && user.name !== name) { user.name = name; changed = true; }
-    if (picture && user.photoURL !== picture) { user.photoURL = picture; changed = true; }
-    if (user.uid !== uid) { user.uid = uid; changed = true; }
-    if (changed) await user.save();
-  } else {
-    // Create user
-    user = await User.create({ uid, email, name, photoURL: picture });
-    // Create profile
-    await Profile.create({ userId: user.id });
-    // Reload with profile
-    user = await User.findByPk(user.id, { include: [{ model: Profile, as: 'profile' }] });
+  // Use a single transaction for the whole find-or-create flow
+  const transaction = await sequelize.transaction();
+  try {
+    console.log('DB LOG: before User.findOne (findOrCreateGoogleUser)');
+    let user = await User.findOne({
+      where: { [Op.or]: [{ uid }, { email }] },
+      include: [{ model: Profile, as: 'profile' }],
+      transaction
+    });
+    console.log('DB LOG: after User.findOne =>', user ? `found user ${user.id}` : 'no user');
+
+    if (user) {
+      let changed = false;
+      if (name && user.name !== name) { console.log('DB LOG: updating name', user.name, '->', name); user.name = name; changed = true; }
+      if (picture && user.photoURL !== picture) { console.log('DB LOG: updating photoURL', user.photoURL, '->', picture); user.photoURL = picture; changed = true; }
+      if (user.uid !== uid) { console.log('DB LOG: updating uid', user.uid, '->', uid); user.uid = uid; changed = true; }
+      if (changed) {
+        console.log('DB LOG: before user.save (existing user)');
+        await user.save({ transaction });
+        console.log('DB LOG: after user.save (existing user)');
+      }
+    } else {
+      // Create user + profile within the same transaction
+      console.log('DB LOG: before User.create (new user)');
+      user = await User.create({ uid, email, name, photoURL: picture }, { transaction });
+      console.log('DB LOG: after User.create =>', `created user ${user.id}`);
+
+      console.log('DB LOG: before Profile.create (new profile)');
+      await Profile.create({ userId: user.id }, { transaction });
+      console.log('DB LOG: after Profile.create');
+
+      console.log('DB LOG: before User.findByPk (reload with profile)');
+      user = await User.findByPk(user.id, { include: [{ model: Profile, as: 'profile' }], transaction });
+      console.log('DB LOG: after User.findByPk =>', user ? `reloaded user ${user.id}` : 'not found');
+    }
+
+    await transaction.commit();
+    console.log('DB LOG: transaction committed (findOrCreateGoogleUser)');
+    return user;
+  } catch (error) {
+    console.error('DB LOG: transaction error, rolling back (findOrCreateGoogleUser):', error);
+    try { await transaction.rollback(); } catch (e) { console.error('DB LOG: rollback failed', e); }
+    throw error;
   }
-  return user;
+};
+
+exports.getUserByIdWithProfile = async (id) => {
+  return await User.findByPk(id, {
+    include: [{ model: Profile, as: 'profile' }],
+    attributes: { include: ['solvedPuzzles', 'solvedChallenges'] }
+  });
 };
 
 /**

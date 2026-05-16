@@ -1,19 +1,23 @@
 const admin = require('../config/firebaseAdmin');
 const { User, Profile } = require('../models');
 const userService = require('../services/userService');
+const { signToken } = require('../utils/jwt');
 const { getPointsForLevel } = require('../utils/points');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+  path: '/',
+  maxAge: 1000 * 60 * 60 * 24 * 7, // 7 أيام
+};
+
 // Helper بسيط لإعداد الكوكيز
 const setAuthCookie = (res, token) => {
-  const options = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 أيام
-  };
-  res.cookie('token', token, options);
+  res.cookie('token', token, cookieOptions);
 };
 
 // Multer configuration for avatar uploads
@@ -87,9 +91,7 @@ exports.handleGoogleSignIn = async (req, res, next) => {
     const { token } = req.body;
     if (!token) return res.status(401).json({ success: false, message: 'Token not provided' });
 
-    console.log('TOKEN RECEIVED:', token);
     const decodedToken = await admin.auth().verifyIdToken(token);
-    console.log('DECODED:', decodedToken);
     const { uid, email, name, picture, email_verified, firebase } = decodedToken;
     const provider = firebase?.sign_in_provider;
 
@@ -101,8 +103,8 @@ exports.handleGoogleSignIn = async (req, res, next) => {
 
     // استخدام الـ Service
     const user = await userService.findOrCreateGoogleUser({ uid, email, name, picture });
-
-    setAuthCookie(res, token);
+    const authToken = signToken({ id: user.id, uid: user.uid, role: user.role });
+    setAuthCookie(res, authToken);
 
     res.status(200).json({
       success: true,
@@ -125,10 +127,7 @@ exports.handleGoogleSignIn = async (req, res, next) => {
 };
 
 exports.logout = (req, res) => {
-  res.cookie('token', 'none', {
-    expires: new Date(Date.now() + 10 * 1000),
-    httpOnly: true,
-  });
+  res.clearCookie('token', cookieOptions);
   res.status(200).json({ success: true, data: {} });
 };
 

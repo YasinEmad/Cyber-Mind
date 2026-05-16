@@ -6,20 +6,22 @@ const { connectDB } = require('./config/db');
 
 const app = express();
 
+// Support secure cookies behind proxies like Render or Vercel
+app.set('trust proxy', 1);
+
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const corsOptions = {
+  origin: FRONTEND_URL,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
 // اتصال قاعدة البيانات
 connectDB();
 
-// --- حل مشكلة الـ CORS نهائياً ---
-app.use(cors({
-  origin: 'http://localhost:5173', // بورت الفرونت إند بتاعك
-  credentials: true,               // مهم جداً عشان Axios يبعت الكوكيز
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-// ده سطر زيادة للأمان عشان المتصفحات اللي بتبعت Pre-flight request
-app.options('*', cors()); 
-// ------------------------------
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
