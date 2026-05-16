@@ -205,46 +205,6 @@ export default function CTFMindWelcome() {
               <CTFLevelGrid category={activeCategory} />
             </motion.div>
           )}
-
-          {/* Enhanced Start Button - Sleek Dark/Red Modern Aesthetic */}
-          {phase >= 6 && (
-            <motion.div
-              className="text-center"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 1.2 }}
-            >
-              <motion.button
-                onClick={() => {
-                  const firstLevel = ctfInfo.levels.find(level => level.category === activeCategory)?.level;
-                  if (firstLevel) {
-                    window.location.href = `/game/level/${firstLevel}`;
-                  }
-                }}
-                className="group relative px-10 py-4 bg-neutral-950 border border-red-900/30 hover:border-red-500/50 text-white font-mono text-sm tracking-widest rounded-lg transition-all duration-300 overflow-hidden"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                {/* Subtle dark red sweep on hover */}
-                <div className="absolute inset-0 bg-gradient-to-r from-red-950/0 via-red-900/20 to-red-950/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-
-                <span className="relative z-10 flex items-center justify-center gap-3">
-                  <Play className="w-4 h-4 text-red-500" />
-                  START {activeCategory.toUpperCase()}
-                  <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:text-red-400 group-hover:translate-x-1 transition-all" />
-                </span>
-              </motion.button>
-
-              <motion.p
-                className="text-neutral-600 text-xs mt-6 font-mono tracking-wide"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.5 }}
-              >
-                COMPLETE CHALLENGES SEQUENTIALLY <span className="text-red-900 mx-2">/</span> DIFFICULTY INCREASES PROGRESSIVELY
-              </motion.p>
-            </motion.div>
-          )}
         </div>
       </div>
     </>

@@ -3,10 +3,12 @@ import PageWrapper from '@/components/PageWrapper';
 import { Challenge, ChallengeDifficulty } from '@/types';
 import ChallengeCard from '@/components/ChallengeCard';
 import { motion, AnimatePresence } from 'framer-motion';
+import Lottie from 'lottie-react';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
 import { fetchChallenges } from '@/redux/slices/challengeSlice';
+import vulnerabilityAnimation from '/home/yasin/Cyber-Mind/CYFrontend/public/assets/vulnarability.json';
 
 const motivationalQuotes = [
   "EXCELLENCE IS NOT AN ACT, BUT A HABIT.",
@@ -121,26 +123,39 @@ const ChallengePage: React.FC = React.memo(() => {
         <div className="relative z-10 pt-8">
           <MotivationalQuote />
 
-          <div className="text-center mb-16 px-4">
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-5xl md:text-7xl font-black tracking-tighter text-white uppercase"
-            >
-              Daily <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">Challenges</span>
-            </motion.h1>
-            <motion.p 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="text-gray-500 mt-4 font-bold tracking-[0.3em] uppercase text-xs"
-            >
-              System Online // Test your limits
-            </motion.p>
-          </div>
-
           <div className="max-w-7xl mx-auto px-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-8 items-center mb-16">
+              <div className="text-center xl:text-left">
+                <motion.h1 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-5xl md:text-7xl font-black tracking-tighter text-white uppercase"
+                >
+                  Daily <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">Challenges</span>
+                </motion.h1>
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-gray-500 mt-4 font-bold tracking-[0.3em] uppercase text-xs"
+                >
+                  System Online // Test your limits
+                </motion.p>
+              </div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="hidden xl:flex justify-end relative z-10"
+              >
+                <div className="relative w-full max-w-[360px] overflow-hidden rounded-[2rem]">
+                  <Lottie animationData={vulnerabilityAnimation} loop autoplay className="h-[320px] w-full" />
+                </div>
+              </motion.div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 relative z-0">
               {cards.map((challenge, index) => (
                 <ChallengeCard key={challenge.id} challenge={challenge} index={index} />
               ))}

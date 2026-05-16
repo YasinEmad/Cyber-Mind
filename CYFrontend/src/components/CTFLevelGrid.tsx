@@ -1,14 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Terminal, Shield, Zap, Target, Lock, Star, Activity, Crosshair } from "lucide-react";
+import { Terminal, Shield, Zap, Target, Lock, Star, Crosshair } from "lucide-react";
 import ctfInfo from "@/utils/ctfinfo";
+import axios from "@/api/axios";
 
 interface LevelData {
   level: number;
   name: string;
   description: string;
   category: string;
+  hints?: string[];
+  target?: string;
+  difficulty?: string;
 }
 
 interface CTFLevelGridProps {
@@ -30,8 +34,44 @@ export default function CTFLevelGrid({ category }: CTFLevelGridProps) {
   const [hoveredLevel, setHoveredLevel] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
+  const [backendLevels, setBackendLevels] = useState<LevelData[]>([]);
+  const [_loading, _setLoading] = useState(true);
+  const [_error, _setError] = useState<string | null>(null);
 
-  const filteredLevels = ctfInfo.levels.filter((level: LevelData) => level.category === category);
+  // Fetch CTF levels from backend
+  useEffect(() => {
+    const fetchCTFLevels = async () => {
+      try {
+        _setLoading(true);
+        const response = await axios.get("/ctf/info");
+        console.log("Backend CTF response:", response.data);
+        
+        // Backend returns { success: true, data: { levels: [...] } }
+        if (response.data && response.data.data && response.data.data.levels) {
+          setBackendLevels(response.data.data.levels);
+          _setError(null);
+          console.log("Loaded backend levels:", response.data.data.levels);
+        } else if (response.data && response.data.levels) {
+          // Fallback for different response structure
+          setBackendLevels(response.data.levels);
+          _setError(null);
+        }
+      } catch (err) {
+        console.error("Failed to fetch CTF levels from backend:", err);
+        _setError("Failed to load CTF levels");
+        // Fall back to frontend data if backend fails
+        setBackendLevels(ctfInfo.levels);
+      } finally {
+        _setLoading(false);
+      }
+    };
+
+    fetchCTFLevels();
+  }, []);
+
+  // Use backend levels if available, otherwise fall back to frontend data
+  const levelsData = backendLevels.length > 0 ? backendLevels : ctfInfo.levels;
+  const filteredLevels = levelsData.filter((level: LevelData) => level.category === category);
 
   return (
     <motion.div
@@ -166,11 +206,13 @@ export default function CTFLevelGrid({ category }: CTFLevelGridProps) {
       {/* Advanced Diagnostics Tooltip */}
       <AnimatePresence>
         {hoveredLevel && (() => {
-          const levelData = ctfInfo.levels.find((level: LevelData) => level.level === hoveredLevel);
+          const levelData = levelsData.find((level: LevelData) => level.level === hoveredLevel);
           if (!levelData) return null;
 
-          const isHard = levelData.level > 20;
-          const isMedium = levelData.level > 10 && levelData.level <= 20;
+          const diffLevel = ((levelData as any)?.difficulty as string)?.toLowerCase() || '';
+          const isHard = diffLevel === 'hard' || levelData.level > 20;
+          const isMedium = diffLevel === 'medium' || (levelData.level > 10 && levelData.level <= 20);
+          const starCount = diffLevel === 'hard' ? 3 : diffLevel === 'medium' ? 2 : 1;
 
           return (
             <motion.div
@@ -203,13 +245,25 @@ export default function CTFLevelGrid({ category }: CTFLevelGridProps) {
                   {levelData.description}
                 </p>
 
-                {/* Sub-panel layout grid inside tooltip */}
+                {/* Hints Section from Backend */}
+                {levelData.hints && levelData.hints.length > 0 && (
+                  <div className="mb-4 pt-3 border-t border-neutral-900">
+                    <span className="text-neutral-600 text-[9px] uppercase block mb-2 font-mono">Hints</span>
+                    <ul className="text-neutral-400 text-xs space-y-1">
+                      {levelData.hints.slice(0, 3).map((hint, idx) => (
+                        <li key={idx} className="text-neutral-500 list-disc list-inside">
+                          {hint}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-2 pt-3 border-t border-neutral-900 font-mono text-[10px]">
                   <div className="bg-neutral-950/60 p-2 rounded border border-neutral-900/60">
                     <span className="text-neutral-600 block text-[9px] uppercase">Threat Level</span>
                     <span className={`font-bold tracking-wide
                       ${isHard ? 'text-red-400' : isMedium ? 'text-amber-500' : 'text-emerald-400'}`}>
-                      {levelData.level <= 10 ? 'LOW_EASY' : levelData.level <= 20 ? 'MID_MEDIUM' : 'HIGH_CRITICAL'}
+                      {isHard ? 'HIGH_CRITICAL' : isMedium ? 'MID_MEDIUM' : 'LOW_EASY'}
                     </span>
                   </div>
                   
@@ -219,7 +273,7 @@ export default function CTFLevelGrid({ category }: CTFLevelGridProps) {
                       {[1, 2, 3].map((star) => (
                         <Star
                           key={star}
-                          className={`w-2.5 h-2.5 ${star <= (levelData.level <= 10 ? 1 : levelData.level <= 20 ? 2 : 3) ? 'text-red-500 fill-red-500/20' : 'text-neutral-800'}`}
+                          className={`w-2.5 h-2.5 ${star <= starCount ? 'text-red-500 fill-red-500/20' : 'text-neutral-800'}`}
                         />
                       ))}
                     </div>

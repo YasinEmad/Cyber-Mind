@@ -3,22 +3,25 @@ const { CTFLevel } = require('../models');
 // Get all CTF level information
 exports.getCTFInfo = async (req, res, next) => {
   try {
+    // Fetch real data from database with all details
     const levels = await CTFLevel.findAll({
       where: { isActive: true },
-      attributes: ['level', 'title', 'description', 'difficulty'],
+      attributes: ['level', 'title', 'description', 'hint', 'difficulty'],
       order: [['level', 'ASC']],
     });
 
+    // Map database records to frontend format
     const ctfInfo = {
       levels: levels.map(level => ({
         level: level.level,
         name: level.title,
         description: level.description,
-        category: 'Linux',
+        hints: Array.isArray(level.hint) ? level.hint : [],
+        category: 'Linux', // You can add category field to DB later if needed
         difficulty: level.difficulty,
       })),
     };
-
+    
     res.status(200).json({
       success: true,
       data: ctfInfo,
