@@ -210,11 +210,10 @@ The frontend runs at `http://localhost:5173` by default.
 ## Recommended local workflow
 
 1. Start PostgreSQL.
-2. Create or update `CYBackend/.env`.
-3. Place Firebase service account JSON at `CYBackend/src/config/firebase-service-account.json`.
-4. Install backend dependencies and run `npm run dev`.
-5. Install frontend dependencies and run `npm run dev`.
-6. Open the frontend in browser and use Firebase sign-in to access protected flows.
+2. Create or update `CYBackend/.env` with Firebase service account credentials.
+3. Install backend dependencies and run `npm run dev`.
+4. Install frontend dependencies and run `npm run dev`.
+5. Open the frontend in browser and use Firebase sign-in to access protected flows.
 
 ---
 
