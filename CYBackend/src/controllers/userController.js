@@ -87,7 +87,9 @@ exports.handleGoogleSignIn = async (req, res, next) => {
     const { token } = req.body;
     if (!token) return res.status(401).json({ success: false, message: 'Token not provided' });
 
+    console.log('TOKEN RECEIVED:', token);
     const decodedToken = await admin.auth().verifyIdToken(token);
+    console.log('DECODED:', decodedToken);
     const { uid, email, name, picture, email_verified, firebase } = decodedToken;
     const provider = firebase?.sign_in_provider;
 
