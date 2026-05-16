@@ -8,10 +8,7 @@ import {
   Zap,
   Target,
   ChevronRight,
-  Lock,
-  Star,
   Play,
-  BarChart3
 } from "lucide-react";
 import ctfInfo from "@/utils/ctfinfo";
 import CTFHeader from "@/components/CTFHeader";
@@ -23,78 +20,14 @@ import serverAnimation from '/home/yasin/Cyber-Mind/CYFrontend/public/assets/ser
 const keyframes = `
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
 
-@keyframes floatImage {
-  0%, 100% { transform: translateY(0px) scale(1); }
-  50% { transform: translateY(-8px) scale(1.02); }
-}
-
 @keyframes scanline {
-  0% { top: -8%; }
-  100% { top: 108%; }
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
 }
 
-@keyframes glitch {
-  0%, 94%, 100% { clip-path: none; transform: translate(0); opacity: 1; }
-  95% { clip-path: polygon(0 30%, 100% 30%, 100% 45%, 0 45%); transform: translate(-3px, 1px); opacity: 0.9; }
-  97% { clip-path: polygon(0 60%, 100% 60%, 100% 75%, 0 75%); transform: translate(3px, -1px); opacity: 0.9; }
-}
-
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-  50% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
-}
-
-@keyframes levelPop {
-  0% { transform: scale(0.6) translateY(15px); opacity: 0; }
-  70% { transform: scale(1.1) translateY(-3px); opacity: 1; }
-  100% { transform: scale(1) translateY(0); opacity: 1; }
-}
-
-@keyframes redGlow {
-  0%, 100% { text-shadow: 0 0 20px rgba(239, 68, 68, 0.8), 0 0 40px rgba(239, 68, 68, 0.4); }
-  50% { text-shadow: 0 0 30px rgba(239, 68, 68, 1), 0 0 60px rgba(239, 68, 68, 0.6); }
-}
-
-@keyframes matrixRain {
-  0% { transform: translateY(-100vh); opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateY(100vh); opacity: 0; }
-}
-
-@keyframes borderGlow {
-  0%, 100% { border-color: rgba(239, 68, 68, 0.3); box-shadow: 0 0 20px rgba(239, 68, 68, 0.1); }
-  50% { border-color: rgba(239, 68, 68, 0.8); box-shadow: 0 0 40px rgba(239, 68, 68, 0.3); }
-}
-
-@keyframes particleFloat {
-  0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
-  33% { transform: translateY(-20px) rotate(120deg); opacity: 0.7; }
-  66% { transform: translateY(-10px) rotate(240deg); opacity: 0.5; }
-}
-
-@keyframes hologram {
-  0%, 100% { opacity: 0.8; transform: translateY(0px); }
-  50% { opacity: 1; transform: translateY(-2px); }
-}
-
-@keyframes dataStream {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-@keyframes cyberpunkGlow {
-  0%, 100% { 
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3), 0 0 40px rgba(239, 68, 68, 0.1), inset 0 0 20px rgba(239, 68, 68, 0.1);
-  }
-  50% { 
-    box-shadow: 0 0 30px rgba(239, 68, 68, 0.5), 0 0 60px rgba(239, 68, 68, 0.2), inset 0 0 30px rgba(239, 68, 68, 0.2);
-  }
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
 }
 `;
 
@@ -107,7 +40,7 @@ export default function CTFMindWelcome() {
     {
       name: "Linux",
       count: 10,
-      color: "#ef4444",
+      color: "#ef4444", // Red
       icon: <Terminal className="w-5 h-5" />,
       description: "Master Linux system administration and security",
       difficulty: "Beginner to Intermediate"
@@ -115,7 +48,7 @@ export default function CTFMindWelcome() {
     {
       name: "Offensive Security",
       count: 10,
-      color: "#ef4444",
+      color: "#dc2626", // Darker Red
       icon: <Shield className="w-5 h-5" />,
       description: "Practice offensive security techniques and exploit development",
       difficulty: "Intermediate"
@@ -123,7 +56,7 @@ export default function CTFMindWelcome() {
     {
       name: "Network",
       count: 10,
-      color: "#10b981",
+      color: "#b91c1c", // Deep Red
       icon: <Zap className="w-5 h-5" />,
       description: "Network protocols, traffic analysis, and security",
       difficulty: "Intermediate to Advanced"
@@ -131,7 +64,7 @@ export default function CTFMindWelcome() {
     {
       name: "Web Security",
       count: 5,
-      color: "#f59e0b",
+      color: "#991b1b", // Darkest Red
       icon: <Target className="w-5 h-5" />,
       description: "Web vulnerabilities and application security",
       difficulty: "Advanced"
@@ -152,72 +85,74 @@ export default function CTFMindWelcome() {
   return (
     <>
       <style>{keyframes}</style>
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white overflow-x-hidden relative">
-        {/* Enhanced Background Effects */}
-        <div className="fixed inset-0 pointer-events-none">
-          {/* Grid overlay */}
-          <div className="absolute inset-0 opacity-[0.02]"
+      {/* Set base background to pure black / very dark neutral */}
+      <div className="min-h-screen bg-[#050505] text-neutral-200 overflow-x-hidden relative font-sans">
+        
+        {/* Modern Dark Background Effects */}
+        <div className="fixed inset-0 pointer-events-none z-0">
+          
+          {/* Subtle dark geometric grid */}
+          <div className="absolute inset-0 opacity-[0.15]"
             style={{
-              backgroundImage: 'linear-gradient(rgba(239, 68, 68, 1) 1px, transparent 1px), linear-gradient(90deg, rgba(239, 68, 68, 1) 1px, transparent 1px)',
-              backgroundSize: '60px 60px',
+              backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)',
+              backgroundSize: '40px 40px',
             }}
           />
 
-          {/* Ambient glow layers */}
+          {/* Deep ambient crimson glows - highly blurred and subtle */}
           <div className="absolute inset-0 pointer-events-none"
             style={{
-              backgroundImage: 'radial-gradient(circle at 18% 18%, rgba(239, 68, 68, 0.18), transparent 24%), radial-gradient(circle at 78% 18%, rgba(59, 130, 246, 0.14), transparent 20%), radial-gradient(circle at 22% 82%, rgba(16, 185, 129, 0.12), transparent 24%)',
-              opacity: 0.9,
+              backgroundImage: `
+                radial-gradient(circle at 15% 20%, rgba(220, 38, 38, 0.03), transparent 40%), 
+                radial-gradient(circle at 85% 80%, rgba(153, 27, 27, 0.04), transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.8), transparent 100%)
+              `,
             }}
           />
-          <div className="absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-black/95 via-black/20 to-transparent pointer-events-none" />
 
-          {/* Animated particles */}
-          {Array.from({ length: 30 }, (_, i) => (
+          {/* Vignette effect to darken edges further */}
+          <div className="absolute inset-0 bg-black/40 shadow-[inset_0_0_150px_rgba(0,0,0,0.9)]" />
+
+          {/* Minimalist modern particles (Ash/Ember style) */}
+          {Array.from({ length: 20 }, (_, i) => (
             <motion.div
               key={i}
               className="absolute w-1 h-1 rounded-full"
               style={{
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
-                background: Math.random() > 0.7 ? '#ef4444' : Math.random() > 0.5 ? '#3b82f6' : '#10b981',
+                background: Math.random() > 0.8 ? 'rgba(239, 68, 68, 0.4)' : 'rgba(115, 115, 115, 0.2)', // Mostly dark gray, rare red
+                boxShadow: '0 0 10px rgba(0,0,0,0.5)'
               }}
               animate={{
-                y: [0, -30, 0],
-                opacity: [0.3, 0.8, 0.3],
-                scale: [1, 1.5, 1],
+                y: [0, -40, 0],
+                opacity: [0.1, 0.5, 0.1],
               }}
               transition={{
-                duration: 4 + Math.random() * 3,
+                duration: 5 + Math.random() * 5,
                 repeat: Infinity,
+                ease: "easeInOut",
                 delay: Math.random() * 2,
               }}
             />
           ))}
 
-          {/* Scanlines */}
+          {/* Modern cinematic scanline overlay */}
           <motion.div
-            className="absolute inset-0 pointer-events-none"
-            animate={{
-              background: [
-                'linear-gradient(0deg, transparent 0%, rgba(239, 68, 68, 0.03) 50%, transparent 100%)',
-                'linear-gradient(0deg, transparent 0%, rgba(59, 130, 246, 0.03) 50%, transparent 100%)',
-                'linear-gradient(0deg, transparent 0%, rgba(16, 185, 129, 0.03) 50%, transparent 100%)',
-              ]
-            }}
-            transition={{ duration: 6, repeat: Infinity }}
+            className="absolute inset-0 w-full h-[10px] bg-gradient-to-b from-transparent via-red-900/5 to-transparent pointer-events-none opacity-50"
+            style={{ animation: 'scanline 8s linear infinite' }}
           />
 
-          {/* Corner brackets */}
-          <div className="absolute top-8 left-8 w-16 h-16 border-l-4 border-t-4 border-red-500/30" />
-          <div className="absolute top-8 right-8 w-16 h-16 border-r-4 border-t-4 border-blue-500/30" />
-          <div className="absolute bottom-8 left-8 w-16 h-16 border-l-4 border-b-4 border-green-500/30" />
-          <div className="absolute bottom-8 right-8 w-16 h-16 border-r-4 border-b-4 border-yellow-500/30" />
+          {/* Sleek, subtle corner brackets */}
+          <div className="absolute top-10 left-10 w-12 h-12 border-l border-t border-neutral-800" />
+          <div className="absolute top-10 right-10 w-12 h-12 border-r border-t border-neutral-800" />
+          <div className="absolute bottom-10 left-10 w-12 h-12 border-l border-b border-neutral-800" />
+          <div className="absolute bottom-10 right-10 w-12 h-12 border-r border-b border-neutral-800" />
         </div>
 
         <div className="relative z-10 max-w-6xl mx-auto px-6 py-12">
           {/* Header Section */}
-<CTFHeader
+          <CTFHeader
             title="CTF MIND"
             subtitle="Welcome to the ultimate cybersecurity training platform. Choose your path and begin your journey."
           />
@@ -245,11 +180,12 @@ export default function CTFMindWelcome() {
                   transition={{ duration: 0.8, delay: 0.3 }}
                 >
                   <div className="relative w-full max-w-sm">
-                    <div className="absolute -inset-4 bg-gradient-to-r from-red-600/20 via-purple-600/20 to-blue-600/20 rounded-2xl blur-3xl" />
+                    {/* Dark, subtle glow behind the server animation */}
+                    <div className="absolute -inset-4 bg-gradient-to-tr from-red-900/10 via-black to-neutral-900/20 rounded-full blur-3xl" />
                     <FeatureItem
                       animationData={serverAnimation}
                       title="CTF"
-                      desc="Compete in Capture The Flag events. Apply your skills in realistic challinging"
+                      desc="Compete in Capture The Flag events. Apply your skills in realistic challenges."
                       index={2}
                     />
                   </div>
@@ -270,7 +206,7 @@ export default function CTFMindWelcome() {
             </motion.div>
           )}
 
-          {/* Enhanced Start Button */}
+          {/* Enhanced Start Button - Sleek Dark/Red Modern Aesthetic */}
           {phase >= 6 && (
             <motion.div
               className="text-center"
@@ -285,37 +221,27 @@ export default function CTFMindWelcome() {
                     window.location.href = `/game/level/${firstLevel}`;
                   }
                 }}
-                className="group relative px-12 py-4 bg-gradient-to-r from-red-600 via-red-500 to-red-600 hover:from-red-500 hover:via-red-400 hover:to-red-500 text-white font-bold rounded-xl transition-all duration-300 transform shadow-2xl shadow-red-500/30 overflow-hidden"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                className="group relative px-10 py-4 bg-neutral-950 border border-red-900/30 hover:border-red-500/50 text-white font-mono text-sm tracking-widest rounded-lg transition-all duration-300 overflow-hidden"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                {/* Animated background */}
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-red-400 to-red-600"
-                  animate={{
-                    x: ['-100%', '100%'],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: "linear",
-                  }}
-                />
+                {/* Subtle dark red sweep on hover */}
+                <div className="absolute inset-0 bg-gradient-to-r from-red-950/0 via-red-900/20 to-red-950/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
 
-                <span className="relative z-10 flex items-center gap-3 font-mono">
-                  <Play className="w-5 h-5" />
-                  START {activeCategory.toUpperCase()} CHALLENGES
-                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <span className="relative z-10 flex items-center justify-center gap-3">
+                  <Play className="w-4 h-4 text-red-500" />
+                  START {activeCategory.toUpperCase()}
+                  <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:text-red-400 group-hover:translate-x-1 transition-all" />
                 </span>
               </motion.button>
 
               <motion.p
-                className="text-gray-500 text-sm mt-4 font-mono"
+                className="text-neutral-600 text-xs mt-6 font-mono tracking-wide"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1.5 }}
               >
-                Complete challenges sequentially • Difficulty increases progressively
+                COMPLETE CHALLENGES SEQUENTIALLY <span className="text-red-900 mx-2">/</span> DIFFICULTY INCREASES PROGRESSIVELY
               </motion.p>
             </motion.div>
           )}

@@ -1,14 +1,14 @@
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ShieldAlert, ShieldCheck, Shield } from "lucide-react";
 
 export interface CTFCategory {
   name: string;
   count: number;
-  color: string;
+  color: string; // Expected as a valid CSS color (e.g., hex "#ef4444" or rgb)
   icon: ReactNode;
   description: string;
-  difficulty: string;
+  difficulty: "Easy" | "Medium" | "Hard" | string;
 }
 
 interface CTFCategorySelectProps {
@@ -24,74 +24,123 @@ export default function CTFCategorySelect({
   onSelectCategory,
   getCategoryStats
 }: CTFCategorySelectProps) {
+  
+  // Helper to render a difficulty badge
+  const renderDifficulty = (difficulty: string) => {
+    const config: Record<string, { color: string; icon: ReactNode }> = {
+      Easy: { color: "text-green-400 bg-green-400/10 border-green-400/20", icon: <ShieldCheck className="w-3 h-3" /> },
+      Medium: { color: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20", icon: <Shield className="w-3 h-3" /> },
+      Hard: { color: "text-red-400 bg-red-400/10 border-red-400/20", icon: <ShieldAlert className="w-3 h-3" /> },
+    };
+
+    const style = config[difficulty] || { color: "text-neutral-400 bg-neutral-400/10 border-neutral-400/20", icon: <Shield className="w-3 h-3" /> };
+
+    return (
+      <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider ${style.color}`}>
+        {style.icon}
+        {difficulty}
+      </div>
+    );
+  };
+
   return (
-    <div>
-      <div className="flex items-center gap-3 mb-8">
-        <ChevronRight className="w-5 h-5 text-red-400" />
-        <span className="text-sm text-red-300 font-mono uppercase tracking-wider">SELECT CHALLENGE CATEGORY</span>
+    <div className="w-full max-w-5xl mx-auto">
+      {/* Header Section - Red Accent */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-1.5 rounded-lg bg-black/20 border border-neutral-800">
+          <ChevronRight className="w-5 h-5 text-red-400" />
+        </div>
+        <h2 className="text-sm text-red-400 font-mono uppercase tracking-widest font-semibold">
+          Select Challenge Category
+        </h2>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      {/* Grid Layout - Improved for responsiveness */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {categories.map((cat, index) => {
           const isActive = activeCategory === cat.name;
           const stats = getCategoryStats(cat.name);
+          const progressPercentage = stats.total > 0 ? (stats.completed / stats.total) * 100 : 0;
 
           return (
             <motion.button
               key={cat.name}
               onClick={() => onSelectCategory(cat.name)}
-              className={`relative p-6 rounded-2xl border-2 transition-all duration-300 backdrop-blur-sm ${isActive
-                ? 'border-red-400 bg-gradient-to-br from-red-900/30 to-red-800/20 shadow-lg shadow-red-500/20'
-                : 'border-gray-700 bg-gradient-to-br from-gray-900/50 to-gray-800/30 hover:border-gray-500'
-              }`}
+              // Use dynamic inline styles for the border and glow based on the category's unique color prop (which can be red)
+              style={{
+                borderColor: isActive ? cat.color : undefined,
+                boxShadow: isActive ? `0 10px 40px -10px ${cat.color}40` : undefined,
+              }}
+              className={`relative text-left p-5 rounded-2xl border-2 transition-all duration-300 backdrop-blur-md overflow-hidden flex flex-col justify-between min-h-[160px]
+                ${isActive 
+                  ? 'bg-neutral-950 z-10' 
+                  : 'border-neutral-900 bg-black/60 hover:border-red-900 hover:bg-neutral-950/80'
+                }`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              transition={{ delay: index * 0.05 }}
             >
-              {isActive && (
-                <motion.div
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring" }}
-                >
-                  <ChevronRight className="w-3 h-3 text-white" />
-                </motion.div>
-              )}
-
-              <div className="text-center">
-                <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-3 ${isActive ? 'bg-red-500/20 text-red-400' : 'bg-gray-700/50 text-gray-400'}`}>
-                  {cat.icon}
+              {/* Top Row: Icon, Title, Difficulty */}
+              <div className="flex justify-between items-start mb-3 relative z-10">
+                <div className="flex items-center gap-4">
+                  <div 
+                    className="flex items-center justify-center w-12 h-12 rounded-xl transition-colors duration-300 border border-neutral-800"
+                    style={{ 
+                      backgroundColor: isActive ? `${cat.color}20` : 'rgba(18, 18, 18, 0.7)',
+                      color: isActive ? cat.color : '#f87171' // Muted red for non-active icons
+                    }}
+                  >
+                    {cat.icon}
+                  </div>
+                  <div>
+                    <h3 className={`font-bold text-lg tracking-wide transition-colors ${isActive ? 'text-white' : 'text-neutral-200'}`}>
+                      {cat.name}
+                    </h3>
+                    <div className="text-xs font-mono text-neutral-500 mt-0.5">
+                      {cat.count} AVAILABLE
+                    </div>
+                  </div>
                 </div>
+                {renderDifficulty(cat.difficulty)}
+              </div>
 
-                <h3 className={`font-bold mb-1 ${isActive ? 'text-white' : 'text-gray-300'}`}>
-                  {cat.name}
-                </h3>
-                <div className={`text-sm mb-2 ${isActive ? 'text-red-300' : 'text-gray-500'}`}>
-                  {cat.count} Challenges
+              {/* Middle Row: Description */}
+              <p className="text-sm text-neutral-400 mb-6 line-clamp-2 relative z-10 h-10">
+                {cat.description}
+              </p>
+
+              {/* Bottom Row: Progress Stats & Bar */}
+              <div className="w-full relative z-10 mt-auto">
+                <div className="flex justify-between items-end mb-2">
+                  <span className="text-xs font-medium text-neutral-400">Progress</span>
+                  <span className="text-xs font-mono text-neutral-300">
+                    <span style={{ color: isActive ? cat.color : undefined }}>{stats.completed}</span> / {stats.total}
+                  </span>
                 </div>
-
-                <div className="w-full bg-gray-700/50 rounded-full h-1 mb-2">
+                
+                <div className="w-full bg-neutral-800 rounded-full h-1.5 overflow-hidden border border-neutral-700">
                   <motion.div
-                    className={`h-1 rounded-full bg-gradient-to-r ${cat.name === 'Linux' ? 'from-red-500 to-red-400' : cat.name === 'Offensive Security' ? 'from-blue-500 to-blue-400' : cat.name === 'Network' ? 'from-green-500 to-green-400' : 'from-yellow-500 to-yellow-400'}`}
+                    className="h-full rounded-full"
+                    style={{ backgroundColor: cat.color }}
                     initial={{ width: 0 }}
-                    animate={{ width: `${(stats.completed / stats.total) * 100}%` }}
-                    transition={{ delay: 1 + index * 0.1, duration: 1 }}
+                    animate={{ width: `${progressPercentage}%` }}
+                    transition={{ delay: 0.5 + index * 0.1, duration: 0.8, ease: "easeOut" }}
                   />
-                </div>
-
-                <div className="text-xs text-gray-500">
-                  {stats.completed}/{stats.total} Completed
                 </div>
               </div>
 
-              <motion.div
-                className={`absolute inset-0 rounded-2xl ${cat.name === 'Linux' ? 'bg-red-500/5' : cat.name === 'Offensive Security' ? 'bg-blue-500/5' : cat.name === 'Network' ? 'bg-green-500/5' : 'bg-yellow-500/5'}`}
-                initial={{ opacity: 0 }}
-                whileHover={{ opacity: 1 }}
-              />
+              {/* Subtle background glow matching the category color (which can be red) */}
+              {isActive && (
+                <motion.div
+                  className="absolute -top-24 -right-24 w-48 h-48 rounded-full blur-[80px] pointer-events-none"
+                  style={{ backgroundColor: cat.color, opacity: 0.15 }}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 1 }}
+                />
+              )}
             </motion.button>
           );
         })}

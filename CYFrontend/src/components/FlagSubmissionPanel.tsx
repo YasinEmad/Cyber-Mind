@@ -6,7 +6,7 @@ import { updateUserProfileFromCTF, addCompletedLevel, setUser } from '../redux/s
 import { syncUserProgressFromProfile } from '../redux/slices/ctfSlice';
 import axiosInstance from '@/api/axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, XCircle, Loader, Flag } from 'lucide-react';
+import { CheckCircle, XCircle, Loader, Flag, Terminal, Info } from 'lucide-react';
 
 interface FlagSubmissionPanelProps {
   level: number;
@@ -94,78 +94,96 @@ const FlagSubmissionPanel: React.FC<FlagSubmissionPanelProps> = ({ level, onSucc
 
   return (
     <motion.div
-      className="w-full max-w-2xl mx-auto p-6 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl"
+      className="w-full max-w-2xl mx-auto p-6 bg-black/60 backdrop-blur-xl border border-neutral-900 rounded-xl shadow-[0_25px_60px_rgba(0,0,0,0.95)] relative"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
     >
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <Flag className="w-5 h-5 text-red-500" />
-        <h2 className="text-lg font-bold text-white tracking-wide">قدّم الـ Flag</h2>
+      {/* Visual Corner Accents */}
+      <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-red-950/40 pointer-events-none" />
+      <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-neutral-900 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-neutral-900 pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-red-950/40 pointer-events-none" />
+
+      {/* Header Panel */}
+      <div className="flex items-center justify-between mb-6 pb-3 border-b border-neutral-900/60">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded bg-red-950/20 border border-red-900/30">
+            <Flag className="w-4 h-4 text-red-500" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold font-mono text-neutral-200 tracking-wider uppercase">Submit Captured Flag</h2>
+            <p className="text-[10px] font-mono text-neutral-600 uppercase">Target Node Protocol // Lvl_{level}</p>
+          </div>
+        </div>
+        <div className="hidden sm:flex items-center gap-1.5 font-mono text-[9px] text-neutral-600 bg-neutral-950 px-2 py-1 rounded border border-neutral-900">
+          <Terminal className="w-3 h-3 text-red-900" />
+          <span>STATUS_WAITING</span>
+        </div>
       </div>
 
-      {/* Success Message */}
+      {/* Success Banner Overlay */}
       <AnimatePresence>
         {showSuccess && (
           <motion.div
-            className="mb-4 p-4 bg-green-900/30 border border-green-500/50 rounded-lg flex items-center gap-3"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
+            className="mb-4 p-4 bg-emerald-950/20 border border-emerald-900/40 rounded-lg flex items-center gap-3 shadow-[inset_0_0_15px_rgba(16,185,129,0.05)]"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
           >
-            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+            <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-green-400">🎉 تم إكمال المستوى!</p>
-              <p className="text-xs text-green-300 mt-1">
-                {flagResult?.pointsAwarded && `حصلت على ${flagResult.pointsAwarded} نقطة`}
+              <p className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wide">🎉 Level Cleared Successfully!</p>
+              <p className="text-[11px] text-neutral-400 mt-0.5">
+                {flagResult?.pointsAwarded && `Database Updated: +${flagResult.pointsAwarded} Network Points added.`}
               </p>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Error Message */}
+      {/* Error / Failure Banner Overlay */}
       <AnimatePresence>
         {flagResult && !flagResult.isCorrect && (
           <motion.div
-            className="mb-4 p-4 bg-red-900/30 border border-red-500/50 rounded-lg flex items-center gap-3"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
+            className="mb-4 p-4 bg-red-950/20 border border-red-900/40 rounded-lg flex items-center gap-3 shadow-[inset_0_0_15px_rgba(239,68,68,0.05)]"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
           >
             <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-red-400">Flag غير صحيح</p>
-              <p className="text-xs text-red-300 mt-1">
-                محاولة {flagResult?.attempts || 0} - حاول مرة أخرى!
+            <div className="flex-1 font-mono">
+              <p className="text-xs font-bold text-red-400 uppercase tracking-wide">Access Denied // Invalid Flag</p>
+              <p className="text-[11px] text-neutral-500 mt-0.5">
+                Failure recorded on attempt {flagResult?.attempts || 0}. Re-evaluate decryption vectors.
               </p>
             </div>
             <button
               onClick={handleClearResult}
-              className="text-xs text-red-400 hover:text-red-300 transition-colors"
+              className="p-1 text-neutral-600 hover:text-neutral-400 transition-colors font-mono text-sm"
+              title="Clear Diagnostic"
             >
-              ✕
+              ×
             </button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Input Form */}
-      <form onSubmit={handleSubmitFlag} className="space-y-3" action="#" noValidate>
-        <div className="relative">
+      {/* Flag Decryption Submission Form */}
+      <form onSubmit={handleSubmitFlag} className="space-y-4" action="#" noValidate>
+        <div className="relative group">
           <input
             type="text"
             value={flagInput}
             onChange={(e) => setFlagInput(e.target.value)}
-            placeholder="أدخل الـ Flag هنا..."
+            placeholder="Enter flag hash format... e.g., FLAG{hash_string}"
             disabled={isLoading || showSuccess}
-            className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-mono text-sm"
+            className="w-full px-4 py-3.5 bg-neutral-950 border border-neutral-900 rounded-lg text-neutral-200 placeholder-neutral-700 focus:outline-none focus:border-red-900/80 focus:ring-1 focus:ring-red-500/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed font-mono text-xs tracking-wide shadow-inner"
           />
           {isLoading && (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+            <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
               <Loader className="w-4 h-4 text-red-500 animate-spin" />
             </div>
           )}
@@ -174,41 +192,42 @@ const FlagSubmissionPanel: React.FC<FlagSubmissionPanelProps> = ({ level, onSucc
         <button
           type="submit"
           disabled={isLoading || !flagInput.trim() || showSuccess}
-          className="w-full px-4 py-3 bg-red-600 hover:bg-red-700 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm tracking-wide uppercase shadow-lg hover:shadow-red-500/30 disabled:shadow-none"
+          className="w-full px-4 py-3.5 bg-neutral-950 border border-red-900/30 hover:border-red-500/50 disabled:border-neutral-900 disabled:bg-neutral-950/40 disabled:text-neutral-700 disabled:cursor-not-allowed text-neutral-200 font-mono text-xs font-bold tracking-widest rounded-lg transition-all duration-300 flex items-center justify-center gap-2 uppercase shadow-xl"
         >
           {isLoading ? (
             <>
-              <Loader className="w-4 h-4 animate-spin" />
-              جاري التحقق...
+              <Loader className="w-3.5 h-3.5 animate-spin text-red-500" />
+              Verifying Checksum...
             </>
           ) : (
             <>
-              <Flag className="w-4 h-4" />
-              إرسال الـ Flag
+              <Flag className="w-3.5 h-3.5 text-red-500" />
+              Submit Access Token
             </>
           )}
         </button>
       </form>
 
-      {/* Stats */}
+      {/* Diagnostic Metadata Footer */}
       {flagResult && (
-        <div className="mt-4 pt-4 border-t border-zinc-800">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-zinc-400">المحاولات:</span>
-            <span className="text-zinc-300 font-mono">{flagResult.attempts || 0}</span>
+        <div className="mt-5 pt-4 border-t border-neutral-900/60 grid grid-cols-2 gap-4 font-mono text-[11px]">
+          <div className="bg-neutral-950/40 p-2.5 rounded border border-neutral-900/60">
+            <span className="text-neutral-600 block text-[9px] uppercase tracking-wider">Total Attempts</span>
+            <span className="text-neutral-300 font-bold">{flagResult.attempts || 0}</span>
           </div>
           {flagResult.isCompleted && (
-            <div className="flex items-center justify-between text-xs mt-2">
-              <span className="text-zinc-400">النقاط:</span>
-              <span className="text-green-400 font-mono font-bold">+{flagResult.pointsAwarded || 0}</span>
+            <div className="bg-neutral-950/40 p-2.5 rounded border border-neutral-900/60">
+              <span className="text-neutral-600 block text-[9px] uppercase tracking-wider">Points Harvested</span>
+              <span className="text-emerald-400 font-bold">+{flagResult.pointsAwarded || 0} PTS</span>
             </div>
           )}
         </div>
       )}
 
-      {/* Helper Text */}
-      <div className="mt-4 text-xs text-zinc-500 italic text-right">
-        💡 الـ Flag يجب أن يكون بالصيغة الصحيحة تمامًا. حاول اتباع الخطوات بدقة.
+      {/* Form System Helper Instructions */}
+      <div className="mt-4 flex items-start gap-2 text-[10px] font-mono text-neutral-600 leading-relaxed">
+        <Info className="w-3.5 h-3.5 text-neutral-700 flex-shrink-0 mt-0.5" />
+        <span>System flags are case-sensitive and must perfectly adhere to specified environments. Inspect challenge endpoints carefully before submission.</span>
       </div>
     </motion.div>
   );

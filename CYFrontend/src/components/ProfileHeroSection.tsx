@@ -7,7 +7,6 @@ interface ProfileHeroSectionProps {
 
 const ProfileHeroSection: React.FC<ProfileHeroSectionProps> = ({ user }) => {
   const solvedCount = user?.profile?.solvedCTFLevels?.length || 0;
-  const globalRank = typeof user?.profile?.globalRank === 'number' ? user.profile.globalRank : null;
   const totalScore = user?.profile?.totalScore || 0;
 
   return (
@@ -44,26 +43,6 @@ const ProfileHeroSection: React.FC<ProfileHeroSectionProps> = ({ user }) => {
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="bg-gradient-to-br from-neutral-900 to-black border border-neutral-700 p-8 rounded-2xl flex flex-col items-center justify-center text-center hover:border-neutral-600 transition-all duration-300 group">
-        <div className="relative mb-6">
-          <div className="absolute -inset-2 bg-gradient-to-tr from-red-600/20 to-orange-500/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          <div className="relative w-24 h-24 rounded-full border-2 border-neutral-700 bg-neutral-800/50 flex items-center justify-center group-hover:border-red-600/50 transition-colors">
-            <span className="text-3xl font-black text-white">{globalRank ?? '—'}</span>
-          </div>
-        </div>
-        <p className="text-xs font-black text-neutral-400 uppercase tracking-[0.15em]">Global Rank</p>
-        <p className="text-sm text-neutral-500 mt-3">
-          {globalRank ? (
-            <>
-              <span className="text-red-400 font-bold">#{globalRank}</span>
-              <span> on leaderboard</span>
-            </>
-          ) : (
-            'Complete challenges to earn rank'
-          )}
-        </p>
       </div>
     </>
   );

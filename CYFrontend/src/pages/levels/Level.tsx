@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import PageWrapper from '../../components/PageWrapper';
 import FlagSubmissionPanel from '../../components/FlagSubmissionPanel';
 import { motion } from 'framer-motion';
-import { ShieldCheck, ChevronRight, Lightbulb, Play, Loader, AlertCircle } from 'lucide-react';
+import { ShieldCheck, ChevronRight, Lightbulb, Play, Loader, AlertCircle, Terminal, Crosshair } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../redux/store';
@@ -51,17 +51,17 @@ const Level: React.FC = () => {
     dispatch(fetchCTFChallenge(levelNumber));
   }, [dispatch, levelNumber]);
 
-  // 2. واجهة حالة التحميل (Loading UI)
+  // Loading State UI
   const isLoading = status === 'loading';
 
   if (isLoading) {
     return (
       <PageWrapper>
-        <div className="h-[calc(100vh-8rem)] flex items-center justify-center">
+        <div className="h-[calc(100vh-8rem)] flex items-center justify-center bg-[#050505]">
           <div className="flex flex-col items-center gap-4">
-            <Loader className="w-10 h-10 text-red-600 animate-spin" />
-            <p className="font-mono text-zinc-500 animate-pulse uppercase tracking-widest text-xs">
-              Fetching Mission Data...
+            <Loader className="w-8 h-8 text-red-500 animate-spin" />
+            <p className="font-mono text-neutral-600 animate-pulse uppercase tracking-[0.25em] text-[10px]">
+              Initializing Secure Terminal...
             </p>
           </div>
         </div>
@@ -71,83 +71,110 @@ const Level: React.FC = () => {
 
   return (
     <PageWrapper>
-      <div className="h-full flex flex-col items-center justify-center p-4 lg:p-8 gap-8">
-        {/* Challenge Info Section */}
+      <div className="min-h-screen bg-[#050505] text-neutral-200 flex flex-col items-center justify-center p-4 lg:p-8 gap-8 relative">
+        
+        {/* Main Interface Block */}
         <motion.div 
-          className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-12 gap-px bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden shadow-2xl"
+          className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-12 bg-black/40 backdrop-blur-xl border border-neutral-900 rounded-xl overflow-hidden shadow-[0_30px_70px_rgba(0,0,0,0.95)] relative group"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
         >
-          {/* الجانب الأيسر: معلومات المهمة */}
-          <div className="md:col-span-4 bg-zinc-950 p-6 flex flex-col justify-between border-r border-zinc-800">
+          {/* Tech Corner Brackets */}
+          <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-red-950/40 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-neutral-900 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-neutral-900 pointer-events-none" />
+          <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-red-950/40 pointer-events-none" />
+
+          {/* Left Panel: Mission Intelligence Details */}
+          <div className="md:col-span-5 bg-neutral-950/90 p-8 flex flex-col justify-between border-b md:border-b-0 md:border-r border-neutral-900/60 relative z-10">
             <div>
               <div className="flex items-center gap-2 text-red-500 mb-6">
-                <ShieldCheck className="w-5 h-5" />
-                <span className="text-[10px] font-mono font-bold tracking-[0.2em] uppercase">
-                  {status === 'failed' ? 'Status.Offline' : 'Auth.Session.Active'}
+                <ShieldCheck className="w-4 h-4" />
+                <span className="text-[9px] font-mono font-bold tracking-[0.25em] uppercase">
+                  {status === 'failed' ? 'SYSTEM.OFFLINE' : 'AUTH.SESSION.ACTIVE'}
                 </span>
               </div>
               
-              <h1 className="text-3xl font-black text-white mb-3 tracking-tight">
-                {displayChallenge?.title}
+              <span className="text-[10px] font-mono text-neutral-600 block uppercase tracking-wider mb-1">Mission Objective</span>
+              <h1 className="text-2xl font-bold font-mono tracking-wide text-white mb-4">
+                &gt; {displayChallenge?.title}
               </h1>
-              <div className="h-1 w-12 bg-red-600 mb-6" />
 
-              <p className="text-zinc-400 text-sm leading-relaxed mb-4 font-medium">
+              <p className="text-neutral-400 text-xs leading-relaxed mb-6 font-sans">
                 {displayChallenge?.description}
               </p>
 
               {(ctfError || localError) && (
-                <div className="flex items-center gap-2 text-orange-500/80 text-[10px] font-mono italic">
-                  <AlertCircle className="w-3 h-3" />
-                  {localError || ctfError}
+                <div className="flex items-center gap-2 bg-red-950/10 border border-red-900/30 p-2.5 rounded font-mono text-[9px] text-red-400 tracking-wide">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 text-red-500" />
+                  <span>ERROR: {localError || ctfError}</span>
                 </div>
               )}
             </div>
 
             <button
               onClick={startCtf}
-              className="mt-10 flex items-center justify-between w-full px-5 py-4 bg-red-700 hover:bg-red-600 text-white text-sm font-bold rounded-sm transition-all group shadow-[0_4px_20px_-5px_rgba(220,38,38,0.4)]"
+              className="mt-8 flex items-center justify-between w-full px-5 py-3.5 bg-neutral-950 border border-red-900/40 hover:border-red-500/60 text-neutral-200 font-mono text-xs font-bold tracking-widest rounded-lg transition-all duration-300 group shadow-lg shadow-black"
             >
-              <div className="flex items-center gap-3">
-                <Play className="w-4 h-4 fill-current" />
-                START MISSION
+              <div className="flex items-center gap-2.5">
+                <Play className="w-3.5 h-3.5 text-red-500 fill-red-500/20 group-hover:fill-red-500/40 transition-all" />
+                LAUNCH ENVIRONMENT
               </div>
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-red-400 group-hover:translate-x-1 transition-all" />
             </button>
           </div>
 
-          {/* الجانب الأيمن: التلميحات (Hints) */}
-          <div className="md:col-span-8 bg-zinc-900 flex flex-col">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-800 bg-zinc-950/50">
+          {/* Right Panel: Hints Matrix */}
+          <div className="md:col-span-7 bg-neutral-950/20 flex flex-col relative z-10">
+            
+            {/* Header Area */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-900 bg-neutral-950/50">
               <div className="flex items-center gap-2">
                 <Lightbulb className="w-3.5 h-3.5 text-red-500" />
-                <span className="text-[10px] font-mono text-zinc-400 tracking-[0.3em] uppercase">Intelligence Hints</span>
+                <span className="text-[9px] font-mono text-neutral-500 tracking-[0.25em] uppercase">Intelligence Sub-vectors</span>
+              </div>
+              <div className="flex items-center gap-1 font-mono text-[9px] text-neutral-600">
+                <Crosshair className="w-3 h-3" />
+                <span>SEC_DATA_STREAM</span>
               </div>
             </div>
             
-            <div className="flex-grow p-8 bg-black/20 relative overflow-y-auto">
-               <div className="grid grid-cols-1 gap-4 relative z-10">
+            {/* Intel Grid Section */}
+            <div className="flex-grow p-6 relative overflow-y-auto max-h-[360px] md:max-h-none">
+               {/* Faint Grid Mesh Texture Overlay */}
+               <div 
+                 className="absolute inset-0 opacity-[0.02] pointer-events-none bg-repeat"
+                 style={{
+                   backgroundImage: `radial-gradient(circle, #fff 1px, transparent 1px)`,
+                   backgroundSize: '14px 14px'
+                 }}
+               />
+
+               <div className="grid grid-cols-1 gap-3 relative z-10">
                  {displayChallenge?.hints && displayChallenge.hints.length > 0 ? (
                    displayChallenge.hints.map((hint: string, index: number) => (
-                     <div key={index} className="p-4 border border-zinc-800 bg-zinc-900/50 rounded-md">
-                       <p className="text-[11px] font-mono text-red-500 mb-1 uppercase tracking-tighter">
-                         Hint #{String(index + 1).padStart(2, '0')}
+                     <div key={index} className="p-4 border border-neutral-900/70 bg-black/40 rounded-lg backdrop-blur-sm transition-all duration-300 hover:border-neutral-800">
+                       <p className="text-[9px] font-mono text-red-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                         <Terminal className="w-3 h-3 text-red-900" />
+                         DECRYPTION_VECTOR_0{index + 1}
                        </p>
-                       <p className="text-zinc-400 text-sm italic leading-relaxed">
+                       <p className="text-neutral-400 text-xs font-mono leading-relaxed pl-4 border-l border-neutral-900">
                          "{hint}"
                        </p>
                      </div>
                    ))
                  ) : (
-                   <div className="text-zinc-600 font-mono text-xs italic">No intelligence available for this sector.</div>
+                   <div className="text-neutral-600 font-mono text-xs italic p-4 text-center border border-dashed border-neutral-900 rounded-lg">
+                     No immediate operational intelligence available for this sector.
+                   </div>
                  )}
                </div>
             </div>
           </div>
         </motion.div>
 
-        {/* Flag Submission Section */}
+        {/* Flag Submission Section Component Integration */}
         <FlagSubmissionPanel 
           level={levelNumber}
           onSuccess={handleFlagSuccess}
