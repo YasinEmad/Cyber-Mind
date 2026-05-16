@@ -1,6 +1,6 @@
 // NOTE: The authoritative CTF level information is now stored in the backend at CYBackend/src/data/ctfinfo.js
 // This file is kept on the frontend as a fallback/cache. Fetch from the backend using the Redux CTF slice or direct axios requests.
-// Use API: GET http://localhost:8080/api/ctf/info
+// Use API: GET https://cyber-mind.onrender.com/api/ctf/info
 
 export default {
   "levels": [
