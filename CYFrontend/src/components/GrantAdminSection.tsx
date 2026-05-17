@@ -15,7 +15,7 @@ interface User {
 type MessageType = { type: 'success' | 'error' | 'info'; text: string } | null;
 
 // Allow overriding the super-admin via env (Vite): `VITE_SUPER_ADMIN_EMAIL`
-const SUPER_ADMIN_EMAIL = (import.meta as any).env?.VITE_SUPER_ADMIN_EMAIL || 'yemad7676@gmail.com';
+const SUPER_ADMIN_EMAIL = ((import.meta as any).env?.VITE_SUPER_ADMIN_EMAIL || 'yemad7676@gmail.com').trim().toLowerCase();
 
 const GrantAdminSection: React.FC = () => {
   const user = useSelector(selectUser);
@@ -26,7 +26,7 @@ const GrantAdminSection: React.FC = () => {
   const [message, setMessage] = useState<MessageType>(null);
 
   // Only show this section to the configured super admin
-  if (user?.email !== SUPER_ADMIN_EMAIL) return null;
+  if (user?.email?.trim().toLowerCase() !== SUPER_ADMIN_EMAIL) return null;
 
   const extractErrorMessage = (err: unknown, fallback = 'Something went wrong') => {
     if (!err) return fallback;
@@ -101,7 +101,7 @@ const GrantAdminSection: React.FC = () => {
       setMessage({ type: 'error', text: 'Please enter an email address' });
       return;
     }
-    if (email.trim() === SUPER_ADMIN_EMAIL) {
+    if (email.trim().toLowerCase() === SUPER_ADMIN_EMAIL) {
       setMessage({ type: 'info', text: 'That user already has the highest privileges' });
       return;
     }
@@ -196,13 +196,13 @@ const GrantAdminSection: React.FC = () => {
                     ? handleRevokeAdmin(u.email)
                     : handleGrantAdmin(u.email)
                   }
-                  disabled={isBusy || u.email === SUPER_ADMIN_EMAIL}
+                  disabled={isBusy || u.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL}
                   className={`px-4 py-2 rounded-lg font-semibold transition-colors border ${
                     u.role === 'admin'
                       ? 'bg-red-900/30 border-red-900/60 hover:bg-red-900/50 text-red-400 hover:text-red-300 disabled:bg-red-900/10 disabled:border-red-900/40 disabled:text-gray-500'
                       : 'bg-green-900/30 border-green-900/60 hover:bg-green-900/50 text-green-400 hover:text-green-300 disabled:bg-red-900/10 disabled:border-red-900/40 disabled:text-gray-500'
                   }`}
-                  aria-disabled={isBusy || u.email === SUPER_ADMIN_EMAIL}
+                  aria-disabled={isBusy || u.email.trim().toLowerCase() === SUPER_ADMIN_EMAIL}
                 >
                   {u.role === 'admin' ? 'Remove Admin' : 'Make Admin'}
                 </button>

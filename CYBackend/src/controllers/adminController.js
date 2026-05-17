@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const adminService = require('../services/adminService');
 
-const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'yemad7676@gmail.com';
+const SUPER_ADMIN_EMAIL = (process.env.SUPER_ADMIN_EMAIL || 'yemad7676@gmail.com').trim().toLowerCase();
 
 exports.getAllUsers = async (req, res, next) => {
   try {
@@ -13,7 +13,8 @@ exports.getAllUsers = async (req, res, next) => {
 exports.grantAdmin = async (req, res, next) => {
   try {
     const { email } = req.body;
-    if (req.user.email !== SUPER_ADMIN_EMAIL) {
+    const requesterEmail = (req.user?.email || '').trim().toLowerCase();
+    if (requesterEmail !== SUPER_ADMIN_EMAIL) {
       return res.status(403).json({ success: false, message: 'Only super admin can do this' });
     }
 
@@ -25,7 +26,8 @@ exports.grantAdmin = async (req, res, next) => {
 exports.revokeAdmin = async (req, res, next) => {
   try {
     const { email } = req.body;
-    if (req.user.email !== SUPER_ADMIN_EMAIL) {
+    const requesterEmail = (req.user?.email || '').trim().toLowerCase();
+    if (requesterEmail !== SUPER_ADMIN_EMAIL) {
       return res.status(403).json({ success: false, message: 'Only super admin can do this' });
     }
 
