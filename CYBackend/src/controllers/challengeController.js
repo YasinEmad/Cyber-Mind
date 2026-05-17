@@ -2,6 +2,7 @@ const { Challenge } = require('../models');
 const challengeService = require('../services/challengeService');
 // التعديل هنا: بننادي على الفانكشن اللي هنستخدمها تحت
 const { getPointsForDifficulty } = require('../utils/challingesPoints');
+const aiService = require('../services/aiService');
 
 // 1. عرض كل التحديات
 exports.getAllChallenges = async (req, res, next) => {
@@ -73,6 +74,28 @@ exports.runCode = async (req, res, next) => {
     res.status(200).json({ success: true, output: result.output, error: result.error });
   } catch (error) { 
     next(error); 
+  }
+};
+
+// AI review: evaluate provided code against the challenge without awarding points
+exports.aiReview = async (req, res, next) => {
+  try {
+    const challengeId = req.params.id;
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ success: false, message: 'Please provide code to evaluate' });
+    }
+
+    const challenge = await Challenge.findByPk(challengeId);
+    if (!challenge) return res.status(404).json({ success: false, message: 'Challenge not found' });
+
+    // Call AI evaluator directly; do NOT award points here
+    const evaluation = await aiService.evaluateSecurityFix(challenge, code);
+
+    res.status(200).json({ success: true, evaluation });
+  } catch (error) {
+    next(error);
   }
 };
 

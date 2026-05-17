@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
-import { fetchChallengeById } from '@/redux/slices/challengeSlice';
+import { fetchChallengeById, evaluateChallengeWithAI } from '@/redux/slices/challengeSlice';
 import { motion, AnimatePresence } from 'framer-motion';
 import Editor from '@monaco-editor/react';
 import { 
@@ -31,26 +31,21 @@ const PlayChallengePage: React.FC = () => {
 
   const dispatch = useDispatch<AppDispatch>();
   const chFromStore = useSelector((state: RootState) => state.challenges.challenge);
-
+  const aiReviewStatus = useSelector((state: RootState) => state.challenges.aiReviewStatus);
+  const aiReviewResult = useSelector((state: RootState) => state.challenges.aiReviewResult);
   useEffect(() => {
     if (challengeId) dispatch(fetchChallengeById(challengeId));
   }, [dispatch, challengeId]);
 
   useEffect(() => {
-    if (chFromStore) {
-      // apply code and hints from backend if present
-      if (chFromStore.code) setCode(chFromStore.code);
-      if (Array.isArray(chFromStore.hints) && chFromStore.hints.length > 0) {
-        setHintsList(chFromStore.hints.map((h: string, idx: number) => ({ id: idx, title: `Hint ${idx + 1}`, content: h })));
-      } else {
-        setHintsList([]);
-      }
+    if (!chFromStore) return;
+    if (chFromStore.code) setCode(chFromStore.code);
+    if (Array.isArray(chFromStore.hints) && chFromStore.hints.length > 0) {
+      setHintsList(chFromStore.hints.map((h: string, idx: number) => ({ id: idx, title: `Hint ${idx + 1}`, content: h })));
+    } else {
+      setHintsList([]);
     }
   }, [chFromStore]);
-
-  // static vulnerabilities removed
-
-  // --- Handlers ---
   const handleEditorChange = (value: string | undefined) => {
     if (value) setCode(value);
   };
@@ -176,6 +171,19 @@ const PlayChallengePage: React.FC = () => {
           >
             <Beaker size={16} className={isRunning ? "animate-spin" : ""} />
             Run Tests
+          </button>
+
+          <button
+            onClick={() => {
+              if (!challengeId) return;
+              dispatch(evaluateChallengeWithAI({ challengeId, code }));
+            }}
+            disabled={isRunning || aiReviewStatus === 'loading'}
+            className="flex items-center gap-2 px-4 py-1.5 bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded-lg border border-blue-800 transition-all disabled:opacity-50"
+            title="AI Review: ask backend to evaluate your fix without awarding points"
+          >
+            <Lightbulb size={16} className={aiReviewStatus === 'loading' ? 'animate-pulse' : ''} />
+            AI Review
           </button>
         </div>
       </header>
@@ -338,6 +346,28 @@ const PlayChallengePage: React.FC = () => {
               }}
             />
           </div>
+
+          {/* AI Review feedback (renders inline below editor) */}
+          {aiReviewStatus === 'loading' && (
+            <div className="border-t border-gray-800 px-4 py-3 bg-gray-900 text-sm text-gray-400">Analyzing with AI&hellip;</div>
+          )}
+
+          {aiReviewResult && aiReviewResult.evaluation && (
+            <div className="border-t border-gray-800 px-4 py-3 bg-gray-900 text-sm text-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {aiReviewResult.evaluation.fixed ? (
+                    <CheckCircle size={16} className="text-green-400" />
+                  ) : (
+                    <AlertTriangle size={16} className="text-red-400" />
+                  )}
+                  <span className="font-medium">AI Review</span>
+                </div>
+                <div className="text-xs text-gray-400">{aiReviewResult.evaluation.fixed ? 'Fixed' : 'Not fixed'}</div>
+              </div>
+              <p className="mt-2 text-sm text-gray-300">{aiReviewResult.evaluation.feedback}</p>
+            </div>
+          )}
 
           {/* Bottom Console Area */}
           <div className="h-[35%] flex flex-col border-t border-gray-800 bg-black">

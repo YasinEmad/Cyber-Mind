@@ -38,3 +38,9 @@ export async function submitChallenge(id: string, answer: string) {
   const res = await axios.post(`${BASE}/${id}/submit`, { answer });
   return res.data;
 }
+
+// Send code to backend AI evaluator without submitting/awarding points
+export async function aiReview(id: string, code: string) {
+  const res = await axios.post(`${BASE}/${id}/ai-review`, { code });
+  return res.data;
+}

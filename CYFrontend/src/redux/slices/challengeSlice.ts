@@ -32,6 +32,8 @@ interface ChallengeState {
   challenge: Challenge | null
   status: 'idle' | 'loading' | 'succeeded' | 'failed'
   submitStatus: 'idle' | 'loading' | 'succeeded' | 'failed' // حالة خاصة بالتسليم
+  aiReviewStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
+  aiReviewResult: any | null
   error: string | null
 }
 
@@ -40,6 +42,8 @@ const initialState: ChallengeState = {
   challenge: null,
   status: 'idle',
   submitStatus: 'idle',
+  aiReviewStatus: 'idle',
+  aiReviewResult: null,
   error: null
 }
 
@@ -135,6 +139,20 @@ export const deleteAllChallenges = createAsyncThunk<void>(
       await challengesApi.deleteAllChallenges();
     } catch (error: any) {
       const errorMsg = error.response?.data?.message || error.message || 'Failed to delete all challenges';
+      return rejectWithValue(errorMsg);
+    }
+  }
+)
+
+// Evaluate code with backend AI evaluator without awarding points
+export const evaluateChallengeWithAI = createAsyncThunk<any, { challengeId: string; code: string }>(
+  'challenges/aiReview',
+  async ({ challengeId, code }, { rejectWithValue }) => {
+    try {
+      const response = await challengesApi.aiReview(challengeId, code);
+      return response;
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'AI review failed';
       return rejectWithValue(errorMsg);
     }
   }
@@ -243,6 +261,18 @@ const slice = createSlice({
       .addCase(deleteAllChallenges.rejected, (state, action) => {
         state.status = 'failed'
         state.error = ((action.payload as string) || action.error.message) ?? 'Failed to delete all challenges'
+      })
+      // Handle AI review status updates
+      .addCase(evaluateChallengeWithAI.pending, (state) => {
+        state.aiReviewStatus = 'loading';
+      })
+      .addCase(evaluateChallengeWithAI.fulfilled, (state, action) => {
+        state.aiReviewStatus = 'succeeded';
+        state.aiReviewResult = action.payload;
+      })
+      .addCase(evaluateChallengeWithAI.rejected, (state, action) => {
+        state.aiReviewStatus = 'failed';
+        state.error = ((action.payload as string) || action.error.message) ?? 'Failed to evaluate challenge with AI';
       })
   }
 })

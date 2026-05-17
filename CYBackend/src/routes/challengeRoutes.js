@@ -28,4 +28,7 @@ router.post('/:id/submit', optionalAuth, submitAnswer);
 // تشغيل الكود
 router.post('/:id/run', optionalAuth, runCode);
 
+// AI review (evaluate code without awarding points)
+router.post('/:id/ai-review', optionalAuth, require('../controllers/challengeController').aiReview);
+
 module.exports = router;
