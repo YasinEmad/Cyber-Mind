@@ -64,7 +64,7 @@ const LoginPage: React.FC = () => {
       <main className="relative z-10 w-full max-w-5xl grid lg:grid-cols-12 gap-0 border border-white/5 rounded-3xl overflow-hidden bg-black/40 backdrop-blur-xl shadow-2xl">
         
         {/* Left Section: Visual Branding */}
-        <div className="hidden lg:flex lg:col-span-7 flex-col items-center justify-center p-12 bg-gradient-to-br from-white/[0.02] to-transparent border-r border-white/5 relative">
+        <div className="flex flex-col lg:col-span-7 col-span-12 items-center justify-center p-12 bg-gradient-to-br from-white/[0.02] to-transparent border-white/5 lg:border-r border-b lg:border-b-0 relative">
           <div className="absolute top-8 left-8 flex items-center gap-2 text-xs font-mono tracking-tighter text-red-500/60">
             <Zap size={14} />
             <span>For free </span>
