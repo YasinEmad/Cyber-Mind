@@ -33,6 +33,7 @@ const PlayChallengePage: React.FC = () => {
   const chFromStore = useSelector((state: RootState) => state.challenges.challenge);
   const aiReviewStatus = useSelector((state: RootState) => state.challenges.aiReviewStatus);
   const aiReviewResult = useSelector((state: RootState) => state.challenges.aiReviewResult);
+  const aiReviewError = useSelector((state: RootState) => state.challenges.error);
   useEffect(() => {
     if (challengeId) dispatch(fetchChallengeById(challengeId));
   }, [dispatch, challengeId]);
@@ -366,6 +367,16 @@ const PlayChallengePage: React.FC = () => {
                 <div className="text-xs text-gray-400">{aiReviewResult.evaluation.fixed ? 'Fixed' : 'Not fixed'}</div>
               </div>
               <p className="mt-2 text-sm text-gray-300">{aiReviewResult.evaluation.feedback}</p>
+            </div>
+          )}
+
+          {aiReviewStatus === 'failed' && (
+            <div className="border-t border-gray-800 px-4 py-3 bg-red-900 text-sm text-red-200">
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={16} className="text-yellow-300" />
+                <span className="font-medium">AI Review failed</span>
+              </div>
+              <p className="mt-2 text-sm">{aiReviewError || 'Evaluation service is temporarily unavailable. Please try again in a moment.'}</p>
             </div>
           )}
 
