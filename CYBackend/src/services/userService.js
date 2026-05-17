@@ -2,7 +2,8 @@ const { sequelize, User, Profile } = require('../models');
 const { Op } = require('sequelize');
 
 exports.findOrCreateGoogleUser = async (userData) => {
-  const { uid, email, name, picture } = userData;
+  let { uid, email, name, picture } = userData;
+  email = email?.trim().toLowerCase();
 
   // Use a single transaction for the whole find-or-create flow
   const transaction = await sequelize.transaction();

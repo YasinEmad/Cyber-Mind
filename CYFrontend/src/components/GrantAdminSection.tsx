@@ -25,8 +25,8 @@ const GrantAdminSection: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState<MessageType>(null);
 
-  // Only show this section to the configured super admin
-  if (user?.email?.trim().toLowerCase() !== SUPER_ADMIN_EMAIL) return null;
+  // Only show this section to admin users
+  if (user?.role !== 'admin') return null;
 
   const extractErrorMessage = (err: unknown, fallback = 'Something went wrong') => {
     if (!err) return fallback;

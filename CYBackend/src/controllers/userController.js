@@ -7,10 +7,11 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+const isProduction = process.env.NODE_ENV === 'production';
 const cookieOptions = {
   httpOnly: true,
-  secure: true,
-  sameSite: 'none',
+  secure: isProduction,
+  sameSite: isProduction ? 'none' : 'lax',
   path: '/',
   maxAge: 1000 * 60 * 60 * 24 * 7, // 7 أيام
 };
@@ -92,7 +93,8 @@ exports.handleGoogleSignIn = async (req, res, next) => {
     if (!token) return res.status(401).json({ success: false, message: 'Token not provided' });
 
     const decodedToken = await admin.auth().verifyIdToken(token);
-    const { uid, email, name, picture, email_verified, firebase } = decodedToken;
+    const { uid, email: rawEmail, name, picture, email_verified, firebase } = decodedToken;
+    const email = rawEmail?.trim().toLowerCase();
     const provider = firebase?.sign_in_provider;
 
     // الأمن أولاً

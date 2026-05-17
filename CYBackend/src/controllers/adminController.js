@@ -13,11 +13,6 @@ exports.getAllUsers = async (req, res, next) => {
 exports.grantAdmin = async (req, res, next) => {
   try {
     const { email } = req.body;
-    const requesterEmail = (req.user?.email || '').trim().toLowerCase();
-    if (requesterEmail !== SUPER_ADMIN_EMAIL) {
-      return res.status(403).json({ success: false, message: 'Only super admin can do this' });
-    }
-
     const user = await adminService.updateUserRole(email, 'admin', SUPER_ADMIN_EMAIL);
     res.status(200).json({ success: true, message: `Admin access granted to ${email}`, data: user });
   } catch (error) { next(error); }
@@ -26,11 +21,6 @@ exports.grantAdmin = async (req, res, next) => {
 exports.revokeAdmin = async (req, res, next) => {
   try {
     const { email } = req.body;
-    const requesterEmail = (req.user?.email || '').trim().toLowerCase();
-    if (requesterEmail !== SUPER_ADMIN_EMAIL) {
-      return res.status(403).json({ success: false, message: 'Only super admin can do this' });
-    }
-
     const user = await adminService.updateUserRole(email, 'user', SUPER_ADMIN_EMAIL);
     res.status(200).json({ success: true, message: `Admin access revoked from ${email}`, data: user });
   } catch (error) { next(error); }

@@ -1,11 +1,14 @@
 const User = require('../models/User');
 
 exports.updateUserRole = async (email, newRole, superAdminEmail) => {
-  const user = await User.findOne({ email });
+  const normalizedEmail = email?.trim().toLowerCase();
+  const normalizedSuperAdminEmail = superAdminEmail?.trim().toLowerCase();
+
+  const user = await User.findOne({ where: { email: normalizedEmail } });
   if (!user) throw new Error('User not found');
 
   // حماية السوبر أدمن من إن رتبته تتغير بالغلط
-  if (user.email === superAdminEmail && newRole !== 'admin') {
+  if (user.email?.trim().toLowerCase() === normalizedSuperAdminEmail && newRole !== 'admin') {
     throw new Error('Cannot revoke super admin access');
   }
 
