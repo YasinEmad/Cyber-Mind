@@ -15,7 +15,7 @@ import CTFHeader from "@/components/CTFHeader";
 import CTFCategorySelect from "@/components/CTFCategorySelect";
 import CTFLevelGrid from "@/components/CTFLevelGrid";
 import FeatureItem from "@/components/FeatureItem";
-import serverAnimation from '/home/yasin/Cyber-Mind/CYFrontend/public/assets/server.json';
+import serverAnimation from '@/assets/server.json';
 
 const keyframes = `
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');

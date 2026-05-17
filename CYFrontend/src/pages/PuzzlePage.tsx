@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Terminal, Cpu, Activity, Filter, SortAsc, Search } from 'lucide-react'
 import Lottie from 'lottie-react'
-import puzzlesAnimation from '/home/yasin/Cyber-Mind/CYFrontend/public/assets/Meditating Brain.json'
+import puzzlesAnimation from '@/assets/Meditating Brain.json'
 
 const PuzzlePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()

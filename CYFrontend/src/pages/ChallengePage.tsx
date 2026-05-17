@@ -8,7 +8,7 @@ import Lottie from 'lottie-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
 import { fetchChallenges } from '@/redux/slices/challengeSlice';
-import vulnerabilityAnimation from '/home/yasin/Cyber-Mind/CYFrontend/public/assets/vulnarability.json';
+import vulnerabilityAnimation from '@/assets/vulnarability.json';
 
 const motivationalQuotes = [
   "EXCELLENCE IS NOT AN ACT, BUT A HABIT.",

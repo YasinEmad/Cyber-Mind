@@ -6,10 +6,10 @@ import { ChevronDown, Zap } from 'lucide-react';
 import Lottie from 'lottie-react';
 
 // Animation files
-import heroAnimationJson from '/home/yasin/Cyber-Mind/CYFrontend/public/assets/Untitled file.json';
-import puzzleAnimation from '/home/yasin/Cyber-Mind/CYFrontend/public/assets/puzzle.json';
-import challingAnimation from '/home/yasin/Cyber-Mind/CYFrontend/public/assets/security code challinging.json';
-import gameAnimation from '/home/yasin/Cyber-Mind/CYFrontend/public/assets/ctf.json';
+import heroAnimationJson from '@/assets/Untitled file.json';
+import puzzleAnimation from '@/assets/puzzle.json';
+import challingAnimation from '@/assets/security code challinging.json';
+import gameAnimation from '@/assets/ctf.json';
 
 // --- ANIMATION VARIANTS ---
 const containerVariants: Variants = {

@@ -8,7 +8,7 @@ import { syncUserProgressFromProfile } from '../redux/slices/ctfSlice';
 import axios from "@/api/axios";
 import Lottie from "lottie-react";
 import { Chrome, Github, ShieldCheck, Zap } from "lucide-react";
-import profileAnimation from "/home/yasin/Cyber-Mind/CYFrontend/public/assets/prof.json";
+import profileAnimation from '@/assets/prof.json';
 
 type Provider = "google" | "github";
 
