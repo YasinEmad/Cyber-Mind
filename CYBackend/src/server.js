@@ -9,7 +9,7 @@ const app = express();
 // Support secure cookies behind proxies like Render or Vercel
 app.set('trust proxy', 1);
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://your-frontend.vercel.app';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://cyber-mind-three.vercel.app';
 const corsOptions = {
   origin: FRONTEND_URL,
   credentials: true,

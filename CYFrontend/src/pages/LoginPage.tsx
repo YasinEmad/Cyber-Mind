@@ -42,9 +42,11 @@ const LoginPage: React.FC = () => {
     } catch (err: any) {
       const apiMessage = err?.response?.data?.message;
       const firebaseCanceled = err?.code === 'auth/popup-closed-by-user';
+      const firebaseMessage = err?.message || err?.code;
       setError(firebaseCanceled
         ? 'Access Denied: Canceled'
-        : apiMessage || 'Authentication Error');
+        : apiMessage || firebaseMessage || 'Authentication Error');
+      console.error('Login flow error:', err);
     } finally {
       setLoading(null);
     }
