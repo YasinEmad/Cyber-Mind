@@ -19,7 +19,10 @@ const PuzzlePage: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<'all' | string>('all')
   const [sortBy, setSortBy] = useState<'level' | 'points' | 'latest'>('level')
 
-  const categories = Array.from(new Set(puzzles.map(p => p.category).filter(Boolean))).sort()
+  const normalizeCategory = (category?: string) => category?.trim() || ''
+  const categories = Array.from(
+    new Set(puzzles.map((p) => normalizeCategory(p.category)).filter(Boolean))
+  ).sort()
 
   useEffect(() => {
     if (status === 'idle') {
@@ -40,7 +43,7 @@ const PuzzlePage: React.FC = () => {
 
     // Category filter
     if (categoryFilter !== 'all') {
-      filtered = filtered.filter(p => p.category === categoryFilter)
+      filtered = filtered.filter(p => normalizeCategory(p.category) === categoryFilter)
     }
 
     // Sorting

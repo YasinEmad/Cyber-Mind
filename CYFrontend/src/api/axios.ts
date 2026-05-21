@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { auth } from '@/firebase';
 
-// Set your backend URL directly here
-const baseURL = 'https://cyber-mind.onrender.com/api';
+// Use a local backend in development and production API when built for deploy.
+const baseURL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080/api' : 'https://cyber-mind.onrender.com/api');
 const instance = axios.create({
   baseURL,
   withCredentials: true,

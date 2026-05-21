@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Lock, Terminal, Eye, BrainCircuit, Lightbulb, Cpu, Sparkles, Zap, Award, Clock } from 'lucide-react';
+import { Lock, Terminal, Eye, BrainCircuit, Lightbulb, Award, Clock, CheckCircle2, XCircle, Circle } from 'lucide-react';
 import { getPointsForLevel } from '@/lib/points';
 
 interface Props {
@@ -17,13 +17,44 @@ interface Props {
   formatTime: (ms: number) => string;
 }
 
+const DIFFICULTY_MAP: Record<string, { label: string; color: string; dot: string }> = {
+  easy:    { label: 'Easy',    color: 'text-emerald-400', dot: 'bg-emerald-400' },
+  medium:  { label: 'Medium',  color: 'text-amber-400',   dot: 'bg-amber-400'   },
+  hard:    { label: 'Hard',    color: 'text-orange-400',  dot: 'bg-orange-400'  },
+  extreme: { label: 'Extreme', color: 'text-rose-400',    dot: 'bg-rose-400'    },
+};
+
+function getDifficulty(level: number) {
+  if (level <= 3) return DIFFICULTY_MAP.easy;
+  if (level <= 6) return DIFFICULTY_MAP.medium;
+  if (level <= 9) return DIFFICULTY_MAP.hard;
+  return DIFFICULTY_MAP.extreme;
+}
+
+const Divider = () => (
+  <div className="h-px w-full bg-white/[0.06]" />
+);
+
+const StatCard: React.FC<{
+  icon: React.ElementType;
+  label: string;
+  value: React.ReactNode;
+  sub?: string;
+}> = ({ icon: Icon, label, value, sub }) => (
+  <div className="flex flex-col gap-2 p-4 rounded-2xl bg-white/[0.03] border border-white/[0.07] hover:bg-white/[0.05] transition-colors duration-200">
+    <div className="flex items-center gap-2">
+      <Icon size={13} className="text-zinc-500" />
+      <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest">{label}</span>
+    </div>
+    <div className="text-xl font-semibold text-zinc-100 leading-none tabular-nums">{value}</div>
+    {sub && <div className="text-[10px] text-zinc-600 font-mono">{sub}</div>}
+  </div>
+);
+
 const SolvePuzzleLeft: React.FC<Props> = ({
   puzzle,
   puzzleId,
   displayedTitle,
-  scrambleTitle,
-  isHoveringTitle,
-  setIsHoveringTitle,
   displayedScenario,
   revealedHintsCount,
   feedback,
@@ -31,163 +62,151 @@ const SolvePuzzleLeft: React.FC<Props> = ({
   formatTime,
 }) => {
   const levelPoints = getPointsForLevel(puzzle?.level);
-  
-  // Determine difficulty color
-  const getDifficultyInfo = (level: number) => {
-    if (level <= 3) return { color: 'green', label: 'EASY', bg: 'from-green-600 to-green-700' }
-    if (level <= 6) return { color: 'yellow', label: 'MEDIUM', bg: 'from-yellow-600 to-yellow-700' }
-    if (level <= 9) return { color: 'orange', label: 'HARD', bg: 'from-orange-600 to-orange-700' }
-    return { color: 'red', label: 'EXTREME', bg: 'from-red-600 to-red-700' }
-  }
-  
-  const difficulty = getDifficultyInfo(puzzle?.level || 1)
-  
-  try { console.debug('SolvePuzzleLeft: puzzle.level:', puzzle?.level, 'typeof:', typeof puzzle?.level, 'levelPoints:', levelPoints); } catch (e) {}
+  const difficulty = getDifficulty(puzzle?.level || 1);
+  const loadPct = Math.round((displayedScenario.length / (puzzle?.scenario?.length || 1)) * 100);
+
+  const statusConfig = {
+    correct: {
+      icon: CheckCircle2,
+      text: 'Challenge solved',
+      className: 'text-emerald-400 bg-emerald-400/8 border-emerald-400/20',
+    },
+    incorrect: {
+      icon: XCircle,
+      text: 'Incorrect — try again',
+      className: 'text-rose-400 bg-rose-400/8 border-rose-400/20',
+    },
+    idle: {
+      icon: Circle,
+      text: 'Awaiting your answer',
+      className: 'text-zinc-500 bg-zinc-800/40 border-zinc-700/40',
+    },
+  }[feedback];
+
+  const StatusIcon = statusConfig.icon;
 
   return (
-    <div className="flex flex-col p-8 lg:p-12 bg-gradient-to-b from-zinc-900/40 via-black to-black border-r border-zinc-800/50 relative overflow-hidden h-full">
-      {/* Ambient effects */}
-      <div className="absolute top-0 left-0 w-40 h-40 bg-red-600/5 blur-3xl rounded-full"></div>
-      <div className="absolute bottom-0 right-0 w-40 h-40 bg-orange-600/5 blur-3xl rounded-full"></div>
-      <div className="absolute top-0 right-1/4 w-32 h-32 border-t border-l border-red-500/10"></div>
+    <div className="flex flex-col h-full bg-[#0d0d0f] border-r border-white/[0.06]">
 
-      <div className="flex-1 relative z-10 space-y-8">
-        {/* Header with Access Node */}
-        <motion.div
-          className="flex items-center justify-between"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="relative p-3 border border-red-600/60 bg-gradient-to-br from-red-600/20 to-transparent shadow-[0_0_20px_rgba(220,38,38,0.15)]">
-              <Lock size={18} className="text-red-500" />
-              <div className="absolute inset-0 bg-red-600/5 animate-pulse"></div>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-zinc-500 tracking-[0.3em] uppercase font-mono">
-                NODE: {puzzleId?.substring(0, 8).toUpperCase()}
-              </span>
-              <span className="text-[9px] text-zinc-600 tracking-widest font-mono mt-1">CAT: {puzzle?.category?.toUpperCase()}</span>
-            </div>
+      {/* ── Top bar ─────────────────────────────────────────────── */}
+      <motion.div
+        className="flex items-center justify-between px-8 py-5"
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-zinc-800/60 border border-white/[0.08]">
+            <Lock size={14} className="text-zinc-400" />
           </div>
-          <motion.div 
-            className={`px-3 py-1.5 rounded-lg font-bold text-[9px] uppercase tracking-wider bg-gradient-to-r ${difficulty.bg} text-white border border-${difficulty.color}-500/60`}
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            {difficulty.label}
-          </motion.div>
-        </motion.div>
-
-        {/* Main Title */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-          <motion.h1
-            className="text-4xl lg:text-5xl font-black text-white mb-6 tracking-tight leading-tight font-mono cursor-pointer group"
-            onMouseEnter={scrambleTitle}
-            onMouseLeave={() => setIsHoveringTitle && setIsHoveringTitle(false)}
-          >
-            <div className="relative inline-block">
-              <span className={`bg-gradient-to-r from-red-400 via-orange-400 to-red-400 bg-clip-text text-transparent transition-all duration-500 ${isHoveringTitle ? 'blur-[0.5px]' : ''}`}>
-                {displayedTitle}
-              </span>
-              <div className="absolute -inset-4 bg-gradient-to-r from-red-600/15 to-orange-600/15 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              {isHoveringTitle && (
-                <Sparkles className="absolute -right-8 top-0 text-orange-500 animate-pulse" size={20} />
-              )}
-            </div>
-            <div className="h-1.5 w-20 bg-gradient-to-r from-red-600 to-orange-600 mt-4 rounded-full"></div>
-          </motion.h1>
-        </motion.div>
-
-        {/* Mission Description */}
-        <motion.div 
-          className="relative p-6 bg-gradient-to-br from-slate-950/80 to-black border border-cyan-800/50 rounded-3xl overflow-hidden group"
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ delay: 0.3 }}
-        >
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent"></div>
-          <div className="absolute top-0 right-0 w-14 h-14 border-t border-r border-cyan-500/20 group-hover:border-cyan-400/40 transition-colors"></div>
-
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-4">
-              <Terminal size={14} className="text-cyan-400" />
-              <span className="text-[9px] font-bold text-cyan-300 tracking-[0.25em] uppercase">Description</span>
-            </div>
-
-            <p className="text-cyan-100 text-base leading-8 font-serif min-h-[120px] max-h-[180px] overflow-y-auto pr-2 custom-scrollbar tracking-wide">
-              {displayedScenario}
+          <div>
+            <p className="text-[10px] font-mono text-zinc-500 tracking-[0.2em] uppercase leading-none">
+              {puzzleId?.substring(0, 8).toUpperCase() ?? '—'}
             </p>
+            <p className="text-[10px] font-mono text-zinc-600 tracking-widest mt-0.5 uppercase">
+              {puzzle?.category ?? 'General'}
+            </p>
+          </div>
+        </div>
 
-            <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-cyan-800/40">
-              <Eye className="h-3 w-3 text-cyan-400" />
-              <span className="text-[8px] text-cyan-300 font-mono tracking-widest">
-                {displayedScenario.length > 0 ? 'Description loaded' : 'Loading...'}
-              </span>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent to-cyan-800/40"></div>
-              <span className="text-[8px] text-cyan-300 font-mono">{Math.round((displayedScenario.length / (puzzle?.scenario?.length || 1)) * 100)}%</span>
+        <div className="flex items-center gap-1.5">
+          <span className={`w-1.5 h-1.5 rounded-full ${difficulty.dot}`} />
+          <span className={`text-[11px] font-semibold tracking-wide ${difficulty.color}`}>
+            {difficulty.label}
+          </span>
+        </div>
+      </motion.div>
+
+      <Divider />
+
+      {/* ── Scrollable body ─────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto px-8 py-7 space-y-7 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-800">
+
+        {/* Title */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08, duration: 0.4, ease: 'easeOut' }}
+        >
+          <h1 className="text-[28px] font-semibold text-white leading-snug tracking-tight">
+            {displayedTitle}
+          </h1>
+        </motion.div>
+
+        {/* Description card */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.4, ease: 'easeOut' }}
+          className="rounded-2xl border border-white/[0.07] bg-white/[0.025] overflow-hidden"
+        >
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.06]">
+            <Terminal size={12} className="text-zinc-500" />
+            <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-[0.2em]">
+              Scenario
+            </span>
+            <div className="flex-1" />
+            {loadPct < 100 ? (
+              <span className="text-[10px] font-mono text-zinc-600">{loadPct}%</span>
+            ) : (
+              <div className="flex items-center gap-1">
+                <Eye size={10} className="text-zinc-600" />
+                <span className="text-[10px] font-mono text-zinc-600">Loaded</span>
+              </div>
+            )}
+          </div>
+
+          <div className="px-5 py-4">
+            <div className="text-[14px] text-zinc-300 leading-[1.85] min-h-[100px] max-h-[200px] overflow-y-auto pr-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-800 whitespace-pre-wrap break-words">
+              {displayedScenario || <span className="text-zinc-600 italic">Loading scenario…</span>}
             </div>
           </div>
         </motion.div>
 
-        {/* Stats Grid */}
-        <motion.div 
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4" 
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ delay: 0.4 }}
+        {/* Stats grid */}
+        <motion.div
+          className="grid grid-cols-2 gap-3"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.22, duration: 0.4, ease: 'easeOut' }}
         >
-          {[
-            { icon: BrainCircuit, label: 'Level', value: puzzle?.level || 1, color: 'red', badge: 'ALV' },
-            { icon: Clock, label: 'Time', value: formatTime(elapsedTime), color: 'blue', badge: 'CLK' },
-            { icon: Lightbulb, label: 'Hints', value: `${revealedHintsCount}/${puzzle?.hints?.length || 0}`, color: 'orange', badge: 'PKT' },
-            { icon: Award, label: 'Reward', value: `+${levelPoints}`, color: 'green', badge: 'PTS' },
-          ].map((stat, index) => (
-            <motion.div 
-              key={index} 
-              className={`bg-gradient-to-br from-${stat.color}-900/15 to-transparent border border-${stat.color}-600/30 p-4 rounded-lg relative group hover:border-${stat.color}-500/50 transition-all duration-300 cursor-default`}
-              whileHover={{ y: -2 }}
-            >
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg bg-gradient-to-br from-${stat.color}-600/10 to-transparent"></div>
-              
-              <div className="relative z-10 flex flex-col items-center space-y-3">
-                <div className={`p-2 bg-${stat.color}-900/30 border border-${stat.color}-600/30 rounded-lg group-hover:border-${stat.color}-500/50 transition-colors`}>
-                  <stat.icon className={`h-4 w-4 text-${stat.color}-500`} />
-                </div>
-                <div className="text-center">
-                  <div className={`text-[10px] text-${stat.color}-600 font-mono tracking-wider mb-1 uppercase font-bold`}>{stat.label}</div>
-                  <div className={`text-lg font-black font-mono text-${stat.color}-400 ${stat.label === 'Time' ? 'text-sm' : ''}`}>{stat.value}</div>
-                </div>
-                <div className={`text-[7px] px-2 py-0.5 rounded bg-${stat.color}-900/40 text-${stat.color}-600 font-mono uppercase tracking-widest`}>
-                  {stat.badge}
-                </div>
-              </div>
-              
-              <div className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-px bg-${stat.color}-600/50 opacity-0 group-hover:opacity-100 transition-opacity`}></div>
-            </motion.div>
-          ))}
+          <StatCard
+            icon={BrainCircuit}
+            label="Level"
+            value={puzzle?.level ?? 1}
+            sub={`Difficulty ${difficulty.label}`}
+          />
+          <StatCard
+            icon={Clock}
+            label="Elapsed"
+            value={formatTime(elapsedTime)}
+            sub="hh:mm:ss"
+          />
+          <StatCard
+            icon={Lightbulb}
+            label="Hints used"
+            value={`${revealedHintsCount} / ${puzzle?.hints?.length ?? 0}`}
+            sub={revealedHintsCount === 0 ? 'None revealed' : `${puzzle?.hints?.length - revealedHintsCount} remaining`}
+          />
+          <StatCard
+            icon={Award}
+            label="Reward"
+            value={`+${levelPoints}`}
+            sub="points on solve"
+          />
         </motion.div>
 
-        {/* Status Bar */}
-        <motion.div 
-          className={`p-4 rounded-lg border-l-4 font-mono text-[9px] uppercase tracking-wider transition-all ${
-            feedback === 'correct' 
-              ? 'bg-green-900/20 border-l-green-600 text-green-400' 
-              : feedback === 'incorrect'
-              ? 'bg-red-900/20 border-l-red-600 text-red-400'
-              : 'bg-blue-900/20 border-l-blue-600 text-blue-400'
-          }`}
+        {/* Status pill */}
+        <motion.div
+          className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border text-[12px] font-medium transition-all duration-300 ${statusConfig.className}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
         >
-          <div className="flex items-center gap-2">
-            <Zap size={12} />
-            <span>
-              {feedback === 'correct' ? '✓ Challenge Solved!' : feedback === 'incorrect' ? '✗ Incorrect Answer' : 'Awaiting Input'}
-            </span>
-          </div>
+          <StatusIcon size={14} />
+          <span>{statusConfig.text}</span>
         </motion.div>
+
       </div>
     </div>
   );

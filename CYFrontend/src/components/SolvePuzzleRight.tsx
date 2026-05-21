@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ArrowRight, CheckCircle, AlertCircle, Lightbulb, Lock, Zap, Keyboard } from 'lucide-react';
+import { ArrowRight, CheckCircle2, XCircle, Lightbulb, ChevronDown } from 'lucide-react';
 
 interface Props {
   puzzle: any;
@@ -17,6 +17,10 @@ interface Props {
   setIsFocused: (focused: boolean) => void;
 }
 
+const Divider = () => (
+  <div className="h-px w-full bg-white/[0.06]" />
+);
+
 const SolvePuzzleRight: React.FC<Props> = ({
   puzzle,
   answer,
@@ -31,264 +35,220 @@ const SolvePuzzleRight: React.FC<Props> = ({
   isFocused,
   setIsFocused,
 }) => {
+  const hintsTotal = puzzle?.hints?.length ?? 0;
+  const hintsLeft = hintsTotal - revealedHintsCount;
+  const solved = feedback === 'correct';
+
   return (
-    <div className="flex flex-col p-8 lg:p-12 bg-gradient-to-b from-black via-zinc-950 to-black justify-center relative overflow-hidden h-full">
-      {/* Ambient effects */}
-      <div className="absolute inset-0 opacity-[0.01]" style={{ backgroundImage: `radial-gradient(circle at 25% 25%, #f97316 2px, transparent 2px)`, backgroundSize: '50px 50px' }} />
-      <div className="absolute top-0 right-0 w-32 h-32 bg-orange-600/5 blur-3xl rounded-full"></div>
+    <div className="flex flex-col h-full bg-[#0d0d0f]">
 
-      <div className="max-w-lg w-full mx-auto space-y-8 relative z-10">
-        {/* Input Section */}
-        <motion.div 
-          className="space-y-6" 
-          initial={{ opacity: 0, x: 20 }} 
-          animate={{ opacity: 1, x: 0 }} 
-          transition={{ delay: 0.2 }}
-        >
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-red-900/30 to-transparent border border-red-600/60 rounded-lg">
-                <Lock className="h-4 w-4 text-red-500" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-zinc-300 tracking-wide">Solve the Challenge</h3>
-                <p className="text-[10px] text-zinc-600 mt-1 font-mono">Enter the encryption key</p>
-              </div>
-            </div>
+      {/* ── Answer section ──────────────────────────────────────── */}
+      <motion.div
+        className="px-8 py-7 space-y-5"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+      >
+        {/* Section label */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-[0.2em]">
+            Your answer
+          </span>
+        </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Input Field */}
-              <div className="relative group">
-                <div className={`absolute -inset-0.5 bg-gradient-to-r from-red-600/20 to-orange-600/20 blur opacity-0 transition-opacity duration-500 rounded-xl ${isFocused ? 'opacity-100' : 'group-focus-within:opacity-100'}`}></div>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={answer}
-                    onChange={(e) => setAnswer(e.target.value)}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
-                    placeholder="ENTER_KEY_"
-                    className={`w-full bg-gradient-to-b from-zinc-900/80 to-black border text-white font-mono text-lg p-5 focus:outline-none transition-all placeholder:text-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl ${
-                      isFocused 
-                        ? 'border-red-600/80 shadow-[0_0_20px_rgba(220,38,38,0.3)]' 
-                        : 'border-zinc-700 group-focus-within:border-red-600/80 group-focus-within:shadow-[0_0_20px_rgba(220,38,38,0.2)]'
-                    }`}
-                    disabled={feedback === 'correct'}
-                    autoComplete="off"
-                    spellCheck="false"
-                  />
-                  <div className={`absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent opacity-0 transition-opacity duration-500 rounded-b-xl ${isFocused ? 'opacity-100' : 'group-focus-within:opacity-100'}`}></div>
-                  <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                    <ChevronRight className={`transition-colors ${isFocused ? 'text-red-500' : 'text-zinc-600 group-focus-within:text-red-500'}`} size={20} />
-                  </div>
-                  {/* Typing indicator */}
-                  {isFocused && answer.length > 0 && (
-                    <motion.div 
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute right-12 top-1/2 transform -translate-y-1/2"
-                    >
-                      <div className="flex space-x-1">
-                        <div className="w-1 h-1 bg-red-500 rounded-full animate-pulse"></div>
-                        <div className="w-1 h-1 bg-orange-500 rounded-full animate-pulse" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-1 h-1 bg-red-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                      </div>
-                    </motion.div>
-                  )}
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <motion.button 
-                type="submit" 
-                whileHover={{ scale: 1.02 }} 
-                whileTap={{ scale: 0.98 }} 
-                className="w-full relative group"
-                disabled={feedback === 'correct' || answer.trim() === ''}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-orange-600 to-red-600 opacity-75 group-hover:opacity-100 group-disabled:opacity-30 transition-opacity duration-300 rounded-xl"></div>
-                <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-orange-600 blur-lg opacity-0 group-hover:opacity-50 group-disabled:opacity-0 transition-opacity duration-300 rounded-xl"></div>
-                <div className="relative bg-gradient-to-r from-red-600 to-orange-600 text-white py-4 font-bold uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all duration-300 rounded-xl border border-red-500/50 group-hover:border-red-400 group-disabled:from-zinc-700 group-disabled:to-zinc-700 group-disabled:text-zinc-600">
-                  <span>Execute</span>
-                  <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                </div>
-              </motion.button>
-
-              {/* Keyboard Shortcuts */}
-              <div className="flex items-center justify-center gap-4 text-[10px] text-zinc-600 font-mono">
-                <div className="flex items-center gap-1">
-                  <Keyboard size={10} />
-                  <span>Enter</span>
-                </div>
-                <span className="text-zinc-700">•</span>
-                <div className="flex items-center gap-1">
-                  <Lightbulb size={10} />
-                  <span>Ctrl+H</span>
-                </div>
-              </div>
-            </form>
-          </div>
-
-          {/* Feedback Message */}
-          <AnimatePresence>
-            {feedback !== 'idle' && (
-              <motion.div 
-                initial={{ opacity: 0, y: -10, scale: 0.95 }} 
-                animate={{ opacity: 1, y: 0, scale: 1 }} 
-                exit={{ opacity: 0, y: -10, scale: 0.95 }} 
-                className="overflow-hidden"
-              >
-                <div className={`p-5 border rounded-lg font-mono text-sm uppercase tracking-wider flex items-start gap-3 backdrop-blur-sm ${
-                  feedback === 'correct' 
-                    ? 'bg-gradient-to-r from-green-900/40 to-green-950/20 border-green-600/50 text-green-300' 
-                    : 'bg-gradient-to-r from-red-900/40 to-red-950/20 border-red-600/50 text-red-300'
-                }`}>
-                  <div className={`p-2 mt-0.5 flex-shrink-0 ${feedback === 'correct' ? 'bg-green-900/50' : 'bg-red-900/50'} rounded-lg`}>
-                    {feedback === 'correct' ? (
-                      <CheckCircle size={18} className="text-green-400" />
-                    ) : (
-                      <AlertCircle size={18} className="text-red-400" />
-                    )}
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <div className="font-bold text-xs">
-                      {feedback === 'correct' ? '✓ Correct!' : '✗ Incorrect'}
-                    </div>
-                    <div className="text-[11px] font-normal">{submissionMessage}</div>
-                    {awardedPointsAmount !== null && (
-                      <motion.div 
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="inline-block px-3 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 text-green-100 rounded-lg text-xs font-mono font-bold mt-2"
-                      >
-                        +{awardedPointsAmount} PTS
-                      </motion.div>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-
-        {/* Hints Section */}
-        <motion.div 
-          className="space-y-6 pt-6 border-t border-zinc-800/50"
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ delay: 0.3 }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-orange-900/30 to-transparent border border-orange-600/50 rounded-lg">
-                <Lightbulb className="h-4 w-4 text-orange-500" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-zinc-300 tracking-wide">Hints Available</h3>
-                <p className="text-[9px] text-zinc-600 mt-1 font-mono">Data packets recovered</p>
-              </div>
-            </div>
-            <div className={`px-3 py-1 rounded-lg font-mono text-xs font-bold tracking-widest ${
-              puzzle?.hints?.length - revealedHintsCount === 0
-                ? 'bg-red-900/30 text-red-400 border border-red-600/30'
-                : 'bg-orange-900/30 text-orange-400 border border-orange-600/30'
-            }`}>
-              {puzzle?.hints?.length - revealedHintsCount} LEFT
-            </div>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-[10px] text-zinc-600 font-mono">
-              <span>Hint Progress</span>
-              <span>{revealedHintsCount}/{puzzle?.hints?.length || 0}</span>
-            </div>
-            <div className="w-full bg-zinc-800/50 rounded-full h-2 overflow-hidden">
-              <motion.div 
-                className="h-full bg-gradient-to-r from-orange-600 to-red-600 rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${(revealedHintsCount / (puzzle?.hints?.length || 1)) * 100}%` }}
-                transition={{ duration: 0.5 }}
-              />
-            </div>
-          </div>
-
-          {/* Hints Display */}
-          <div className="space-y-3 min-h-[150px] max-h-[280px] overflow-y-auto pr-2 custom-scrollbar">
-            {visibleHints.length === 0 ? (
-              <motion.div 
-                className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-zinc-700/50 bg-gradient-to-b from-zinc-900/30 to-transparent rounded-lg group hover:border-zinc-600/50 transition-all duration-300 cursor-pointer"
-                onClick={handleRevealHint}
-                whileHover={{ scale: 1.02 }}
-              >
-                <div className="p-4 mb-4 bg-gradient-to-br from-zinc-800 to-black border border-zinc-700/50 group-hover:border-zinc-600/50 transition-colors rounded-lg">
-                  <Zap className="h-6 w-6 text-zinc-600 group-hover:text-orange-500 transition-colors" />
-                </div>
-                <span className="text-xs text-zinc-600 uppercase tracking-widest mb-2 font-bold">No Hints Revealed</span>
-                <span className="text-[10px] text-zinc-700">Click to request first data packet</span>
-                {puzzle?.hints?.length > 0 && (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="mt-4 p-3 bg-orange-900/10 border border-orange-600/20 rounded-lg"
-                  >
-                    <div className="text-[9px] text-orange-600 font-mono mb-1">PREVIEW:</div>
-                    <div className="text-[11px] text-zinc-400 italic">
-                      "{puzzle.hints[0].substring(0, 50)}{puzzle.hints[0].length > 50 ? '...' : ''}"
-                    </div>
-                  </motion.div>
-                )}
-              </motion.div>
-            ) : (
-              <div className="space-y-3">
-                {visibleHints.map((hint: string, i: number) => (
-                  <motion.div 
-                    key={i} 
-                    initial={{ x: 20, opacity: 0 }} 
-                    animate={{ x: 0, opacity: 1 }} 
-                    transition={{ delay: i * 0.1 }}
-                    className="relative group"
-                  >
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-orange-600 to-orange-700 opacity-0 group-hover:opacity-100 transition-opacity rounded-l-lg"></div>
-                    <div className="pl-5">
-                      <div className="text-[9px] text-orange-600 mb-2 font-mono tracking-widest font-bold">PKT_{i + 1}</div>
-                      <div className="bg-gradient-to-br from-zinc-900/60 to-black/60 p-4 border border-zinc-800/50 text-zinc-300 text-sm font-sans leading-relaxed rounded-lg group-hover:border-zinc-700/50 group-hover:bg-zinc-900/80 transition-all">
-                        {hint}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-                {/* Next hint preview */}
-                {revealedHintsCount < (puzzle?.hints?.length || 0) && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-3 bg-zinc-900/30 border border-zinc-800/30 rounded-lg border-dashed"
-                  >
-                    <div className="text-[9px] text-zinc-600 font-mono mb-1">NEXT PACKET PREVIEW:</div>
-                    <div className="text-[11px] text-zinc-500 italic">
-                      "{puzzle.hints[revealedHintsCount].substring(0, 40)}{puzzle.hints[revealedHintsCount].length > 40 ? '...' : ''}"
-                    </div>
-                  </motion.div>
-                )}
-              </div>
+        {/* Input */}
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="relative">
+            <input
+              type="text"
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              placeholder="Type your answer…"
+              disabled={solved}
+              autoComplete="off"
+              spellCheck={false}
+              className={`
+                w-full bg-white/[0.03] border rounded-2xl
+                px-5 py-4 text-[15px] text-zinc-100 font-mono
+                placeholder:text-zinc-700
+                focus:outline-none transition-all duration-200
+                disabled:opacity-40 disabled:cursor-not-allowed
+                ${isFocused
+                  ? 'border-zinc-500 ring-1 ring-zinc-600/40'
+                  : 'border-white/[0.08] hover:border-white/[0.12]'}
+              `}
+            />
+            {/* char count */}
+            {answer.length > 0 && (
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-mono text-zinc-600">
+                {answer.length}
+              </span>
             )}
           </div>
 
-          {/* Hint Request Button */}
-          <motion.button 
-            onClick={handleRevealHint} 
-            disabled={revealedHintsCount === puzzle?.hints?.length || feedback === 'correct'} 
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full px-5 py-3 bg-gradient-to-br from-zinc-800 to-black border border-zinc-700 text-sm font-bold text-zinc-400 uppercase tracking-wider hover:text-orange-500 hover:border-orange-600/50 hover:bg-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-zinc-400 disabled:hover:border-zinc-700 transition-all duration-300 flex items-center justify-center gap-2 rounded-lg"
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={solved || answer.trim() === ''}
+            className={`
+              w-full flex items-center justify-center gap-2
+              py-3.5 rounded-2xl text-[13px] font-semibold tracking-wide
+              transition-all duration-200
+              disabled:opacity-30 disabled:cursor-not-allowed
+              ${!solved && answer.trim()
+                ? 'bg-white text-zinc-900 hover:bg-zinc-100 active:scale-[0.99]'
+                : 'bg-white/10 text-zinc-400'}
+            `}
           >
-            <Lightbulb size={14} />
-            <span>Request Hint</span>
-            <ArrowRight size={12} />
-          </motion.button>
-        </motion.div>
-      </div>
+            <span>Submit answer</span>
+            <ArrowRight size={14} />
+          </button>
+        </form>
+
+        {/* Keyboard hint */}
+        <p className="text-center text-[10px] text-zinc-700 font-mono">
+          Press Enter to submit · Ctrl+H for hint
+        </p>
+      </motion.div>
+
+      {/* ── Feedback ────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {feedback !== 'idle' && (
+          <motion.div
+            className="px-8 pb-5"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.25 }}
+          >
+            <div className={`
+              rounded-2xl border p-4 flex gap-3
+              ${feedback === 'correct'
+                ? 'bg-emerald-500/[0.07] border-emerald-500/20'
+                : 'bg-rose-500/[0.07] border-rose-500/20'}
+            `}>
+              <div className="flex-shrink-0 mt-0.5">
+                {feedback === 'correct'
+                  ? <CheckCircle2 size={16} className="text-emerald-400" />
+                  : <XCircle size={16} className="text-rose-400" />
+                }
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`text-[13px] font-semibold mb-1 ${
+                  feedback === 'correct' ? 'text-emerald-300' : 'text-rose-300'
+                }`}>
+                  {feedback === 'correct' ? 'Correct!' : 'Not quite'}
+                </p>
+                {submissionMessage && (
+                  <p className="text-[12px] text-zinc-400 leading-relaxed">
+                    {submissionMessage}
+                  </p>
+                )}
+                {awardedPointsAmount != null && (
+                  <motion.span
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="inline-flex items-center mt-2 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-mono font-semibold"
+                  >
+                    +{awardedPointsAmount} pts
+                  </motion.span>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <Divider />
+
+      {/* ── Hints section ───────────────────────────────────────── */}
+      <motion.div
+        className="flex-1 flex flex-col px-8 py-7 space-y-5 overflow-hidden"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.35, ease: 'easeOut' }}
+      >
+        {/* Header row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Lightbulb size={13} className="text-zinc-500" />
+            <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-[0.2em]">
+              Hints
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Progress dots */}
+            <div className="flex gap-1">
+              {Array.from({ length: hintsTotal }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
+                    i < revealedHintsCount ? 'bg-amber-400' : 'bg-zinc-800'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-[10px] font-mono text-zinc-600">
+              {revealedHintsCount}/{hintsTotal}
+            </span>
+          </div>
+        </div>
+
+        {/* Hints list */}
+        <div className="flex-1 overflow-y-auto space-y-3 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-800 pr-1">
+          {visibleHints.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-center space-y-2">
+              <div className="w-10 h-10 rounded-2xl bg-white/[0.03] border border-white/[0.07] flex items-center justify-center mb-1">
+                <Lightbulb size={16} className="text-zinc-600" />
+              </div>
+              <p className="text-[13px] text-zinc-600">No hints revealed yet</p>
+              <p className="text-[11px] text-zinc-700">Use the button below when you need a nudge</p>
+            </div>
+          ) : (
+            visibleHints.map((hint, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: 8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.06, duration: 0.25 }}
+                className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-4 space-y-1.5"
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400/80" />
+                  <span className="text-[10px] font-mono text-zinc-600 tracking-widest">
+                    Hint {i + 1}
+                  </span>
+                </div>
+                <p className="text-[13.5px] text-zinc-300 leading-relaxed">{hint}</p>
+              </motion.div>
+            ))
+          )}
+        </div>
+
+        {/* Reveal button */}
+        <button
+          onClick={handleRevealHint}
+          disabled={hintsLeft === 0 || solved}
+          className={`
+            w-full flex items-center justify-center gap-2
+            py-3 rounded-2xl text-[13px] font-medium
+            border transition-all duration-200
+            disabled:opacity-30 disabled:cursor-not-allowed
+            ${hintsLeft > 0 && !solved
+              ? 'border-white/[0.10] text-zinc-400 hover:bg-white/[0.04] hover:border-white/[0.15] hover:text-zinc-300'
+              : 'border-white/[0.06] text-zinc-600'}
+          `}
+        >
+          <ChevronDown size={13} />
+          <span>
+            {hintsLeft === 0
+              ? 'All hints revealed'
+              : `Reveal hint · ${hintsLeft} left`}
+          </span>
+        </button>
+      </motion.div>
     </div>
   );
 };
