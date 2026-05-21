@@ -16,8 +16,10 @@ const PuzzlePage: React.FC = () => {
   
   const [filteredPuzzles, setFilteredPuzzles] = useState(puzzles)
   const [searchTerm, setSearchTerm] = useState('')
-  const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'easy' | 'medium' | 'hard' | 'extreme'>('all')
+  const [categoryFilter, setCategoryFilter] = useState<'all' | string>('all')
   const [sortBy, setSortBy] = useState<'level' | 'points' | 'latest'>('level')
+
+  const categories = Array.from(new Set(puzzles.map(p => p.category).filter(Boolean))).sort()
 
   useEffect(() => {
     if (status === 'idle') {
@@ -36,16 +38,9 @@ const PuzzlePage: React.FC = () => {
       )
     }
 
-    // Difficulty filter
-    if (difficultyFilter !== 'all') {
-      filtered = filtered.filter(p => {
-        const level = p.level || 1
-        if (difficultyFilter === 'easy') return level <= 3
-        if (difficultyFilter === 'medium') return level > 3 && level <= 6
-        if (difficultyFilter === 'hard') return level > 6 && level <= 9
-        if (difficultyFilter === 'extreme') return level > 9
-        return true
-      })
+    // Category filter
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(p => p.category === categoryFilter)
     }
 
     // Sorting
@@ -56,13 +51,12 @@ const PuzzlePage: React.FC = () => {
     }
 
     setFilteredPuzzles(filtered)
-  }, [puzzles, searchTerm, difficultyFilter, sortBy])
+  }, [puzzles, searchTerm, categoryFilter, sortBy])
 
   // Calculate stats
   const easyCount = puzzles.filter(p => (p.level || 1) <= 3).length
   const mediumCount = puzzles.filter(p => (p.level || 1) > 3 && (p.level || 1) <= 6).length
   const hardCount = puzzles.filter(p => (p.level || 1) > 6 && (p.level || 1) <= 9).length
-  const extremeCount = puzzles.filter(p => (p.level || 1) > 9).length
 
   return (
     <div className="min-h-screen bg-black text-neutral-200 selection:bg-red-500/30 overflow-x-hidden">
@@ -120,10 +114,6 @@ const PuzzlePage: React.FC = () => {
                 <div className="text-xs font-bold text-orange-400 uppercase tracking-wide">Hard</div>
                 <div className="text-2xl font-black text-white mt-2">{hardCount}</div>
               </div>
-              <div className="bg-red-500/5 border border-red-500/30 rounded-lg p-4">
-                <div className="text-xs font-bold text-red-400 uppercase tracking-wide">Extreme</div>
-                <div className="text-2xl font-black text-white mt-2">{extremeCount}</div>
-              </div>
             </motion.div>
           )}
 
@@ -150,35 +140,30 @@ const PuzzlePage: React.FC = () => {
               <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
                 <div className="flex flex-wrap gap-2">
                   <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2">
-                    <Filter size={14} /> Filter
+                    <Filter size={14} /> Category
                   </span>
-                  {['all', 'easy', 'medium', 'hard', 'extreme'].map((difficulty) => (
+                  <button
+                    key="all"
+                    onClick={() => setCategoryFilter('all')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${
+                      categoryFilter === 'all'
+                        ? 'bg-red-600 border-red-500 text-white'
+                        : 'bg-transparent border-zinc-700 text-zinc-400 hover:border-red-500/50 hover:text-red-400'
+                    }`}
+                  >
+                    All Categories
+                  </button>
+                  {categories.map((category) => (
                     <button
-                      key={difficulty}
-                      onClick={() => setDifficultyFilter(difficulty as any)}
+                      key={category}
+                      onClick={() => setCategoryFilter(category)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${
-                        difficultyFilter === difficulty
-                          ? difficulty === 'all'
-                            ? 'bg-red-600 border-red-500 text-white'
-                            : difficulty === 'easy'
-                            ? 'bg-green-600 border-green-500 text-white'
-                            : difficulty === 'medium'
-                            ? 'bg-yellow-600 border-yellow-500 text-white'
-                            : difficulty === 'hard'
-                            ? 'bg-orange-600 border-orange-500 text-white'
-                            : 'bg-red-700 border-red-600 text-white'
-                          : difficulty === 'all'
-                          ? 'bg-transparent border-zinc-700 text-zinc-400 hover:border-red-500/50 hover:text-red-400'
-                          : difficulty === 'easy'
-                          ? 'bg-transparent border-green-500/30 text-green-400/70 hover:border-green-500 hover:text-green-400'
-                          : difficulty === 'medium'
-                          ? 'bg-transparent border-yellow-500/30 text-yellow-400/70 hover:border-yellow-500 hover:text-yellow-400'
-                          : difficulty === 'hard'
-                          ? 'bg-transparent border-orange-500/30 text-orange-400/70 hover:border-orange-500 hover:text-orange-400'
-                          : 'bg-transparent border-red-500/30 text-red-400/70 hover:border-red-500 hover:text-red-400'
+                        categoryFilter === category
+                          ? 'bg-red-600 border-red-500 text-white'
+                          : 'bg-transparent border-zinc-700 text-zinc-400 hover:border-red-500/50 hover:text-red-400'
                       }`}
                     >
-                      {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+                      {category}
                     </button>
                   ))}
                 </div>
@@ -199,7 +184,7 @@ const PuzzlePage: React.FC = () => {
               </div>
 
               {/* Result count */}
-              {searchTerm || difficultyFilter !== 'all' ? (
+              {searchTerm || categoryFilter !== 'all' ? (
                 <div className="text-xs text-zinc-500">
                   Showing <span className="font-bold text-white">{filteredPuzzles.length}</span> of <span className="font-bold text-white">{puzzles.length}</span> puzzles
                 </div>

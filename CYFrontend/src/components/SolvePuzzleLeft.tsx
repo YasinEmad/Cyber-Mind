@@ -100,33 +100,33 @@ const SolvePuzzleLeft: React.FC<Props> = ({
           </motion.h1>
         </motion.div>
 
-        {/* Mission Brief */}
+        {/* Mission Description */}
         <motion.div 
-          className="relative p-6 bg-gradient-to-br from-zinc-900/60 to-black border border-zinc-800 rounded-xl overflow-hidden group"
+          className="relative p-6 bg-gradient-to-br from-slate-950/80 to-black border border-cyan-800/50 rounded-3xl overflow-hidden group"
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ delay: 0.3 }}
         >
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent"></div>
-          <div className="absolute top-0 right-0 w-12 h-12 border-t border-r border-red-500/20 group-hover:border-red-500/40 transition-colors"></div>
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent"></div>
+          <div className="absolute top-0 right-0 w-14 h-14 border-t border-r border-cyan-500/20 group-hover:border-cyan-400/40 transition-colors"></div>
 
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-4">
-              <Terminal size={14} className="text-orange-500" />
-              <span className="text-[9px] font-bold text-zinc-400 tracking-[0.2em] uppercase">Brief</span>
+              <Terminal size={14} className="text-cyan-400" />
+              <span className="text-[9px] font-bold text-cyan-300 tracking-[0.25em] uppercase">Description</span>
             </div>
 
-            <p className="text-zinc-300 text-sm leading-relaxed font-sans min-h-[120px] max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
+            <p className="text-cyan-100 text-base leading-8 font-serif min-h-[120px] max-h-[180px] overflow-y-auto pr-2 custom-scrollbar tracking-wide">
               {displayedScenario}
             </p>
 
-            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-zinc-800/50">
-              <Eye className="h-3 w-3 text-zinc-600" />
-              <span className="text-[8px] text-zinc-600 font-mono tracking-widest">
-                {displayedScenario.length > 0 ? 'Brief loaded' : 'Loading...'}
+            <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-cyan-800/40">
+              <Eye className="h-3 w-3 text-cyan-400" />
+              <span className="text-[8px] text-cyan-300 font-mono tracking-widest">
+                {displayedScenario.length > 0 ? 'Description loaded' : 'Loading...'}
               </span>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent to-zinc-800/50"></div>
-              <span className="text-[8px] text-zinc-600 font-mono">{Math.round((displayedScenario.length / (puzzle?.scenario?.length || 1)) * 100)}%</span>
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent to-cyan-800/40"></div>
+              <span className="text-[8px] text-cyan-300 font-mono">{Math.round((displayedScenario.length / (puzzle?.scenario?.length || 1)) * 100)}%</span>
             </div>
           </div>
         </motion.div>
