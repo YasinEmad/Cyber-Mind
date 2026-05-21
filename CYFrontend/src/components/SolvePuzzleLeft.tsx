@@ -18,10 +18,10 @@ interface Props {
 }
 
 const DIFFICULTY_MAP: Record<string, { label: string; color: string; dot: string }> = {
-  easy:    { label: 'Easy',    color: 'text-emerald-400', dot: 'bg-emerald-400' },
-  medium:  { label: 'Medium',  color: 'text-amber-400',   dot: 'bg-amber-400'   },
-  hard:    { label: 'Hard',    color: 'text-orange-400',  dot: 'bg-orange-400'  },
-  extreme: { label: 'Extreme', color: 'text-rose-400',    dot: 'bg-rose-400'    },
+  easy:    { label: 'Easy',    color: 'text-red-500', dot: 'bg-red-500' },
+  medium:  { label: 'Medium',  color: 'text-red-600',   dot: 'bg-red-600'   },
+  hard:    { label: 'Hard',    color: 'text-red-700',  dot: 'bg-red-700'  },
+  extreme: { label: 'Extreme', color: 'text-red-800',    dot: 'bg-red-800'    },
 };
 
 function getDifficulty(level: number) {
@@ -41,13 +41,13 @@ const StatCard: React.FC<{
   value: React.ReactNode;
   sub?: string;
 }> = ({ icon: Icon, label, value, sub }) => (
-  <div className="flex flex-col gap-2 p-4 rounded-2xl bg-white/[0.03] border border-white/[0.07] hover:bg-white/[0.05] transition-colors duration-200">
+  <div className="flex flex-col gap-2 p-4 rounded-2xl bg-gradient-to-br from-gray-900/60 to-black/60 border border-red-950/40 hover:border-red-900/60 hover:bg-gradient-to-br hover:from-gray-900/80 hover:to-black/80 transition-all duration-200 shadow-lg shadow-red-950/30">
     <div className="flex items-center gap-2">
-      <Icon size={13} className="text-zinc-500" />
-      <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest">{label}</span>
+      <Icon size={13} className="text-gray-500" />
+      <span className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">{label}</span>
     </div>
-    <div className="text-xl font-semibold text-zinc-100 leading-none tabular-nums">{value}</div>
-    {sub && <div className="text-[10px] text-zinc-600 font-mono">{sub}</div>}
+    <div className="text-xl font-semibold text-gray-100 leading-none tabular-nums">{value}</div>
+    {sub && <div className="text-[10px] text-gray-600 font-mono">{sub}</div>}
   </div>
 );
 
@@ -69,24 +69,24 @@ const SolvePuzzleLeft: React.FC<Props> = ({
     correct: {
       icon: CheckCircle2,
       text: 'Challenge solved',
-      className: 'text-emerald-400 bg-emerald-400/8 border-emerald-400/20',
+      className: 'text-red-400 bg-gradient-to-r from-red-950/40 to-red-900/20 border-red-800/50 shadow-lg shadow-red-900/30',
     },
     incorrect: {
       icon: XCircle,
       text: 'Incorrect — try again',
-      className: 'text-rose-400 bg-rose-400/8 border-rose-400/20',
+      className: 'text-red-500 bg-gradient-to-r from-red-950/50 to-red-900/30 border-red-800/60 shadow-lg shadow-red-900/40',
     },
     idle: {
       icon: Circle,
       text: 'Awaiting your answer',
-      className: 'text-zinc-500 bg-zinc-800/40 border-zinc-700/40',
+      className: 'text-gray-500 bg-gradient-to-r from-gray-900/50 to-gray-800/30 border-gray-800/40 shadow-lg shadow-gray-950/30',
     },
   }[feedback];
 
   const StatusIcon = statusConfig.icon;
 
   return (
-    <div className="flex flex-col h-full bg-[#0d0d0f] border-r border-white/[0.06]">
+    <div className="flex flex-col h-full bg-gradient-to-br from-black via-gray-950 to-black border-r border-red-950/30">
 
       {/* ── Top bar ─────────────────────────────────────────────── */}
       <motion.div
@@ -96,14 +96,14 @@ const SolvePuzzleLeft: React.FC<Props> = ({
         transition={{ duration: 0.35, ease: 'easeOut' }}
       >
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-zinc-800/60 border border-white/[0.08]">
-            <Lock size={14} className="text-zinc-400" />
+          <div className="p-2 rounded-xl bg-gradient-to-br from-red-900/40 to-red-950/50 border border-red-900/50 shadow-lg shadow-red-950/30">
+            <Lock size={14} className="text-red-600" />
           </div>
           <div>
-            <p className="text-[10px] font-mono text-zinc-500 tracking-[0.2em] uppercase leading-none">
+            <p className="text-[10px] font-mono text-gray-500 tracking-[0.2em] uppercase leading-none">
               {puzzleId?.substring(0, 8).toUpperCase() ?? '—'}
             </p>
-            <p className="text-[10px] font-mono text-zinc-600 tracking-widest mt-0.5 uppercase">
+            <p className="text-[10px] font-mono text-gray-600 tracking-widest mt-0.5 uppercase">
               {puzzle?.category ?? 'General'}
             </p>
           </div>
@@ -123,42 +123,55 @@ const SolvePuzzleLeft: React.FC<Props> = ({
       <div className="flex-1 overflow-y-auto px-8 py-7 space-y-7 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-800">
 
         {/* Title */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.08, duration: 0.4, ease: 'easeOut' }}
-        >
-          <h1 className="text-[28px] font-semibold text-white leading-snug tracking-tight">
-            {displayedTitle}
-          </h1>
-        </motion.div>
+       <motion.div
+  initial={{ opacity: 0, y: 10 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ delay: 0.08, duration: 0.4, ease: "easeOut" }}
+>
+  <h1
+    className="
+      text-[28px]
+      font-semibold
+      leading-snug
+      tracking-tight
+      bg-gradient-to-r
+      from-rose-500
+      via-red-400
+      to-orange-300
+      bg-clip-text
+      text-transparent
+    "
+  >
+    {displayedTitle}
+  </h1>
+</motion.div>
 
         {/* Description card */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.4, ease: 'easeOut' }}
-          className="rounded-2xl border border-white/[0.07] bg-white/[0.025] overflow-hidden"
+          className="rounded-2xl border border-red-900/40 bg-gradient-to-br from-red-950/20 to-black/40 overflow-hidden shadow-lg shadow-red-950/20"
         >
-          <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.06]">
-            <Terminal size={12} className="text-zinc-500" />
-            <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-[0.2em]">
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-red-900/30 bg-red-950/10">
+            <Terminal size={12} className="text-red-600" />
+            <span className="text-[10px] font-medium text-red-400 uppercase tracking-[0.2em]">
               Scenario
             </span>
             <div className="flex-1" />
             {loadPct < 100 ? (
-              <span className="text-[10px] font-mono text-zinc-600">{loadPct}%</span>
+              <span className="text-[10px] font-mono text-red-500 font-semibold">{loadPct}%</span>
             ) : (
               <div className="flex items-center gap-1">
-                <Eye size={10} className="text-zinc-600" />
-                <span className="text-[10px] font-mono text-zinc-600">Loaded</span>
+                <Eye size={10} className="text-red-600" />
+                <span className="text-[10px] font-mono text-red-400 font-semibold">Loaded</span>
               </div>
             )}
           </div>
 
           <div className="px-5 py-4">
-            <div className="text-[14px] text-zinc-300 leading-[1.85] min-h-[100px] max-h-[200px] overflow-y-auto pr-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-800 whitespace-pre-wrap break-words">
-              {displayedScenario || <span className="text-zinc-600 italic">Loading scenario…</span>}
+            <div className="text-[14px] text-gray-300 leading-[1.85] min-h-[100px] max-h-[200px] overflow-y-auto pr-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-red-900/50 whitespace-pre-wrap break-words">
+              {displayedScenario || <span className="text-gray-600 italic">Loading scenario…</span>}
             </div>
           </div>
         </motion.div>

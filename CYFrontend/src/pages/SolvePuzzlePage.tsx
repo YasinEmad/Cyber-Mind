@@ -185,10 +185,10 @@ const SolvePuzzlePage: React.FC = () => {
   // ── Loading ────────────────────────────────────────────────────
   if (status === 'loading') {
     return (
-      <div className="min-h-screen w-full bg-[#0d0d0f] flex items-center justify-center">
+      <div className="min-h-screen w-full bg-gradient-to-br from-black via-slate-900 to-black flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 size={28} className="text-zinc-500 animate-spin" />
-          <p className="text-[13px] text-zinc-600 font-mono tracking-widest uppercase">
+          <Loader2 size={28} className="text-red-600 animate-spin" />
+          <p className="text-[13px] text-red-700 font-mono tracking-widest uppercase">
             Loading puzzle…
           </p>
         </div>
@@ -199,20 +199,20 @@ const SolvePuzzlePage: React.FC = () => {
   // ── Error ──────────────────────────────────────────────────────
   if (status === 'failed' || !puzzle) {
     return (
-      <div className="min-h-screen w-full bg-[#0d0d0f] flex items-center justify-center px-4">
-        <div className="w-full max-w-sm rounded-2xl border border-white/[0.07] bg-white/[0.02] p-8 space-y-5">
+      <div className="min-h-screen w-full bg-gradient-to-br from-black via-slate-900 to-black flex items-center justify-center px-4">
+        <div className="w-full max-w-sm rounded-2xl border border-red-900/40 bg-gradient-to-br from-red-950/20 to-black p-8 space-y-5 shadow-xl shadow-red-950/40">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20">
-              <AlertCircle size={16} className="text-rose-400" />
+            <div className="p-2 rounded-xl bg-red-950/40 border border-red-900/50">
+              <AlertCircle size={16} className="text-red-600" />
             </div>
-            <span className="text-[14px] font-semibold text-zinc-200">Puzzle not found</span>
+            <span className="text-[14px] font-semibold text-red-300">Puzzle not found</span>
           </div>
-          <p className="text-[13px] text-zinc-500 leading-relaxed">
+          <p className="text-[13px] text-slate-400 leading-relaxed">
             {error || 'This puzzle could not be loaded. It may have been removed or the link is invalid.'}
           </p>
           <button
             onClick={() => window.history.back()}
-            className="w-full py-3 rounded-xl border border-white/[0.09] text-[13px] font-medium text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200 transition-all duration-200"
+            className="w-full py-3 rounded-xl border border-red-900/40 text-[13px] font-medium text-red-400 hover:bg-red-950/20 hover:text-red-300 hover:border-red-900/60 transition-all duration-200"
           >
             Go back
           </button>
@@ -224,14 +224,15 @@ const SolvePuzzlePage: React.FC = () => {
   // ── Main layout ────────────────────────────────────────────────
   return (
     <PageWrapper>
-      {/* Base background — no animated blurs or grid patterns */}
-      <div className="fixed inset-0 bg-[#0d0d0f] -z-10" />
+      {/* Base background with dark gradient */}
+      <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-950 to-black -z-10" />
+      <div className="fixed inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIEwgMCA2MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDExMCw4MCw4MCwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] -z-10 opacity-30" />
 
-      {/* Solve flash — very subtle green wash on correct */}
+      {/* Solve flash — red wash on correct */}
       <AnimatePresence>
         {showSuccess && (
           <motion.div
-            className="fixed inset-0 z-40 pointer-events-none bg-emerald-500/[0.04]"
+            className="fixed inset-0 z-40 pointer-events-none bg-red-600/[0.08]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
