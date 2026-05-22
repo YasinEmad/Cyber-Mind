@@ -2,20 +2,73 @@
 
 const { Sequelize, DataTypes } = require('sequelize');
 
-const dbUrl = process.env.DATABASE_URL?.replace(
-  'postgresql://',
-  'postgres://'
-);
+const dbUrlRaw = process.env.DATABASE_URL;
+const dbUrl = dbUrlRaw?.replace('postgresql://', 'postgres://');
+
+// Determine DB host (best-effort). Used to keep localhost developer experience simple.
+let dbHost;
+try {
+  if (dbUrl) {
+    const parsed = new URL(dbUrl);
+    dbHost = parsed.hostname;
+  }
+} catch (e) {
+  dbHost = process.env.DB_HOST || undefined;
+}
+
+const isLocalhost = !!dbHost && ['localhost', '127.0.0.1', '::1'].includes(dbHost);
+
+// Environment-aware SSL policy
+// - In production: always validate certificates (rejectUnauthorized: true).
+// - For local development (connecting to localhost) keep it simple and allow no SSL.
+// - For non-production remote DBs, allow opting into relaxed validation via
+//   DB_SSL_ALLOW_SELF_SIGNED (only for development/testing). By default we require
+//   proper certificate validation to prevent MITM attacks.
+const shouldEnableSsl = (() => {
+  if (process.env.DB_SSL === 'disable') return false;
+  if (isLocalhost && process.env.NODE_ENV !== 'production') return false;
+  if (process.env.NODE_ENV === 'production') return true;
+  return process.env.DB_SSL === 'true';
+})();
+
+// Build secure ssl options for Sequelize's dialectOptions.
+let dialectOptions = {};
+if (shouldEnableSsl) {
+  const sslOptions = {
+    // ask the driver to use SSL
+    require: true,
+    // Default: validate certificates. NEVER allow disabling this in production.
+    rejectUnauthorized: true,
+  };
+
+  // In non-production only, allow opting out of certificate validation for
+  // development/testing against self-signed certs.
+  if (process.env.NODE_ENV !== 'production') {
+    if (isLocalhost) {
+      // Localhost commonly doesn't use SSL; keep developer experience simple.
+      // NOTE: this branch only runs for localhost in non-production.
+      sslOptions.rejectUnauthorized = false;
+    } else if (process.env.DB_SSL_ALLOW_SELF_SIGNED === 'true') {
+      // Explicit developer opt-in to allow self-signed certs for non-production.
+      sslOptions.rejectUnauthorized = false;
+    }
+  }
+
+  // Optional certificate pinning: provide the CA certificate (PEM) via
+  // DB_SSL_CERT environment variable. This enables strong server identity
+  // verification and mitigates MITM attacks even when CAs are compromised.
+  if (process.env.DB_SSL_CERT) {
+    // Sequelize / node-postgres accepts `ca` as a string or Buffer.
+    sslOptions.ca = process.env.DB_SSL_CERT;
+  }
+
+  dialectOptions = { ssl: sslOptions };
+}
+
 const sequelize = new Sequelize(dbUrl, {
   dialect: 'postgres',
   logging: false,
-
-  dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false,
-    },
-  },
+  dialectOptions,
 
   pool: {
     max: 10,

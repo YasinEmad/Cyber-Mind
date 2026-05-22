@@ -11,6 +11,7 @@ const {
   deleteAllChallenges
 } = require('../controllers/challengeController');
 const { optionalAuth, authAdmin } = require('../middlewares/auth');
+const { submissionLimiter, executeLimiter } = require('../middlewares/rateLimiter');
 
 router.route('/')
   .get(getAllChallenges)
@@ -23,12 +24,15 @@ router.route('/:id')
   .delete(authAdmin, deleteChallenge); // الأدمن بس اللي يحذف
 
 // المسار السحري لتسليم الحل واحتساب النقط
-router.post('/:id/submit', optionalAuth, submitAnswer);
+// Apply submissionLimiter after optionalAuth so limiter keys by user when present
+router.post('/:id/submit', optionalAuth, submissionLimiter, submitAnswer);
 
 // تشغيل الكود
-router.post('/:id/run', optionalAuth, runCode);
+// CRITICAL SECURITY: executeLimiter protects against code execution abuse, infinite loops, and CPU attacks
+router.post('/:id/run', optionalAuth, executeLimiter, runCode);
 
 // AI review (evaluate code without awarding points)
-router.post('/:id/ai-review', optionalAuth, require('../controllers/challengeController').aiReview);
+// CRITICAL SECURITY: executeLimiter protects against code compilation abuse
+router.post('/:id/ai-review', optionalAuth, executeLimiter, require('../controllers/challengeController').aiReview);
 
 module.exports = router;

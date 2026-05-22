@@ -11,9 +11,10 @@ const {
 
 // التعديل هنا: غيرنا authUser لـ auth
 const { protect } = require('../middlewares/auth'); 
+const { authLimiter } = require('../middlewares/rateLimiter');
 
 // مسارات عامة
-router.post('/auth/google', handleGoogleSignIn);
+router.post('/auth/google', authLimiter, handleGoogleSignIn);
 router.get('/logout', logout);
 
 // مسارات محمية (كل اللي جاي تحت محتاج protect)

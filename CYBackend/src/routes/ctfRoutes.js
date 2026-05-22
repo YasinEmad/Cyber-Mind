@@ -29,6 +29,7 @@ const {
 } = require('../controllers/ctfExecutionController');
 
 const { authAdmin, protect } = require('../middlewares/auth');
+const { executeLimiter, flagLimiter } = require('../middlewares/rateLimiter');
 
 // Get all CTF level information
 router.get('/info', getCTFInfo);
@@ -60,10 +61,11 @@ router.post('/templates', authAdmin, createCommandTemplate);
 router.put('/templates/:id', authAdmin, updateCommandTemplate);
 router.delete('/templates/:id', authAdmin, deleteCommandTemplate);
 // Execute a command in CTF mode (requires user authentication)
-router.post('/execute', protect, executeCTFCommand);
+// Important: protect must run before the limiter so the limiter can key by user id when available.
+router.post('/execute', protect, executeLimiter, executeCTFCommand);
 
 // Verify flag submission (requires authentication)
-router.post('/verify-flag/:level', protect, verifyFlag);
+router.post('/verify-flag/:level', protect, flagLimiter, verifyFlag);
 
 // Get user progress for a specific level (requires authentication)
 router.get('/user-progress/:level', protect, getUserLevelProgress);
