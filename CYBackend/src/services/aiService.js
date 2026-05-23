@@ -40,6 +40,10 @@ function getFallbackIncorrectFeedback(challengeData) {
 
 // Extract relevant code lines to reduce token count
 function extractRelevantCode(code) {
+  if (typeof code !== 'string' || !code) {
+    return '';
+  }
+
   const keywordPatterns = ['query', 'req', 'input', 'db', 'execute', 'eval', 'setTimeout', 'innerHTML', 'dangerouslySetInnerHTML', 'sql', 'password', 'token', 'auth', 'validate', 'sanitize', 'params', 'join'];
   const lines = code.split('\n');
   const relevantLines = lines.filter(line => 
@@ -52,10 +56,10 @@ function extractRelevantCode(code) {
 
 async function evaluateWithAI(challengeData, userCode) {
   // Extract relevant code sections only
-  const initialCodeRelevant = extractRelevantCode(challengeData.initialCode);
-  const userCodeRelevant = extractRelevantCode(userCode);
+  const initialCodeRelevant = extractRelevantCode(challengeData.initialCode || '');
+  const userCodeRelevant = extractRelevantCode(userCode || '');
 
-  const prompt = `Initial Code:\n${initialCodeRelevant}\n\nUser Code:\n${userCodeRelevant}\n\nVulnerability: ${challengeData.description}`;
+  const prompt = `Initial Code:\n${initialCodeRelevant}\n\nUser Code:\n${userCodeRelevant}\n\nVulnerability: ${challengeData.description || 'Not provided'}`;
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
@@ -167,7 +171,8 @@ function parseAIResponse(text) {
   }
 
   try {
-    return JSON.parse(trimmed);
+    const parsed = JSON.parse(trimmed);
+    return parsed;
   } catch (firstErr) {
     const jsonMatch = trimmed.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
@@ -178,8 +183,8 @@ function parseAIResponse(text) {
       }
     }
 
-    // If the AI returned a plain text message instead of JSON, use it directly.
-    return { feedback: trimmed };
+    // If the AI returned a plain text message instead of JSON, return fallback response.
+    return { fixed: false, feedback: trimmed };
   }
 }
 

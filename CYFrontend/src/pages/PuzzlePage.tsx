@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { AppDispatch, RootState } from '@/redux/store'
 import { fetchPuzzles } from '@/redux/slices/puzzleSlice'
+import { selectUser } from '@/redux/slices/userSlice'
 import PageWrapper from '@/components/PageWrapper'
 import PuzzleCard from '@/components/PuzzleCard'
 import { Link } from 'react-router-dom'
@@ -13,6 +14,7 @@ import puzzlesAnimation from '@/assets/Meditating Brain.json'
 const PuzzlePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
   const { puzzles, status, error } = useSelector((state: RootState) => state.puzzles)
+  const user = useSelector((state: RootState) => selectUser(state))
   
   const [filteredPuzzles, setFilteredPuzzles] = useState(puzzles)
   const [searchTerm, setSearchTerm] = useState('')
@@ -220,20 +222,21 @@ const PuzzlePage: React.FC = () => {
                   transition={{ duration: 0.5 }}
                   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10"
                 >
-                  {filteredPuzzles.map((puzzle, index) => (
-                    <Link 
-                      to={`/puzzles/${puzzle.id}`} 
-                      key={puzzle.id}
-                      className="group relative"
-                    >
-                      {/* Hover Glow Effect */}
-                      <div className="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-orange-600 rounded-[2rem] opacity-0 group-hover:opacity-40 blur-lg transition duration-500" />
-                      
-                      <div className="relative h-full bg-black/30 border border-neutral-800 rounded-[2rem] overflow-hidden transition-all duration-300">
-                        <PuzzleCard puzzle={puzzle} index={index} />
-                      </div>
-                    </Link>
-                  ))}
+                  {filteredPuzzles.map((puzzle, index) => {
+                    const solvedList = Array.isArray(user?.profile?.solvedPuzzles) ? user!.profile!.solvedPuzzles.map(String) : []
+                    const isSolved = solvedList.includes(String(puzzle.id))
+
+                    return (
+                      <Link to={`/puzzles/${puzzle.id}`} key={puzzle.id} className="group relative">
+                        {/* Hover Glow Effect */}
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-orange-600 rounded-[2rem] opacity-0 group-hover:opacity-40 blur-lg transition duration-500" />
+
+                        <div className="relative h-full bg-black/30 border border-neutral-800 rounded-[2rem] overflow-hidden transition-all duration-300">
+                          <PuzzleCard puzzle={puzzle} index={index} isSolved={isSolved} />
+                        </div>
+                      </Link>
+                    )
+                  })}
                 </motion.div>
               ) : (
                 <motion.div 

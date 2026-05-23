@@ -87,7 +87,7 @@ const ChallengeSidebar: React.FC<SidebarProps> = ({
                   <span className="text-xs font-semibold text-white uppercase tracking-wide">Your Mission</span>
                 </div>
                 <p className="text-xs text-white leading-relaxed">
-                  Identify and fix the security vulnerability in the code editor. Run tests to validate your solution.
+                  Identify and fix the security vulnerability in the code editor. Validate your solution using the editor tools.
                 </p>
               </div>
             </motion.div>

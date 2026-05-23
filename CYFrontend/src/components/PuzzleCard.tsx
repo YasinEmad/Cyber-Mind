@@ -1,15 +1,16 @@
 import React, { useState, useRef } from 'react'
 import { getPointsForLevel } from '@/lib/points'
 import { motion } from 'framer-motion'
-import { ChevronRight, Zap, Hash, Star, TrendingUp } from 'lucide-react'
+import { ChevronRight, Zap, Hash, Star, TrendingUp, Check } from 'lucide-react'
 import { Puzzle } from '../types'
 
 interface PuzzleCardProps {
   puzzle: Puzzle
   index: number
+  isSolved?: boolean
 }
 
-const PuzzleCard: React.FC<PuzzleCardProps> = ({ puzzle, index }) => {
+const PuzzleCard: React.FC<PuzzleCardProps> = ({ puzzle, index, isSolved = false }) => {
   const [displayedTitle, setDisplayedTitle] = useState(puzzle.title)
   const intervalRef = useRef<number | null>(null)
 
@@ -91,6 +92,13 @@ const PuzzleCard: React.FC<PuzzleCardProps> = ({ puzzle, index }) => {
             {difficulty.label}
           </span>
         </div>
+        {/** Solved badge */}
+        {isSolved && (
+          <div className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-900/20 border border-emerald-700/30 text-emerald-300 text-xs font-bold">
+            <Check size={14} className="text-emerald-400" />
+            <span>Solved</span>
+          </div>
+        )}
       </div>
 
       {/* Title and Description */}

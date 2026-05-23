@@ -86,7 +86,7 @@ const FeatureItem: React.FC<FeatureItemProps> = ({
       viewport={{ once: true }}
       variants={fadeInUp}
       transition={{ delay: index * 0.2 + 0.5 }}
-      className="text-gray-400 text-base leading-relaxed mb-8 max-w-sm"
+      className="text-gray-200 italic text-base leading-relaxed mb-8 max-w-sm"
     >
       {desc}
     </motion.p>

@@ -68,37 +68,17 @@ const AboutPage: React.FC = () => {
           variants={itemVariants}
           className="w-full relative group mt-4 z-20"
         >
-          {/* Subtle outer glow on hover */}
           <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-orange-600 rounded-[2rem] blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-700" />
           
-          <div className="relative aspect-[21/9] w-full bg-[#0a0a0a] rounded-3xl overflow-hidden border border-white/10 cursor-pointer transition-all duration-700 hover:border-red-500/40 shadow-2xl">
-            
-            {/* Tech Grid Background */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_50%,#000_20%,transparent_100%)]" />
-            
-            {/* Play Button Center */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="relative flex items-center justify-center group/btn">
-                <div className="absolute w-24 h-24 bg-red-600/20 rounded-full animate-ping opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="absolute inset-0 bg-red-600/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                
-                <div className="relative bg-black/40 backdrop-blur-xl p-6 rounded-full border border-white/5 group-hover:border-red-500/30 group-hover:bg-red-950/40 transition-all duration-500 transform group-hover:scale-105">
-                  <PlayCircle className="w-12 h-12 text-white/50 group-hover:text-red-400 transition-colors duration-300 stroke-[1.5px]" />
-                </div>
-              </div>
-            </div>
-
-            {/* Video Meta Data Overlay (Glassmorphism) */}
-            <div className="absolute bottom-6 left-6 md:bottom-8 md:left-8">
-              <div className="flex items-center gap-4 bg-black/60 backdrop-blur-md border border-white/10 px-5 py-2.5 rounded-full">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                  <span className="text-[10px] uppercase tracking-widest text-gray-300 font-semibold">Showcase v1.4</span>
-                </div>
-                <div className="h-3 w-[1px] bg-gray-600" />
-                <span className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold italic">2:30 MIN</span>
-              </div>
-            </div>
+          <div className="relative aspect-[16/9] w-full bg-[#0a0a0a] rounded-3xl overflow-hidden border border-white/10 transition-all duration-700 hover:border-red-500/40 shadow-2xl">
+            <iframe
+              className="absolute inset-0 w-full h-full"
+              src="https://www.youtube.com/embed/WAvchbP2kXM"
+              title="Cyber Mind About Video"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
           </div>
         </motion.div>
 

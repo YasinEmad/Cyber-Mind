@@ -147,7 +147,7 @@ const HomePage: React.FC = () => {
               </motion.h1>
               <motion.p 
                 variants={fadeInUp} 
-                className="text-lg text-gray-400 max-w-2xl mx-auto lg:mx-0 font-light mb-8"
+                className="text-lg text-gray-100 italic max-w-2xl mx-auto lg:mx-0 font-light mb-8"
               >
                 Think like a hacker. Solve like a defender. Train your mind in ethical cybersecurity through real-world CTF challenges.
               </motion.p>
@@ -198,7 +198,7 @@ const HomePage: React.FC = () => {
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
                 Train Your <span className="text-red-500">Security Mindset</span>
               </h2>
-              <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+              <p className="text-gray-200 text-lg italic max-w-2xl mx-auto">
                 Master cryptography, penetration testing, and vulnerability analysis through hands-on challenges
               </p>
             </motion.div>
