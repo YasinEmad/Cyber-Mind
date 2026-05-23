@@ -1,5 +1,6 @@
 const { Puzzle } = require('../models');
 const puzzleService = require('../services/puzzleService');
+const userService = require('../services/userService');
 
 // @desc    Get all puzzles
 exports.getPuzzles = async (req, res, next) => {
@@ -165,6 +166,44 @@ exports.submitAnswer = async (req, res, next) => {
       awardedPointsAmount: result.awardedPointsAmount,
       message: 'Correct answer! Points awarded.',
       user: result.user
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Deduct points when a user requests a puzzle hint
+exports.usePuzzleHint = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { hintIndex, amount } = req.body;
+
+    if (!id || id === 'undefined' || isNaN(id)) {
+      return res.status(400).json({ message: 'Invalid puzzle ID provided' });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({ message: 'Authentication required to use hints' });
+    }
+
+    const parsedHintIndex = Number(hintIndex);
+    if (!Number.isInteger(parsedHintIndex) || parsedHintIndex < 0) {
+      return res.status(400).json({ message: 'Invalid hint index' });
+    }
+
+    const deductionAmount = Math.max(0, Number(amount) || 0);
+    if (deductionAmount <= 0) {
+      return res.status(400).json({ message: 'Invalid hint deduction amount' });
+    }
+
+    const result = await userService.deductHintPoints(req.user.id, deductionAmount, id, 'puzzle', parsedHintIndex);
+
+    return res.status(200).json({
+      success: true,
+      deducted: result.deducted,
+      alreadyUsed: result.alreadyUsed,
+      totalScore: result.totalScore,
+      usedHints: result.usedHints,
     });
   } catch (err) {
     next(err);

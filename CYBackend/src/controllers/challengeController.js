@@ -2,6 +2,7 @@ const { Challenge } = require('../models');
 const challengeService = require('../services/challengeService');
 // التعديل هنا: بننادي على الفانكشن اللي هنستخدمها تحت
 const { getPointsForDifficulty } = require('../utils/challingesPoints');
+const userService = require('../services/userService');
 const aiService = require('../services/aiService');
 
 // 1. عرض كل التحديات
@@ -56,6 +57,44 @@ exports.submitAnswer = async (req, res, next) => {
     res.status(200).json({ success: true, ...result });
   } catch (error) { 
     next(error); 
+  }
+};
+
+// Deduct points when a user requests a challenge hint
+exports.useChallengeHint = async (req, res, next) => {
+  try {
+    const challengeId = req.params.id;
+    const { hintIndex, amount } = req.body;
+
+    if (!challengeId || challengeId === 'undefined' || isNaN(challengeId)) {
+      return res.status(400).json({ success: false, message: 'Invalid challenge ID provided' });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'Authentication required to use hints' });
+    }
+
+    const parsedHintIndex = Number(hintIndex);
+    if (!Number.isInteger(parsedHintIndex) || parsedHintIndex < 0) {
+      return res.status(400).json({ success: false, message: 'Invalid hint index' });
+    }
+
+    const deductionAmount = Math.max(0, Number(amount) || 0);
+    if (deductionAmount <= 0) {
+      return res.status(400).json({ success: false, message: 'Invalid hint deduction amount' });
+    }
+
+    const result = await userService.deductHintPoints(req.user.id, deductionAmount, challengeId, 'challenge', parsedHintIndex);
+
+    res.status(200).json({
+      success: true,
+      deducted: result.deducted,
+      alreadyUsed: result.alreadyUsed,
+      totalScore: result.totalScore,
+      usedHints: result.usedHints,
+    });
+  } catch (error) {
+    next(error);
   }
 };
 

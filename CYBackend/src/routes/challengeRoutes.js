@@ -6,6 +6,7 @@ const {
   getChallengeById, 
   submitAnswer,
   runCode,
+  useChallengeHint,
   updateChallenge,
   deleteChallenge,
   deleteAllChallenges
@@ -26,6 +27,7 @@ router.route('/:id')
 // المسار السحري لتسليم الحل واحتساب النقط
 // Apply submissionLimiter after optionalAuth so limiter keys by user when present
 router.post('/:id/submit', optionalAuth, submissionLimiter, submitAnswer);
+router.post('/:id/hint', optionalAuth, submissionLimiter, useChallengeHint);
 
 // تشغيل الكود
 // CRITICAL SECURITY: executeLimiter protects against code execution abuse, infinite loops, and CPU attacks

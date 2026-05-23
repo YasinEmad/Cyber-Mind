@@ -44,6 +44,12 @@ const Profile = sequelize.define('Profile', {
     defaultValue: [],
     comment: 'Array of objects with level info: { levelId, level, title, difficulty, pointsAwarded, completedAt }',
   },
+  usedHints: {
+    type: DataTypes.JSON,
+    allowNull: false,
+    defaultValue: { puzzles: {}, challenges: {} },
+    comment: 'Track per-item hint use by user to prevent duplicate deduction',
+  },
   totalScore: {
     type: DataTypes.INTEGER,
     defaultValue: 0,

@@ -7,7 +7,8 @@ const {
   updatePuzzle,
   deletePuzzle,
   deleteAllPuzzles,
-  submitAnswer
+  submitAnswer,
+  usePuzzleHint,
 } = require('../controllers/puzzleController');
 
 // التعديل هنا: بنستدعي optionalAuth من ملف auth الجديد
@@ -29,5 +30,6 @@ router.route('/:id')
 // تصحيح الإجابة
 // Apply submissionLimiter after optionalAuth so limiter keys by user when available
 router.route('/:id/submit').post(optionalAuth, submissionLimiter, submitAnswer);
+router.route('/:id/hint').post(optionalAuth, usePuzzleHint);
 
 module.exports = router;

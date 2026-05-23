@@ -98,3 +98,52 @@ exports.addPointsToUser = async (userId, points, itemId, itemType = 'puzzle') =>
 
   return { awarded: true, profile, user };
 };
+
+/**
+ * Deduct hint points from a user's profile when they request a hint.
+ * Prevents duplicate deduction for the same hint index on the same item.
+ */
+exports.deductHintPoints = async (userId, amount, itemId, itemType = 'puzzle', hintIndex) => {
+  const validItemType = itemType === 'challenge' ? 'challenges' : 'puzzles';
+  const itemIdNum = Number(itemId);
+
+  const user = await User.findByPk(userId);
+  if (!user) throw new Error('User not found');
+
+  const profile = await Profile.findOne({ where: { userId } });
+  if (!profile) throw new Error('Profile not found');
+
+  if (!profile.usedHints || typeof profile.usedHints !== 'object') {
+    profile.usedHints = { puzzles: {}, challenges: {} };
+  }
+
+  if (!profile.usedHints[validItemType] || typeof profile.usedHints[validItemType] !== 'object') {
+    profile.usedHints[validItemType] = {};
+  }
+
+  const usedForItem = Array.isArray(profile.usedHints[validItemType][itemIdNum])
+    ? profile.usedHints[validItemType][itemIdNum]
+    : [];
+
+  if (usedForItem.includes(hintIndex)) {
+    return {
+      deducted: false,
+      alreadyUsed: true,
+      totalScore: profile.totalScore,
+      usedHints: profile.usedHints,
+    };
+  }
+
+  usedForItem.push(hintIndex);
+  profile.usedHints[validItemType][itemIdNum] = usedForItem;
+  profile.totalScore = Math.max(0, (profile.totalScore || 0) - Math.max(0, Number(amount)));
+
+  await profile.save();
+
+  return {
+    deducted: true,
+    alreadyUsed: false,
+    totalScore: profile.totalScore,
+    usedHints: profile.usedHints,
+  };
+};

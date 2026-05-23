@@ -103,6 +103,15 @@ const connectDB = async () => {
           });
           console.log(`DB Migration: column 'solvedCTFLevels' added to ${profilesTable}`);
         }
+        if (!Object.prototype.hasOwnProperty.call(profilesDesc, 'usedHints')) {
+          console.log(`DB Migration: adding missing column 'usedHints' to ${profilesTable}`);
+          await qi.addColumn(profilesTable, 'usedHints', {
+            type: DataTypes.JSONB,
+            allowNull: false,
+            defaultValue: { puzzles: {}, challenges: {} },
+          });
+          console.log(`DB Migration: column 'usedHints' added to ${profilesTable}`);
+        }
       }
 
       // --- NEW: Migration for 'users' table ---
