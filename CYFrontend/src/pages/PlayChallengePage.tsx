@@ -3,11 +3,13 @@ import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
 import { fetchChallengeById, evaluateChallengeWithAI } from '@/redux/slices/challengeSlice';
+import { deductPoints, selectUser, updateScore } from '@/redux/slices/userSlice';
+import axios from '@/api/axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import Editor from '@monaco-editor/react';
 import { 
   Shield, Play, RotateCcw, Terminal, 
-  Beaker, CheckCircle, AlertTriangle, 
+  CheckCircle, AlertTriangle, 
   Zap, ChevronRight,
   XCircle, Lightbulb
 } from 'lucide-react';
@@ -22,8 +24,7 @@ const PlayChallengePage: React.FC = () => {
   const [code, setCode] = useState<string>("");
   const [output, setOutput] = useState<string>("");
   const [activeLeftTab, setActiveLeftTab] = useState<'challenge' | 'recommendations' | 'hints'>('challenge');
-  const [activeBottomTab, setActiveBottomTab] = useState<'output' | 'tests'>('output');
-  const [testResults, setTestResults] = useState<Array<{ passed: boolean; message: string; severity?: 'high' | 'medium' | 'low' }>>([]);
+  const [activeBottomTab, setActiveBottomTab] = useState<'output'>('output');
   const [isRunning, setIsRunning] = useState(false);
   const [revealedHints, setRevealedHints] = useState<Set<number>>(new Set());
 
@@ -31,9 +32,23 @@ const PlayChallengePage: React.FC = () => {
 
   const dispatch = useDispatch<AppDispatch>();
   const chFromStore = useSelector((state: RootState) => state.challenges.challenge);
+  const currentUser = useSelector(selectUser);
   const aiReviewStatus = useSelector((state: RootState) => state.challenges.aiReviewStatus);
   const aiReviewResult = useSelector((state: RootState) => state.challenges.aiReviewResult);
   const aiReviewError = useSelector((state: RootState) => state.challenges.error);
+  const [usedHints, setUsedHints] = useState<Set<number>>(new Set());
+
+  const getHintCost = (difficulty?: string) => {
+    switch (difficulty?.toLowerCase()) {
+      case 'medium':
+        return 4;
+      case 'hard':
+        return 8;
+      default:
+        return 2;
+    }
+  };
+
   useEffect(() => {
     if (challengeId) dispatch(fetchChallengeById(challengeId));
   }, [dispatch, challengeId]);
@@ -54,17 +69,44 @@ const PlayChallengePage: React.FC = () => {
   const handleReset = () => {
     setCode(chFromStore?.code || "");
     setOutput("");
-    setTestResults([]);
   }; 
 
-  const toggleHint = (hintId: number) => {
+  const toggleHint = async (hintId: number) => {
     const newHints = new Set(revealedHints);
+    const newUsedHints = new Set(usedHints);
+
     if (newHints.has(hintId)) {
       newHints.delete(hintId);
+      setRevealedHints(newHints);
+      setUsedHints(newUsedHints);
+      return;
+    }
+
+    // Reveal flow for new hint
+    if (!newUsedHints.has(hintId) && currentUser) {
+      const cost = getHintCost(chFromStore?.level);
+      try {
+        const res = await axios.post(`/challenges/${challengeId}/hint`, { hintIndex: hintId, amount: cost });
+        if (res.data?.success) {
+          if (typeof res.data.totalScore === 'number') {
+            dispatch(updateScore(res.data.totalScore));
+          }
+          newUsedHints.add(hintId);
+          newHints.add(hintId);
+        }
+      } catch (e) {
+        // On error, fall back to local reveal without deduction
+        newUsedHints.add(hintId);
+        newHints.add(hintId);
+      }
     } else {
+      // anonymous or already-used: reveal locally
+      newUsedHints.add(hintId);
       newHints.add(hintId);
     }
+
     setRevealedHints(newHints);
+    setUsedHints(newUsedHints);
   };
 
   const handleRun = () => {
@@ -90,46 +132,7 @@ const PlayChallengePage: React.FC = () => {
     }, 1000);
   };
 
-  const handleTest = () => {
-    setIsRunning(true);
-    setActiveBottomTab('tests');
-    setTestResults([]);
-    
-    setTimeout(() => {
-      const updatedCode = code.toLowerCase();
-      const tests = [
-        { 
-          check: !updatedCode.includes('${username}') && !updatedCode.includes('${password}'),
-          message: "SQL Injection Prevention",
-          severity: "high" as const,
-        },
-        {
-          check: updatedCode.includes('bcrypt.hash') || updatedCode.includes('bcrypt.compare'),
-          message: "Secure Password Hashing",
-          severity: "high" as const,
-        },
-        {
-          check: updatedCode.includes('jwt.sign') && !updatedCode.includes('ssn'),
-          message: "Token Sanitization",
-          severity: "high" as const,
-        },
-        {
-          check: updatedCode.includes('try') && !updatedCode.includes('console.log(error)'),
-          message: "Safe Error Handling",
-          severity: "medium" as const,
-        }
-      ];
-
-      const results = tests.map(test => ({
-        passed: test.check,
-        message: test.message,
-        severity: test.severity
-      }));
-
-      setTestResults(results);
-      setIsRunning(false);
-    }, 1200);
-  };
+  // Test runner removed per request (dummy security-check messages eliminated)
 
   return (
     <div className="flex flex-col h-screen w-screen bg-black text-gray-300 font-sans overflow-hidden">
@@ -146,6 +149,11 @@ const PlayChallengePage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2 rounded-full border border-gray-800 bg-gray-900/80 px-3 py-1 text-xs text-gray-300">
+            <span className="font-semibold text-emerald-300">Score</span>
+            <span className="text-white">{currentUser?.profile?.totalScore ?? 0}</span>
+          </div>
+
           <button 
             onClick={handleReset}
             className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-lg transition-all hover:border hover:border-gray-700"
@@ -165,14 +173,7 @@ const PlayChallengePage: React.FC = () => {
             Run
           </button>
 
-          <button
-            onClick={handleTest}
-            disabled={isRunning}
-            className="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-red-700 to-orange-700 hover:from-red-600 hover:to-orange-600 text-white text-sm font-bold rounded-lg shadow-xl shadow-red-900/40 transition-all disabled:opacity-50 hover:scale-[1.02]"
-          >
-            <Beaker size={16} className={isRunning ? "animate-spin" : ""} />
-            Run Tests
-          </button>
+          {/* Run Tests button removed */}
 
           <button
             onClick={() => {
@@ -392,17 +393,7 @@ const PlayChallengePage: React.FC = () => {
               >
                 <Terminal size={12} /> Console Output
               </button>
-              <button
-                onClick={() => setActiveBottomTab('tests')}
-                className={`px-4 h-full text-xs font-medium flex items-center gap-2 border-r border-gray-800 transition-colors ${
-                  activeBottomTab === 'tests' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:text-gray-300'
-                }`}
-              >
-                <CheckCircle size={12} /> Test Results
-                {testResults.length > 0 && (
-                  <span className="bg-gray-800 text-gray-500 px-1.5 rounded-full text-[10px]">{testResults.length}</span>
-                )}
-              </button>
+              {/* Test Results tab removed; only Console Output is shown */}
             </div>
 
             {/* Console Content */}
@@ -417,38 +408,7 @@ const PlayChallengePage: React.FC = () => {
                 </div>
               )}
 
-              {activeBottomTab === 'tests' && (
-                <div className="space-y-2">
-                  {testResults.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-700">
-                      <div className="p-3 bg-black rounded-full mb-2 border border-gray-800">
-                        <Beaker size={24} className="opacity-30" />
-                      </div>
-                      <p className="text-sm">No tests run yet.</p>
-                    </div>
-                  ) : (
-                    testResults.map((result, i) => (
-                      <div key={i} className="flex items-center gap-3 p-3 hover:bg-black rounded-lg border border-gray-800 group transition-all">
-                        <div className="p-1.5 rounded border border-gray-800 bg-black">
-                          {result.passed ? (
-                            <CheckCircle size={14} className="text-green-500 group-hover:text-green-400 transition-colors" />
-                          ) : (
-                            <XCircle size={14} className="text-red-500 group-hover:text-red-400 transition-colors" />
-                          )}
-                        </div>
-                        <span className={`flex-1 text-sm ${result.passed ? 'text-gray-300' : 'text-red-300'}`}>
-                          {result.message}
-                        </span>
-                        {result.severity && !result.passed && (
-                          <span className="text-[10px] uppercase font-black bg-gradient-to-r from-red-900/20 to-orange-900/20 text-red-400 px-2 py-0.5 rounded border border-red-900/30">
-                            {result.severity}
-                          </span>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
+              {/* Test results removed; only console output remains */}
             </div>
           </div>
 

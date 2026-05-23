@@ -7,9 +7,8 @@ import { AlertCircle, Loader2 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/redux/store';
-import { selectUser } from '@/redux/slices/userSlice';
+import { selectUser, setUser, deductPoints, updateScore } from '@/redux/slices/userSlice';
 import { fetchPuzzleById } from '@/redux/slices/puzzleSlice';
-import { setUser } from '@/redux/slices/userSlice';
 import axios from '@/api/axios';
 import { getPointsForLevel } from '@/lib/points';
 
@@ -20,6 +19,14 @@ const SolvePuzzlePage: React.FC = () => {
   const currentUser = useSelector(selectUser);
 
   const [revealedHintsCount, setRevealedHintsCount] = useState(0);
+  const [hintMessage, setHintMessage] = useState<string | null>(null);
+
+  const getHintCost = (level?: number) => {
+    if (!level) return 2;
+    if (level <= 3) return 2;
+    if (level <= 6) return 4;
+    return 8;
+  };
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState<'idle' | 'correct' | 'incorrect'>('idle');
   const [submissionMessage, setSubmissionMessage] = useState<string | null>(null);
@@ -100,9 +107,34 @@ const SolvePuzzlePage: React.FC = () => {
     return () => clearInterval(timer);
   }, [startTime, feedback]);
 
-  const handleRevealHint = () => {
+  const handleRevealHint = async () => {
     if (!puzzle || revealedHintsCount >= puzzle.hints.length) return;
-    setRevealedHintsCount((prev) => prev + 1);
+    if (!currentUser) {
+      setHintMessage('Please log in to use hints and deduct points securely.');
+      return;
+    }
+
+    const nextHintIndex = revealedHintsCount;
+    const amount = getHintCost(puzzle.level);
+
+    try {
+      const response = await axios.post(`/puzzles/${puzzleId}/hint`, {
+        hintIndex: nextHintIndex,
+        amount,
+      });
+
+      if (response.data?.success) {
+        setRevealedHintsCount((prev) => prev + 1);
+        if (typeof response.data.totalScore === 'number') {
+          dispatch(updateScore(response.data.totalScore));
+        }
+        setHintMessage(null);
+      } else {
+        setHintMessage(response.data?.message || 'Unable to reveal hint.');
+      }
+    } catch (err: any) {
+      setHintMessage(err?.response?.data?.message ?? 'Unable to use hint.');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -267,9 +299,11 @@ const SolvePuzzlePage: React.FC = () => {
           handleSubmit={handleSubmit}
           submissionMessage={submissionMessage}
           awardedPointsAmount={awardedPointsAmount}
+          currentScore={currentUser?.profile?.totalScore ?? 0}
           visibleHints={visibleHints}
           revealedHintsCount={revealedHintsCount}
           handleRevealHint={handleRevealHint}
+          hintMessage={hintMessage}
           isFocused={isFocused}
           setIsFocused={setIsFocused}
         />

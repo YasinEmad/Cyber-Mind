@@ -15,6 +15,7 @@ interface Props {
   feedback: 'idle' | 'correct' | 'incorrect';
   elapsedTime: number;
   formatTime: (ms: number) => string;
+  currentScore?: number;
 }
 
 const DIFFICULTY_MAP: Record<string, { label: string; color: string; dot: string }> = {
@@ -60,8 +61,17 @@ const SolvePuzzleLeft: React.FC<Props> = ({
   feedback,
   elapsedTime,
   formatTime,
+  currentScore,
 }) => {
   const levelPoints = getPointsForLevel(puzzle?.level);
+  const getHintCost = (level?: number) => {
+    if (!level) return 2;
+    if (level <= 3) return 2;
+    if (level <= 6) return 4;
+    return 8;
+  };
+  const totalHintDeduction = Math.max(0, revealedHintsCount) * getHintCost(puzzle?.level);
+  const effectiveReward = Math.max(0, (levelPoints || 0) - totalHintDeduction);
   const difficulty = getDifficulty(puzzle?.level || 1);
   const loadPct = Math.round((displayedScenario.length / (puzzle?.scenario?.length || 1)) * 100);
 
@@ -69,7 +79,7 @@ const SolvePuzzleLeft: React.FC<Props> = ({
     correct: {
       icon: CheckCircle2,
       text: 'Challenge solved',
-      className: 'text-red-400 bg-gradient-to-r from-red-950/40 to-red-900/20 border-red-800/50 shadow-lg shadow-red-900/30',
+      className: 'text-emerald-400 bg-gradient-to-r from-emerald-900/30 to-emerald-700/12 border-emerald-800/40 shadow-lg shadow-emerald-900/18',
     },
     incorrect: {
       icon: XCircle,
@@ -109,11 +119,18 @@ const SolvePuzzleLeft: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <span className={`w-1.5 h-1.5 rounded-full ${difficulty.dot}`} />
-          <span className={`text-[11px] font-semibold tracking-wide ${difficulty.color}`}>
-            {difficulty.label}
-          </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <span className={`w-1.5 h-1.5 rounded-full ${difficulty.dot}`} />
+            <span className={`text-[11px] font-semibold tracking-wide ${difficulty.color}`}>
+              {difficulty.label}
+            </span>
+          </div>
+          {typeof currentScore === 'number' && (
+            <div className="rounded-full border border-emerald-500/25 bg-emerald-500/5 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-200">
+              Score {currentScore}
+            </div>
+          )}
         </div>
       </motion.div>
 
@@ -204,8 +221,8 @@ const SolvePuzzleLeft: React.FC<Props> = ({
           <StatCard
             icon={Award}
             label="Reward"
-            value={`+${levelPoints}`}
-            sub="points on solve"
+            value={`+${effectiveReward}`}
+            sub={totalHintDeduction > 0 ? `${levelPoints} base • -${totalHintDeduction} hints` : 'points on solve'}
           />
         </motion.div>
 

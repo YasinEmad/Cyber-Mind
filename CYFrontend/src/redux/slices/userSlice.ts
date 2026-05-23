@@ -114,6 +114,17 @@ const userSlice = createSlice({
         }
       }
     },
+    deductPoints: (state, action: PayloadAction<number>) => {
+      if (state.user && state.user.profile) {
+        const deduction = Math.max(0, action.payload);
+        state.user.profile.totalScore = Math.max(0, (state.user.profile.totalScore || 0) - deduction);
+      }
+    },
+    updateScore: (state, action: PayloadAction<number>) => {
+      if (state.user && state.user.profile) {
+        state.user.profile.totalScore = Math.max(0, action.payload);
+      }
+    },
     addCompletedLevel: (state, action: PayloadAction<number>) => {
       if (state.user && !state.user.solvedChallenges) {
         state.user.solvedChallenges = [];
@@ -126,6 +137,7 @@ const userSlice = createSlice({
 });
 
 export const { setUser, clearUser, setLoading, updateUserProfileFromCTF, addCompletedLevel } = userSlice.actions;
+export const { updateScore } = userSlice.actions;
 
 export const selectUser = (state: RootState) => state.user.user;
 export const selectIsAuthenticated = (state: RootState) => state.user.isAuthenticated;

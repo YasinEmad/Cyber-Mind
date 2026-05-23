@@ -13,6 +13,7 @@ interface Props {
   visibleHints: string[];
   revealedHintsCount: number;
   handleRevealHint: () => void;
+  hintMessage?: string | null;
   isFocused: boolean;
   setIsFocused: (focused: boolean) => void;
 }
@@ -32,6 +33,7 @@ const SolvePuzzleRight: React.FC<Props> = ({
   visibleHints,
   revealedHintsCount,
   handleRevealHint,
+  hintMessage,
   isFocused,
   setIsFocused,
 }) => {
@@ -126,18 +128,18 @@ const SolvePuzzleRight: React.FC<Props> = ({
             <div className={`
               rounded-2xl border p-4 flex gap-3 shadow-lg
               ${feedback === 'correct'
-                ? 'bg-gradient-to-r from-red-950/40 to-red-900/20 border-red-800/50 shadow-red-900/30'
-                : 'bg-gradient-to-r from-red-950/50 to-red-900/30 border-red-800/60 shadow-red-900/40'}
+                  ? 'bg-gradient-to-r from-emerald-900/30 to-emerald-700/12 border-emerald-800/40 shadow-emerald-900/18'
+                  : 'bg-gradient-to-r from-red-950/50 to-red-900/30 border-red-800/60 shadow-red-900/40'}
             `}>
               <div className="flex-shrink-0 mt-0.5">
                 {feedback === 'correct'
-                  ? <CheckCircle2 size={16} className="text-red-500" />
-                  : <XCircle size={16} className="text-red-600" />
+                    ? <CheckCircle2 size={16} className="text-emerald-500" />
+                    : <XCircle size={16} className="text-red-600" />
                 }
               </div>
               <div className="flex-1 min-w-0">
                 <p className={`text-[13px] font-semibold mb-1 ${
-                  feedback === 'correct' ? 'text-red-400' : 'text-red-300'
+                    feedback === 'correct' ? 'text-emerald-400' : 'text-red-300'
                 }`}>
                   {feedback === 'correct' ? 'Correct!' : 'Not quite'}
                 </p>
@@ -248,6 +250,9 @@ const SolvePuzzleRight: React.FC<Props> = ({
               : `Reveal hint · ${hintsLeft} left`}
           </span>
         </button>
+        {hintMessage && (
+          <p className="mt-3 text-[12px] text-orange-300 px-1">{hintMessage}</p>
+        )}
       </motion.div>
     </div>
   );
