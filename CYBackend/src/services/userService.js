@@ -71,16 +71,25 @@ exports.addPointsToUser = async (userId, points, itemId, itemType = 'puzzle') =>
 
   // Coerce itemId to number to match stored IDs
   const itemIdNum = Number(itemId);
+  console.log(`[POINTS] Adding points for User ${userId}: points=${points}, ${itemType} ID=${itemIdNum}, solvedField=${solvedField}`);
 
   // 2. جلب المستخدم والبروفايل
   const user = await User.findByPk(userId);
-  if (!user) throw new Error('User not found');
+  if (!user) {
+    console.error(`[POINTS ERROR] User ${userId} not found`);
+    throw new Error('User not found');
+  }
 
   const profile = await Profile.findOne({ where: { userId } });
-  if (!profile) throw new Error('Profile not found');
+  if (!profile) {
+    console.error(`[POINTS ERROR] Profile for User ${userId} not found`);
+    throw new Error('Profile not found');
+  }
 
   // 3. التحقق من عدم حل هذا التحدي من قبل (من Profile)
+  console.log(`[POINTS DEBUG] Current ${solvedField}:`, profile[solvedField]);
   if (profile[solvedField].includes(itemIdNum)) {
+    console.log(`[POINTS] User ${userId} already solved ${itemType} #${itemIdNum}`);
     return { awarded: false, alreadySolved: true };
   }
 

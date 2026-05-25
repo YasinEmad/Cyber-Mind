@@ -1,3 +1,5 @@
+const axios = require('axios');
+
 exports.generateIncorrectFeedback = async (challengeData, userAnswer) => {
   try {
     const aiResult = await generateFeedbackWithAI(challengeData, userAnswer);
@@ -5,7 +7,7 @@ exports.generateIncorrectFeedback = async (challengeData, userAnswer) => {
     if (typeof aiResult === 'string' && aiResult.trim()) return aiResult.trim();
     return getFallbackIncorrectFeedback(challengeData);
   } catch (error) {
-    console.error("AI feedback generation failed:", error);
+    console.error('AI feedback generation failed:', error);
     return getFallbackIncorrectFeedback(challengeData);
   }
 };
@@ -15,11 +17,11 @@ exports.evaluateSecurityFix = async (challengeData, userCode) => {
     const aiResult = await evaluateWithAI(challengeData, userCode);
     return aiResult;
   } catch (error) {
-    console.error("AI evaluation failed:", error);
+    console.error('AI evaluation failed:', error);
 
     return {
       fixed: false,
-      feedback: "Evaluation service is temporarily unavailable. Please try again in a moment."
+      feedback: 'AI is not ready right now. Please come back later.'
     };
   }
 };
@@ -31,12 +33,11 @@ function getFallbackIncorrectFeedback(challengeData) {
   }
 
   if (challengeData.description) {
-    return `Review the challenge requirements and try again.`;
+    return 'Review the challenge requirements and try again.';
   }
 
   return 'Incorrect answer. Try again!';
 }
-
 
 // Extract relevant code lines to reduce token count
 function extractRelevantCode(code) {
@@ -55,136 +56,104 @@ function extractRelevantCode(code) {
 }
 
 async function evaluateWithAI(challengeData, userCode) {
-  // Extract relevant code sections only
   const initialCodeRelevant = extractRelevantCode(challengeData.initialCode || '');
   const userCodeRelevant = extractRelevantCode(userCode || '');
 
   const prompt = `Initial Code:\n${initialCodeRelevant}\n\nUser Code:\n${userCodeRelevant}\n\nVulnerability: ${challengeData.description || 'Not provided'}`;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{
-          text: "You are a security fix evaluator. Analyze code changes and determine if a vulnerability is fixed. Return ONLY valid JSON with 'fixed' (boolean) and 'feedback' (max 15 words) fields. No explanations outside JSON."
-        }]
+  const requestBody = {
+    model: 'openai/gpt-4.1-mini',
+    max_tokens: 80,
+    temperature: 0,
+    messages: [
+      {
+        role: 'system',
+        content: 'You are a strict JSON API.\n\nRules:\n- Return ONLY valid minified JSON\n- No markdown\n- No explanations\n- No code blocks\n- No extra text\n- Response format must always be:\n{"fixed":true,"feedback":"..."}\nor\n{"fixed":false,"feedback":"..."}\n\nKeep feedback very short.'
       },
-      contents: [
-        {
-          parts: [{ text: prompt }]
-        }
-      ],
-      generationConfig: {
-        responseMimeType: "application/json",
-        maxOutputTokens: 100
+      {
+        role: 'user',
+        content: `Return only valid JSON with keys "fixed" (boolean) and "feedback" (string). ${prompt}`
       }
-    })
-  });
+    ]
+  };
 
-  const data = await response.json();
-
-  console.log("GEMINI RAW RESPONSE");
-  console.log(JSON.stringify(data, null, 2));
-
-  if (!response.ok || data.error) {
-    console.error("STATUS:", response.status);
-    console.error("API ERROR:", data.error);
-
-    const errorMessage = data.error?.message || response.statusText;
-
-    if (data.error?.code === 429) {
-      throw new Error("Quota exceeded");
-    }
-
-    throw new Error(`API Error: ${errorMessage}`);
-  }
-
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-  console.log("EXTRACTED TEXT");
-  console.log(text);
-
-  if (!text) {
-    throw new Error("Empty response from Gemini");
-  }
-
-  return parseAIResponse(text);
+  return sendOpenRouterRequest(requestBody);
 }
 
 async function generateFeedbackWithAI(challengeData, userAnswer) {
-  const prompt = `Challenge: ${challengeData.title}
-Description: ${challengeData.description}
-Hints: ${challengeData.hints?.join(', ') || 'None'}
-User Answer: ${userAnswer}
+  const prompt = `Challenge: ${challengeData.title}\nDescription: ${challengeData.description}\nHints: ${challengeData.hints?.join(', ') || 'None'}\nUser Answer: ${userAnswer}`;
 
-Generate a short, helpful feedback message (max 20 words) for why this answer is incorrect and a hint to guide the user.`;
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{
-          text: "You are a helpful tutor for coding challenges. Provide short, encouraging feedback for incorrect answers. Return ONLY valid JSON with 'feedback' field containing a string (max 20 words)."
-        }]
+  const requestBody = {
+    model: 'openai/gpt-4.1-mini',
+    max_tokens: 80,
+    temperature: 0,
+    messages: [
+      {
+        role: 'system',
+        content: 'You are a strict JSON API.\n\nRules:\n- Return ONLY valid minified JSON\n- No markdown\n- No explanations\n- No code blocks\n- No extra text\n- Response format must always be:\n{"fixed":true,"feedback":"..."}\nor\n{"fixed":false,"feedback":"..."}\n\nKeep feedback very short.'
       },
-      contents: [
-        {
-          parts: [{ text: prompt }]
-        }
-      ],
-      generationConfig: {
-        responseMimeType: "application/json",
-        maxOutputTokens: 50
+      {
+        role: 'user',
+        content: `Return only valid JSON with keys "fixed" (boolean) and "feedback" (string). ${prompt}`
       }
-    })
-  });
+    ]
+  };
 
-  const data = await response.json();
-
-  if (!response.ok || data.error) {
-    throw new Error(`API Error: ${data.error?.message || response.statusText}`);
-  }
-
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-  if (!text) {
-    throw new Error("Empty response from Gemini");
-  }
-
-  return parseAIResponse(text);
+  return sendOpenRouterRequest(requestBody);
 }
 
-function parseAIResponse(text) {
-  const trimmed = text.trim();
-  if (!trimmed) {
-    throw new Error("Empty text from AI response");
+async function sendOpenRouterRequest(body) {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error('Missing OPENROUTER_API_KEY environment variable');
+  }
+
+  const url = 'https://openrouter.ai/api/v1/chat/completions';
+
+  const response = await axios.post(url, body, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    timeout: 15000
+  });
+
+  const content = String(response.data?.choices?.[0]?.message?.content || '').trim();
+  if (!content) {
+    console.error('Unexpected OpenRouter response:', JSON.stringify(response?.data, null, 2));
+    return { fixed: false, feedback: 'AI response parsing failed' };
   }
 
   try {
-    const parsed = JSON.parse(trimmed);
-    return parsed;
-  } catch (firstErr) {
-    const jsonMatch = trimmed.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      try {
-        return JSON.parse(jsonMatch[0]);
-      } catch (secondErr) {
-        console.error("JSON parsing failed on extracted substring", secondErr);
-      }
-    }
+    const parsed = JSON.parse(content);
 
-    // If the AI returned a plain text message instead of JSON, return fallback response.
-    return { fixed: false, feedback: trimmed };
+    const candidate = parsed.fixed ?? parsed.success ?? parsed.result ?? parsed.status;
+
+    const isTruthy = (v) => {
+      if (v === true || v === 1) return true;
+      if (typeof v === 'string') {
+        const s = v.trim().toLowerCase();
+        return ['true', 'yes', 'y', '1', 'ok', 'fixed', 'correct'].includes(s);
+      }
+      return false;
+    };
+
+    const fixed = isTruthy(candidate);
+
+    const feedback = (typeof parsed.feedback === 'string' && parsed.feedback.trim())
+      ? parsed.feedback.trim()
+      : (typeof parsed.message === 'string' && parsed.message.trim())
+        ? parsed.message.trim()
+        : 'AI response parsing failed';
+
+    return { fixed, feedback };
+  } catch (error) {
+    console.error('Failed to parse AI JSON response:', content);
+
+    return {
+      fixed: false,
+      feedback: 'AI response parsing failed'
+    };
   }
 }
 

@@ -32,6 +32,7 @@ interface ChallengeState {
   challenge: Challenge | null
   status: 'idle' | 'loading' | 'succeeded' | 'failed'
   submitStatus: 'idle' | 'loading' | 'succeeded' | 'failed' // حالة خاصة بالتسليم
+  submitResult: SubmitResponse | null
   aiReviewStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
   aiReviewResult: any | null
   error: string | null
@@ -42,6 +43,7 @@ const initialState: ChallengeState = {
   challenge: null,
   status: 'idle',
   submitStatus: 'idle',
+  submitResult: null,
   aiReviewStatus: 'idle',
   aiReviewResult: null,
   error: null
@@ -202,11 +204,12 @@ const slice = createSlice({
       })
       .addCase(submitChallenge.fulfilled, (state, action) => {
         state.submitStatus = 'succeeded'
-        // هنا ممكن تطلع Alert لليوزر وتقوله "مبروك أخدت X نقط"
+        state.submitResult = action.payload
         console.log('Submit Result:', action.payload)
       })
       .addCase(submitChallenge.rejected, (state, action) => {
         state.submitStatus = 'failed'
+        state.submitResult = null
         state.error = ((action.payload as string) || action.error.message) ?? 'Failed to submit challenge'
       })
 

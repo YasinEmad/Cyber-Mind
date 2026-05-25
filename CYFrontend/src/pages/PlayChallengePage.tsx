@@ -2,16 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
-import { fetchChallengeById, evaluateChallengeWithAI } from '@/redux/slices/challengeSlice';
-import { deductPoints, selectUser, updateScore } from '@/redux/slices/userSlice';
+import { fetchChallengeById, evaluateChallengeWithAI, submitChallenge } from '@/redux/slices/challengeSlice';
+import { selectUser, updateScore } from '@/redux/slices/userSlice';
 import axios from '@/api/axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import Editor from '@monaco-editor/react';
 import { 
   Shield, Play, RotateCcw, Terminal, 
   CheckCircle, AlertTriangle, 
-  Zap, ChevronRight,
-  XCircle, Lightbulb
+  Zap,
+  XCircle, Lightbulb, Send
 } from 'lucide-react';
 
 // NOTE: In a real app, you might keep PageWrapper if it handles global auth checks,
@@ -23,12 +23,9 @@ const PlayChallengePage: React.FC = () => {
   // --- State Management ---
   const [code, setCode] = useState<string>("");
   const [output, setOutput] = useState<string>("");
-  const [activeLeftTab, setActiveLeftTab] = useState<'challenge' | 'recommendations' | 'hints'>('challenge');
+  const [activeLeftTab, setActiveLeftTab] = useState<'challenge' | 'recommendations'>('challenge');
   const [activeBottomTab, setActiveBottomTab] = useState<'output'>('output');
   const [isRunning, setIsRunning] = useState(false);
-  const [revealedHints, setRevealedHints] = useState<Set<number>>(new Set());
-
-  const [hintsList, setHintsList] = useState<Array<{id:number; title:string; content:string}>>([]);
 
   const dispatch = useDispatch<AppDispatch>();
   const chFromStore = useSelector((state: RootState) => state.challenges.challenge);
@@ -36,18 +33,8 @@ const PlayChallengePage: React.FC = () => {
   const aiReviewStatus = useSelector((state: RootState) => state.challenges.aiReviewStatus);
   const aiReviewResult = useSelector((state: RootState) => state.challenges.aiReviewResult);
   const aiReviewError = useSelector((state: RootState) => state.challenges.error);
-  const [usedHints, setUsedHints] = useState<Set<number>>(new Set());
-
-  const getHintCost = (difficulty?: string) => {
-    switch (difficulty?.toLowerCase()) {
-      case 'medium':
-        return 4;
-      case 'hard':
-        return 8;
-      default:
-        return 2;
-    }
-  };
+  const submitStatus = useSelector((state: RootState) => state.challenges.submitStatus);
+  const submitResult = useSelector((state: RootState) => state.challenges.submitResult);
 
   useEffect(() => {
     if (challengeId) dispatch(fetchChallengeById(challengeId));
@@ -56,11 +43,6 @@ const PlayChallengePage: React.FC = () => {
   useEffect(() => {
     if (!chFromStore) return;
     if (chFromStore.code) setCode(chFromStore.code);
-    if (Array.isArray(chFromStore.hints) && chFromStore.hints.length > 0) {
-      setHintsList(chFromStore.hints.map((h: string, idx: number) => ({ id: idx, title: `Hint ${idx + 1}`, content: h })));
-    } else {
-      setHintsList([]);
-    }
   }, [chFromStore]);
   const handleEditorChange = (value: string | undefined) => {
     if (value) setCode(value);
@@ -70,44 +52,6 @@ const PlayChallengePage: React.FC = () => {
     setCode(chFromStore?.code || "");
     setOutput("");
   }; 
-
-  const toggleHint = async (hintId: number) => {
-    const newHints = new Set(revealedHints);
-    const newUsedHints = new Set(usedHints);
-
-    if (newHints.has(hintId)) {
-      newHints.delete(hintId);
-      setRevealedHints(newHints);
-      setUsedHints(newUsedHints);
-      return;
-    }
-
-    // Reveal flow for new hint
-    if (!newUsedHints.has(hintId) && currentUser) {
-      const cost = getHintCost(chFromStore?.level);
-      try {
-        const res = await axios.post(`/challenges/${challengeId}/hint`, { hintIndex: hintId, amount: cost });
-        if (res.data?.success) {
-          if (typeof res.data.totalScore === 'number') {
-            dispatch(updateScore(res.data.totalScore));
-          }
-          newUsedHints.add(hintId);
-          newHints.add(hintId);
-        }
-      } catch (e) {
-        // On error, fall back to local reveal without deduction
-        newUsedHints.add(hintId);
-        newHints.add(hintId);
-      }
-    } else {
-      // anonymous or already-used: reveal locally
-      newUsedHints.add(hintId);
-      newHints.add(hintId);
-    }
-
-    setRevealedHints(newHints);
-    setUsedHints(newUsedHints);
-  };
 
   const handleRun = () => {
     setIsRunning(true);
@@ -182,10 +126,23 @@ const PlayChallengePage: React.FC = () => {
             }}
             disabled={isRunning || aiReviewStatus === 'loading'}
             className="flex items-center gap-2 px-4 py-1.5 bg-blue-700 hover:bg-blue-600 text-white text-sm font-medium rounded-lg border border-blue-800 transition-all disabled:opacity-50"
-            title="AI Review: ask backend to evaluate your fix without awarding points"
+            title="AI Review: evaluate your fix without awarding points"
           >
             <Lightbulb size={16} className={aiReviewStatus === 'loading' ? 'animate-pulse' : ''} />
             AI Review
+          </button>
+
+          <button
+            onClick={() => {
+              if (!challengeId) return;
+              dispatch(submitChallenge({ challengeId, answer: code }));
+            }}
+            disabled={isRunning || submitStatus === 'loading'}
+            className="flex items-center gap-2 px-4 py-1.5 bg-green-700 hover:bg-green-600 text-white text-sm font-medium rounded-lg border border-green-800 transition-all disabled:opacity-50"
+            title="Submit your solution and earn points"
+          >
+            <Send size={16} className={submitStatus === 'loading' ? 'animate-pulse' : ''} />
+            Submit & Earn
           </button>
         </div>
       </header>
@@ -223,16 +180,6 @@ const PlayChallengePage: React.FC = () => {
               }`}
             >
               <Zap size={14} /> Recommendations
-            </button>
-            <button
-              onClick={() => setActiveLeftTab('hints')}
-              className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition-colors ${
-                activeLeftTab === 'hints' 
-                  ? 'border-red-600 text-white bg-black' 
-                  : 'border-transparent text-gray-600 hover:text-gray-300 hover:bg-black'
-              }`}
-            >
-              <Lightbulb size={14} /> Hints
             </button>
           </div>
 
@@ -273,52 +220,7 @@ const PlayChallengePage: React.FC = () => {
                     </div>
                   )}
                 </motion.div>
-              ) : (
-                <motion.div 
-                  key="hints"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="space-y-3"
-                >
-                  <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-4">Available Hints</h3>
-                  {hintsList.map((hint) => (
-                    <motion.div
-                      key={hint.id}
-                      className="bg-black border border-gray-800 rounded-lg overflow-hidden hover:border-red-900/50 transition-all duration-300 group hover:shadow-lg hover:shadow-red-900/10"
-                      whileHover={{ scale: 1.02 }}
-                    >
-                      <button
-                        onClick={() => toggleHint(hint.id)}
-                        className="w-full text-left p-4 flex items-center justify-between hover:bg-black/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-1.5 bg-black rounded border border-gray-800">
-                            <Lightbulb size={14} className="text-orange-500 group-hover:text-orange-400 transition-colors" />
-                          </div>
-                          <span className="font-semibold text-gray-300 text-sm group-hover:text-white transition-colors">{hint.title}</span>
-                        </div>
-                        <div className="p-1 bg-black rounded border border-gray-800">
-                          <ChevronRight 
-                            size={14} 
-                            className={`text-gray-600 group-hover:text-gray-400 transition-all ${revealedHints.has(hint.id) ? 'rotate-90 text-orange-500' : ''}`}
-                          />
-                        </div>
-                      </button>
-                      {revealedHints.has(hint.id) && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="border-t border-gray-800 px-4 pb-4 pt-2 bg-black"
-                        >
-                          <p className="text-xs text-gray-500 leading-relaxed">{hint.content}</p>
-                        </motion.div>
-                      )}
-                    </motion.div>
-                  ))}
-                </motion.div>
-              )}
+              ) : null}
             </AnimatePresence>
           </div>
         </div>
@@ -378,6 +280,42 @@ const PlayChallengePage: React.FC = () => {
                 <span className="font-medium">AI Review failed</span>
               </div>
               <p className="mt-2 text-sm">{aiReviewError || 'Evaluation service is temporarily unavailable. Please try again in a moment.'}</p>
+            </div>
+          )}
+
+          {submitStatus === 'loading' && (
+            <div className="border-t border-gray-800 px-4 py-3 bg-gray-900 text-sm text-gray-400">Submitting your solution&hellip;</div>
+          )}
+
+          {submitResult && (
+            <div className={`border-t border-gray-800 px-4 py-3 text-sm text-gray-200 ${submitResult.success ? 'bg-green-900/20' : 'bg-red-900/20'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {submitResult.success ? (
+                    <CheckCircle size={16} className="text-green-400" />
+                  ) : (
+                    <XCircle size={16} className="text-red-400" />
+                  )}
+                  <span className="font-medium">Submission Result</span>
+                </div>
+                {submitResult.awarded && (
+                  <div className="text-xs font-bold text-green-400">+{submitResult.points} points!</div>
+                )}
+              </div>
+              <p className="mt-2 text-sm text-gray-300">{submitResult.message}</p>
+              {submitResult.alreadySolved && (
+                <p className="mt-1 text-xs text-yellow-400">You already solved this challenge before.</p>
+              )}
+            </div>
+          )}
+
+          {submitStatus === 'failed' && (
+            <div className="border-t border-gray-800 px-4 py-3 bg-red-900 text-sm text-red-200">
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={16} className="text-yellow-300" />
+                <span className="font-medium">Submission failed</span>
+              </div>
+              <p className="mt-2 text-sm">{aiReviewError || 'Failed to submit your solution. Please try again.'}</p>
             </div>
           )}
 

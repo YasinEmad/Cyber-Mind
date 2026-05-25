@@ -23,9 +23,19 @@ exports.submitChallengeAnswer = async (challengeId, user, userAnswer) => {
     isCorrect = evaluation.fixed;
     feedback = evaluation.feedback;
     
-    // Set points based on difficulty for security challenges
+    // Prefer explicit `challenge.points` if set (for seeded/existing challenges),
+    // otherwise fall back to level mapping, with a minimum default of 25 points.
     const levelPoints = { easy: 10, medium: 20, hard: 30 };
-    pointsToAward = isCorrect ? (levelPoints[String(challenge.level).toLowerCase()] || 0) : 0;
+    const pointsFromLevel = levelPoints[String(challenge.level).toLowerCase()] || 0;
+    const explicitPoints = Number(challenge.points) || 0;
+    let computedPoints = explicitPoints > 0 ? explicitPoints : pointsFromLevel;
+    // Ensure minimum points for AI-evaluated challenges if none specified
+    if (computedPoints === 0) {
+      computedPoints = 25;
+      console.log('[CHALLENGE SERVICE] No points configured, using default: 25');
+    }
+    pointsToAward = isCorrect ? computedPoints : 0;
+    console.log(`[CHALLENGE SERVICE] Computed pointsToAward=${pointsToAward} (explicit=${explicitPoints}, fromLevel=${pointsFromLevel})`);
   } else {
     // Original validation logic for non-security challenges
     if (!challenge.solution) {

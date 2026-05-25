@@ -25,10 +25,18 @@ exports.getChallengeById = async (req, res, next) => {
 // 3. إضافة تحدي جديد
 exports.createChallenge = async (req, res, next) => {
   try {
-    // كدة الفانكشن دي هتشتغل صح لأننا عملنا لها require فوق
-    const points = getPointsForDifficulty(req.body.level);
+    // For security challenges (with initialCode), ensure level is set
+    let body = { ...req.body };
+    if (body.initialCode && !body.level) {
+      body.level = 'medium'; // Default security challenges to medium difficulty
+      console.log('[CHALLENGE CREATE] Security challenge without level, defaulting to "medium"');
+    }
     
-    const challenge = await Challenge.create({ ...req.body, points });
+    // Calculate points based on difficulty level
+    const points = getPointsForDifficulty(body.level);
+    
+    const challenge = await Challenge.create({ ...body, points });
+    console.log(`[CHALLENGE CREATE] Challenge created: ID=${challenge.id}, level=${challenge.level}, points=${challenge.points}`);
     
     res.status(201).json({ success: true, data: challenge });
   } catch (error) { next(error); }
