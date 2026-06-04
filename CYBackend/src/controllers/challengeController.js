@@ -62,7 +62,7 @@ exports.submitAnswer = async (req, res, next) => {
     
     console.log(`[SUBMISSION RESULT] Challenge: ${challengeId}, Success: ${result.success}, Awarded: ${result.awarded}, AlreadySolved: ${result.alreadySolved}`);
     
-    res.status(200).json({ success: true, ...result });
+    res.status(200).json(result);
   } catch (error) { 
     next(error); 
   }
@@ -140,7 +140,14 @@ exports.aiReview = async (req, res, next) => {
     // Call AI evaluator directly; do NOT award points here
     const evaluation = await aiService.evaluateSecurityFix(challenge, code);
 
-    res.status(200).json({ success: true, evaluation });
+    // Only include debug details in non-production environments
+    if (process.env.NODE_ENV !== 'production' && evaluation && evaluation.debug) {
+      res.status(200).json({ success: true, evaluation });
+    } else {
+      // Strip debug before sending to users in production
+      const safeEval = { fixed: evaluation?.fixed ?? false, feedback: evaluation?.feedback ?? '' };
+      res.status(200).json({ success: true, evaluation: safeEval });
+    }
   } catch (error) {
     next(error);
   }

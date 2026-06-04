@@ -1,159 +1,142 @@
 const axios = require('axios');
 
+/* =========================
+   PUBLIC API
+========================= */
+
 exports.generateIncorrectFeedback = async (challengeData, userAnswer) => {
   try {
-    const aiResult = await generateFeedbackWithAI(challengeData, userAnswer);
-    if (aiResult?.feedback) return aiResult.feedback;
-    if (typeof aiResult === 'string' && aiResult.trim()) return aiResult.trim();
-    return getFallbackIncorrectFeedback(challengeData);
-  } catch (error) {
-    console.error('AI feedback generation failed:', error);
-    return getFallbackIncorrectFeedback(challengeData);
+    const result = await callAI(generateFeedbackPrompt(challengeData, userAnswer));
+
+    if (result?.feedback) return result.feedback;
+    return fallbackFeedback(challengeData);
+  } catch (err) {
+    console.error('AI feedback error:', err);
+    return fallbackFeedback(challengeData);
   }
 };
 
 exports.evaluateSecurityFix = async (challengeData, userCode) => {
   try {
-    const aiResult = await evaluateWithAI(challengeData, userCode);
-    return aiResult;
-  } catch (error) {
-    console.error('AI evaluation failed:', error);
+    return await callAI(evaluatePrompt(challengeData, userCode));
+  } catch (err) {
+    console.error('AI evaluation error:', {
+      message: err?.message,
+      code: err?.code,
+      status: err?.response?.status,
+    });
 
     return {
-      fixed: false,
-      feedback: 'AI is not ready right now. Please come back later.'
+      fixed: null,
+      feedback: 'AI service unavailable',
     };
   }
 };
 
-function getFallbackIncorrectFeedback(challengeData) {
-  const hints = challengeData.hints || [];
-  if (hints.length > 0) {
-    return hints[Math.floor(Math.random() * hints.length)];
-  }
+/* =========================
+   PROMPTS
+========================= */
 
-  if (challengeData.description) {
-    return 'Review the challenge requirements and try again.';
-  }
-
-  return 'Incorrect answer. Try again!';
-}
-
-// Extract relevant code lines to reduce token count
-function extractRelevantCode(code) {
-  if (typeof code !== 'string' || !code) {
-    return '';
-  }
-
-  const keywordPatterns = ['query', 'req', 'input', 'db', 'execute', 'eval', 'setTimeout', 'innerHTML', 'dangerouslySetInnerHTML', 'sql', 'password', 'token', 'auth', 'validate', 'sanitize', 'params', 'join'];
-  const lines = code.split('\n');
-  const relevantLines = lines.filter(line => 
-    keywordPatterns.some(keyword => line.toLowerCase().includes(keyword))
-  );
-  return relevantLines.length > 0 
-    ? relevantLines.slice(0, 30).join('\n') 
-    : lines.slice(0, 30).join('\n');
-}
-
-async function evaluateWithAI(challengeData, userCode) {
-  const initialCodeRelevant = extractRelevantCode(challengeData.initialCode || '');
-  const userCodeRelevant = extractRelevantCode(userCode || '');
-
-  const prompt = `Initial Code:\n${initialCodeRelevant}\n\nUser Code:\n${userCodeRelevant}\n\nVulnerability: ${challengeData.description || 'Not provided'}`;
-
-  const requestBody = {
+function evaluatePrompt(challengeData, userCode) {
+  return {
     model: 'openai/gpt-4.1-mini',
-    max_tokens: 80,
+    max_tokens: 120,
     temperature: 0,
     messages: [
       {
         role: 'system',
-        content: 'You are a strict JSON API.\n\nRules:\n- Return ONLY valid minified JSON\n- No markdown\n- No explanations\n- No code blocks\n- No extra text\n- Response format must always be:\n{"fixed":true,"feedback":"..."}\nor\n{"fixed":false,"feedback":"..."}\n\nKeep feedback very short.'
+        content:
+          'You are a security evaluator. Evaluate ONLY the user code fix. Ignore system code, backend logic, or infrastructure. Return ONLY JSON: {"fixed":true,"feedback":"..."} or {"fixed":false,"feedback":"..."}. If unsure, return false.',
       },
       {
         role: 'user',
-        content: `Return only valid JSON with keys "fixed" (boolean) and "feedback" (string). ${prompt}`
-      }
-    ]
-  };
+        content: `
+VULNERABILITY:
+${challengeData.description || 'N/A'}
 
-  return sendOpenRouterRequest(requestBody);
+USER CODE:
+${userCode || ''}
+        `,
+      },
+    ],
+  };
 }
 
-async function generateFeedbackWithAI(challengeData, userAnswer) {
-  const prompt = `Challenge: ${challengeData.title}\nDescription: ${challengeData.description}\nHints: ${challengeData.hints?.join(', ') || 'None'}\nUser Answer: ${userAnswer}`;
-
-  const requestBody = {
+function generateFeedbackPrompt(challengeData, userAnswer) {
+  return {
     model: 'openai/gpt-4.1-mini',
-    max_tokens: 80,
+    max_tokens: 120,
     temperature: 0,
     messages: [
       {
         role: 'system',
-        content: 'You are a strict JSON API.\n\nRules:\n- Return ONLY valid minified JSON\n- No markdown\n- No explanations\n- No code blocks\n- No extra text\n- Response format must always be:\n{"fixed":true,"feedback":"..."}\nor\n{"fixed":false,"feedback":"..."}\n\nKeep feedback very short.'
+        content:
+          'You are a strict security reviewer. Return ONLY JSON: {"fixed":true,"feedback":"..."} or {"fixed":false,"feedback":"..."}. No extra text.',
       },
       {
         role: 'user',
-        content: `Return only valid JSON with keys "fixed" (boolean) and "feedback" (string). ${prompt}`
-      }
-    ]
-  };
+        content: `
+CHALLENGE: ${challengeData.title || ''}
+DESCRIPTION: ${challengeData.description || ''}
+HINTS: ${(challengeData.hints || []).join(', ')}
 
-  return sendOpenRouterRequest(requestBody);
+ANSWER:
+${userAnswer || ''}
+        `,
+      },
+    ],
+  };
 }
 
-async function sendOpenRouterRequest(body) {
+/* =========================
+   AI CALL CORE (CLEAN)
+========================= */
+
+async function callAI(body) {
   const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    throw new Error('Missing OPENROUTER_API_KEY environment variable');
-  }
+  if (!apiKey) throw new Error('Missing OPENROUTER_API_KEY');
 
   const url = 'https://openrouter.ai/api/v1/chat/completions';
 
-  const response = await axios.post(url, body, {
+  const res = await axios.post(url, body, {
     headers: {
       Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     },
-    timeout: 15000
+    timeout: 30000,
   });
 
-  const content = String(response.data?.choices?.[0]?.message?.content || '').trim();
-  if (!content) {
-    console.error('Unexpected OpenRouter response:', JSON.stringify(response?.data, null, 2));
-    return { fixed: false, feedback: 'AI response parsing failed' };
+  const text = res.data?.choices?.[0]?.message?.content?.trim();
+
+  if (!text) {
+    return { fixed: null, feedback: 'Empty AI response' };
   }
 
+  const json = safeParse(text);
+
+  return {
+    fixed: typeof json.fixed === 'boolean' ? json.fixed : null,
+    feedback: json.feedback || 'No feedback provided',
+  };
+}
+
+/* =========================
+   HELPERS
+========================= */
+
+function safeParse(text) {
   try {
-    const parsed = JSON.parse(content);
-
-    const candidate = parsed.fixed ?? parsed.success ?? parsed.result ?? parsed.status;
-
-    const isTruthy = (v) => {
-      if (v === true || v === 1) return true;
-      if (typeof v === 'string') {
-        const s = v.trim().toLowerCase();
-        return ['true', 'yes', 'y', '1', 'ok', 'fixed', 'correct'].includes(s);
-      }
-      return false;
-    };
-
-    const fixed = isTruthy(candidate);
-
-    const feedback = (typeof parsed.feedback === 'string' && parsed.feedback.trim())
-      ? parsed.feedback.trim()
-      : (typeof parsed.message === 'string' && parsed.message.trim())
-        ? parsed.message.trim()
-        : 'AI response parsing failed';
-
-    return { fixed, feedback };
-  } catch (error) {
-    console.error('Failed to parse AI JSON response:', content);
-
-    return {
-      fixed: false,
-      feedback: 'AI response parsing failed'
-    };
+    const match = text.match(/\{[\s\S]*\}/);
+    return JSON.parse(match ? match[0] : '{}');
+  } catch {
+    return {};
   }
 }
 
+function fallbackFeedback(challengeData) {
+  const hints = challengeData?.hints || [];
+  if (hints.length) return hints[Math.floor(Math.random() * hints.length)];
+  return challengeData?.description
+    ? 'Review the challenge requirements.'
+    : 'Incorrect answer.';
+}

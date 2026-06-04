@@ -64,48 +64,70 @@ exports.getUserByIdWithProfile = async (id) => {
  * ثم يتم تحديث كلاً من User و Profile لضمان التزامن
  */
 exports.addPointsToUser = async (userId, points, itemId, itemType = 'puzzle') => {
-  // 1. تحديد أسماء الحقول بناءً على نوع العملية
   const isPuzzle = itemType === 'puzzle';
   const solvedField = isPuzzle ? 'solvedPuzzles' : 'solvedChallenges';
   const counterField = isPuzzle ? 'puzzlesDone' : 'challengesDone';
 
-  // Coerce itemId to number to match stored IDs
   const itemIdNum = Number(itemId);
   console.log(`[POINTS] Adding points for User ${userId}: points=${points}, ${itemType} ID=${itemIdNum}, solvedField=${solvedField}`);
 
-  // 2. جلب المستخدم والبروفايل
-  const user = await User.findByPk(userId);
-  if (!user) {
-    console.error(`[POINTS ERROR] User ${userId} not found`);
-    throw new Error('User not found');
-  }
+  return await sequelize.transaction(async (transaction) => {
+    const user = await User.findByPk(userId, { transaction });
+    if (!user) {
+      console.error(`[POINTS ERROR] User ${userId} not found`);
+      throw new Error('User not found');
+    }
 
-  const profile = await Profile.findOne({ where: { userId } });
-  if (!profile) {
-    console.error(`[POINTS ERROR] Profile for User ${userId} not found`);
-    throw new Error('Profile not found');
-  }
+    const profile = await Profile.findOne({
+      where: { userId },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
 
-  // 3. التحقق من عدم حل هذا التحدي من قبل (من Profile)
-  console.log(`[POINTS DEBUG] Current ${solvedField}:`, profile[solvedField]);
-  if (profile[solvedField].includes(itemIdNum)) {
-    console.log(`[POINTS] User ${userId} already solved ${itemType} #${itemIdNum}`);
-    return { awarded: false, alreadySolved: true };
-  }
+    if (!profile) {
+      console.error(`[POINTS ERROR] Profile for User ${userId} not found`);
+      throw new Error('Profile not found');
+    }
 
-  // 4. تحديث Profile
-  profile.totalScore += points;
-  profile[counterField] += 1;
-  profile[solvedField] = [...profile[solvedField], itemIdNum];
-  await profile.save();
+    const solvedList = Array.isArray(profile[solvedField]) ? profile[solvedField] : [];
+    console.log(`[POINTS DEBUG] Current ${solvedField}:`, solvedList);
 
-  // 5. تحديث User ليكون متزامناً مع Profile
-  user[solvedField] = [...(user[solvedField] || []), itemIdNum];
-  await user.save();
+    const currentTotalScore = Number(profile.totalScore || 0);
+    const currentSolvedCount = Number(profile[counterField] || 0);
 
-  console.log(`✓ Points awarded to user ${userId}: +${points} for ${itemType} #${itemIdNum}`);
+    if (solvedList.includes(itemIdNum)) {
+      console.log(`[POINTS] User ${userId} already solved ${itemType} #${itemIdNum}`);
+      return {
+        success: true,
+        awarded: false,
+        alreadySolved: true,
+        points: 0,
+        totalScore: currentTotalScore,
+        userId: Number(userId),
+      };
+    }
 
-  return { awarded: true, profile, user };
+    const finalPoints = Number(points || 0);
+    profile.totalScore = currentTotalScore + finalPoints;
+    profile[counterField] = currentSolvedCount + 1;
+    profile[solvedField] = Array.from(new Set([...solvedList, itemIdNum]));
+    await profile.save({ transaction });
+
+    const userSolvedList = Array.isArray(user[solvedField]) ? user[solvedField] : [];
+    user[solvedField] = Array.from(new Set([...userSolvedList, itemIdNum]));
+    await user.save({ transaction });
+
+    console.log(`✓ Points awarded to user ${userId}: +${finalPoints} for ${itemType} #${itemIdNum}`);
+
+    return {
+      success: true,
+      awarded: true,
+      alreadySolved: false,
+      points: finalPoints,
+      totalScore: Number(profile.totalScore || 0),
+      userId: Number(userId),
+    };
+  });
 };
 
 /**
