@@ -8,6 +8,7 @@
     "dev": "nodemon src/server.js",
     "test": "jest",
     "migrate:create-profiles": "node src/scripts/createMissingProfiles.js",
+    "migrate:add-challenge-uuid": "node src/scripts/addChallengeUuidField.js",
     "cleanup:ctf": "node src/scripts/cleanupCTFLevels.js"
   },
   "keywords": [],

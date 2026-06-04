@@ -32,7 +32,6 @@ const ChallengeView = () => {
     initialCode: '',
     challengeDetails: '',
     recommendation: '',
-    hints: ['']
   });
 
   useEffect(() => {
@@ -43,31 +42,13 @@ const ChallengeView = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleHintChange = (index: number, value: string) => {
-    const newHints = [...formData.hints];
-    newHints[index] = value;
-    setFormData(prev => ({ ...prev, hints: newHints }));
-  };
-
-  const addHint = () => {
-    setFormData(prev => ({ ...prev, hints: [...prev.hints, ''] }));
-  };
-
-  const removeHint = (index: number) => {
-    if (formData.hints.length > 1) {
-      const newHints = formData.hints.filter((_, i) => i !== index);
-      setFormData(prev => ({ ...prev, hints: newHints }));
-    }
-  };
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const filteredHints = formData.hints.filter(hint => hint.trim() !== '');
-
     const challengeData = {
       ...formData,
-      hints: filteredHints,
       challengeDetails: formData.challengeDetails || formData.description
     };
 
@@ -81,8 +62,7 @@ const ChallengeView = () => {
         level: 'easy',
         initialCode: '',
         challengeDetails: '',
-        recommendation: '',
-        hints: ['']
+        recommendation: ''
       });
       dispatch(fetchChallenges());
     } catch (error) {
@@ -98,8 +78,7 @@ const ChallengeView = () => {
       level: 'easy',
       initialCode: '',
       challengeDetails: '',
-      recommendation: '',
-      hints: ['']
+      recommendation: ''
     });
   };
 
@@ -111,8 +90,7 @@ const ChallengeView = () => {
       level: challenge.level,
       initialCode: challenge.initialCode || '',
       challengeDetails: challenge.challengeDetails || '',
-      recommendation: challenge.recommendation || '',
-      hints: challenge.hints && challenge.hints.length > 0 ? challenge.hints : ['']
+      recommendation: challenge.recommendation || ''
     });
     setIsEditModalOpen(true);
   };
@@ -121,15 +99,12 @@ const ChallengeView = () => {
     e.preventDefault();
     if (!editingChallenge) return;
 
-    const filteredHints = formData.hints.filter(hint => hint.trim() !== '');
-
     const challengeData = {
       ...formData,
-      hints: filteredHints,
       challengeDetails: formData.challengeDetails || formData.description
     };
 
-    const challengeId = editingChallenge.id?.toString() || editingChallenge._id;
+    const challengeId = editingChallenge.uuid || editingChallenge.id?.toString() || editingChallenge._id;
     if (!challengeId) {
       toast.error('Invalid challenge ID');
       return;
@@ -155,7 +130,7 @@ const ChallengeView = () => {
   const confirmDelete = async () => {
     if (!deleteConfirm.challenge) return;
 
-    const deleteId = deleteConfirm.challenge.id?.toString() || deleteConfirm.challenge._id;
+    const deleteId = deleteConfirm.challenge.uuid || deleteConfirm.challenge.id?.toString() || deleteConfirm.challenge._id;
     if (!deleteId) {
       toast.error('Invalid challenge ID');
       return;
@@ -313,41 +288,7 @@ const ChallengeView = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-                  <Lightbulb size={16} />
-                  Hints
-                </label>
-                <div className="space-y-2">
-                  {formData.hints.map((hint, index) => (
-                    <div key={index} className="flex gap-2">
-                      <input
-                        type="text"
-                        value={hint}
-                        onChange={(e) => handleHintChange(index, e.target.value)}
-                        className={inputClasses}
-                        placeholder={`Hint ${index + 1}`}
-                      />
-                      {formData.hints.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeHint(index)}
-                          className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors"
-                        >
-                          <X size={16} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={addHint}
-                    className="text-red-400 hover:text-red-300 text-sm font-medium"
-                  >
-                    + Add another hint
-                  </button>
-                </div>
-              </div>
+
 
               <div className="flex justify-end gap-3 pt-6 border-t border-red-900/40">
                 <button
@@ -474,41 +415,7 @@ const ChallengeView = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-                  <Lightbulb size={16} />
-                  Hints
-                </label>
-                <div className="space-y-2">
-                  {formData.hints.map((hint, index) => (
-                    <div key={index} className="flex gap-2">
-                      <input
-                        type="text"
-                        value={hint}
-                        onChange={(e) => handleHintChange(index, e.target.value)}
-                        className={inputClasses}
-                        placeholder={`Hint ${index + 1}`}
-                      />
-                      {formData.hints.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeHint(index)}
-                          className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors"
-                        >
-                          <X size={16} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={addHint}
-                    className="text-red-400 hover:text-red-300 text-sm font-medium"
-                  >
-                    + Add another hint
-                  </button>
-                </div>
-              </div>
+
 
               <div className="flex justify-end gap-3 pt-6 border-t border-red-900/40">
                 <button
@@ -584,7 +491,7 @@ const ChallengeView = () => {
             </thead>
             <tbody className="divide-y divide-red-900/20">
               {challenges?.map((challenge: Challenge) => (
-                <tr key={challenge.id || challenge._id} className="hover:bg-red-900/10 transition-colors">
+                <tr key={challenge.uuid || challenge.id || challenge._id} className="hover:bg-red-900/10 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center">
                       <div className="p-2 bg-red-900/30 rounded-lg text-red-400 mr-3">

@@ -43,14 +43,14 @@ const PlayChallengePage: React.FC = () => {
 
   useEffect(() => {
     if (!chFromStore) return;
-    if (chFromStore.code) setCode(chFromStore.code);
+    setCode(chFromStore.initialCode || chFromStore.code || "");
   }, [chFromStore]);
   const handleEditorChange = (value: string | undefined) => {
     if (value) setCode(value);
   };
 
   const handleReset = () => {
-    setCode(chFromStore?.code || "");
+    setCode(chFromStore?.initialCode || chFromStore?.code || "");
   };
 
   // Test runner removed per request (dummy security-check messages eliminated)

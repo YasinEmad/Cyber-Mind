@@ -98,7 +98,7 @@ const ChallengePage: React.FC = React.memo(() => {
     const lvl = ch.level || ch.difficulty || 'easy';
     const difficulty = lvl.toLowerCase() === 'medium' ? ChallengeDifficulty.Medium : (lvl.toLowerCase() === 'hard' ? ChallengeDifficulty.Hard : ChallengeDifficulty.Easy);
     return {
-      id: ch._id || ch.id,
+      id: ch.uuid || ch._id || ch.id,
       title: ch.title,
       description: ch.description,
       difficulty,

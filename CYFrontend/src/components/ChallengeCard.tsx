@@ -63,7 +63,7 @@ const ChallengeCard: React.FC<ChallengeCardProps> = React.memo(({ challenge, ind
 
         <div className="mt-6">
           <Link
-            to={`/challenges/${challenge.id}`}
+            to={`/challenges/${challenge.uuid || challenge.id || challenge._id}`}
             className="relative w-full flex items-center justify-center px-4 py-3 bg-black border border-red-900/40 text-white font-black text-xs tracking-widest rounded-md overflow-hidden transition-all duration-300 group/btn"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-orange-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />

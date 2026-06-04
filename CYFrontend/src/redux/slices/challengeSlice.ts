@@ -14,6 +14,7 @@ export interface Challenge {
   // معرف التحدي الفريد والثابت (PRIMARY KEY من قاعدة البيانات)
   id: string | number
   _id?: string // للتوافقية مع MongoDB إن وجدت
+  uuid?: string
   title: string
   description?: string
   code?: string
@@ -232,7 +233,7 @@ const slice = createSlice({
       })
       .addCase(updateChallenge.fulfilled, (state, action) => {
         state.status = 'succeeded'
-        const index = state.challenges.findIndex(c => c.id === action.payload.id || c._id === action.payload._id)
+        const index = state.challenges.findIndex(c => (c.id && action.payload.id && c.id === action.payload.id) || (c._id && action.payload._id && c._id === action.payload._id) || (c.uuid && action.payload.uuid && c.uuid === action.payload.uuid))
         if (index !== -1) {
           state.challenges[index] = action.payload
         }
@@ -248,7 +249,7 @@ const slice = createSlice({
       })
       .addCase(deleteChallenge.fulfilled, (state, action) => {
         state.status = 'succeeded'
-        state.challenges = state.challenges.filter(c => (c.id || c._id) !== action.payload)
+        state.challenges = state.challenges.filter(c => ((c.id || c._id || c.uuid) !== action.payload))
       })
       .addCase(deleteChallenge.rejected, (state, action) => {
         state.status = 'failed'

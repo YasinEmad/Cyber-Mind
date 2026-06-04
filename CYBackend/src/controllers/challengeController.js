@@ -16,7 +16,10 @@ exports.getAllChallenges = async (req, res, next) => {
 // 2. عرض تحدي واحد بالـ ID
 exports.getChallengeById = async (req, res, next) => {
   try {
-    const challenge = await Challenge.findByPk(req.params.id);
+    const idParam = req.params.id;
+    const numericId = await resolveToNumericId(idParam);
+    if (!numericId) return res.status(404).json({ success: false, message: 'Challenge not found' });
+    const challenge = await Challenge.findByPk(numericId);
     if (!challenge) return res.status(404).json({ success: false, message: 'Challenge not found' });
     res.status(200).json({ success: true, data: challenge });
   } catch (error) { next(error); }
@@ -36,11 +39,23 @@ exports.createChallenge = async (req, res, next) => {
     const points = getPointsForDifficulty(body.level);
     
     const challenge = await Challenge.create({ ...body, points });
-    console.log(`[CHALLENGE CREATE] Challenge created: ID=${challenge.id}, level=${challenge.level}, points=${challenge.points}`);
+    console.log(`[CHALLENGE CREATE] Challenge created: ID=${challenge.id}, UUID=${challenge.uuid}, level=${challenge.level}, points=${challenge.points}`);
     
     res.status(201).json({ success: true, data: challenge });
   } catch (error) { next(error); }
 };
+
+// Helper: resolve a param which may be numeric id or uuid to numeric DB id
+async function resolveToNumericId(idParam) {
+  if (!idParam) return null;
+  const maybeNum = Number(idParam);
+  if (!Number.isNaN(maybeNum) && String(maybeNum) === String(idParam)) {
+    return maybeNum;
+  }
+  // try to find by uuid
+  const found = await Challenge.findOne({ where: { uuid: idParam } });
+  return found ? found.id : null;
+}
 
 // 4. تسليم الحل
 // 4. تسليم الحل (بعد التعديل لاستقبال الإجابة)
@@ -48,19 +63,21 @@ exports.createChallenge = async (req, res, next) => {
 // عند النجاح لأول مرة فقط: تتم إضافة النقاط و تسجيل التحدي كمحلول
 exports.submitAnswer = async (req, res, next) => {
   try {
-    const challengeId = req.params.id;
+    const challengeIdParam = req.params.id;
+    const numericChallengeId = await resolveToNumericId(challengeIdParam);
+    if (!numericChallengeId) return res.status(404).json({ success: false, message: 'Challenge not found' });
     const { answer } = req.body;
 
-    console.log(`[SUBMISSION] User: ${req.user?.id || 'anonymous'}, Challenge ID: ${challengeId}`);
+    console.log(`[SUBMISSION] User: ${req.user?.id || 'anonymous'}, Challenge Param: ${challengeIdParam}, Resolved ID: ${numericChallengeId}`);
 
     if (!answer) {
       return res.status(400).json({ success: false, message: 'Please provide an answer' });
     }
 
     // بنبعت الـ ID، اليوزر (عشان النقط)، والحل (عشان التقييم)
-    const result = await challengeService.submitChallengeAnswer(challengeId, req.user, answer);
+    const result = await challengeService.submitChallengeAnswer(numericChallengeId, req.user, answer);
     
-    console.log(`[SUBMISSION RESULT] Challenge: ${challengeId}, Success: ${result.success}, Awarded: ${result.awarded}, AlreadySolved: ${result.alreadySolved}`);
+    console.log(`[SUBMISSION RESULT] Challenge Param: ${challengeIdParam}, Success: ${result.success}, Awarded: ${result.awarded}, AlreadySolved: ${result.alreadySolved}`);
     
     res.status(200).json(result);
   } catch (error) { 
@@ -71,12 +88,11 @@ exports.submitAnswer = async (req, res, next) => {
 // Deduct points when a user requests a challenge hint
 exports.useChallengeHint = async (req, res, next) => {
   try {
-    const challengeId = req.params.id;
+    const challengeIdParam = req.params.id;
     const { hintIndex, amount } = req.body;
 
-    if (!challengeId || challengeId === 'undefined' || isNaN(challengeId)) {
-      return res.status(400).json({ success: false, message: 'Invalid challenge ID provided' });
-    }
+    const numericChallengeId = await resolveToNumericId(challengeIdParam);
+    if (!numericChallengeId) return res.status(400).json({ success: false, message: 'Invalid challenge ID provided' });
 
     if (!req.user) {
       return res.status(401).json({ success: false, message: 'Authentication required to use hints' });
@@ -92,7 +108,7 @@ exports.useChallengeHint = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Invalid hint deduction amount' });
     }
 
-    const result = await userService.deductHintPoints(req.user.id, deductionAmount, challengeId, 'challenge', parsedHintIndex);
+    const result = await userService.deductHintPoints(req.user.id, deductionAmount, numericChallengeId, 'challenge', parsedHintIndex);
 
     res.status(200).json({
       success: true,
@@ -109,14 +125,16 @@ exports.useChallengeHint = async (req, res, next) => {
 // 4.5. تشغيل الكود
 exports.runCode = async (req, res, next) => {
   try {
-    const challengeId = req.params.id;
+    const challengeIdParam = req.params.id;
+    const numericChallengeId = await resolveToNumericId(challengeIdParam);
+    if (!numericChallengeId) return res.status(404).json({ success: false, message: 'Challenge not found' });
     const { code } = req.body;
 
     if (!code) {
       return res.status(400).json({ success: false, message: 'Please provide code to run' });
     }
 
-    const result = await challengeService.runCode(challengeId, code);
+    const result = await challengeService.runCode(numericChallengeId, code);
     
     res.status(200).json({ success: true, output: result.output, error: result.error });
   } catch (error) { 
@@ -127,14 +145,16 @@ exports.runCode = async (req, res, next) => {
 // AI review: evaluate provided code against the challenge without awarding points
 exports.aiReview = async (req, res, next) => {
   try {
-    const challengeId = req.params.id;
+    const challengeIdParam = req.params.id;
+    const numericChallengeId = await resolveToNumericId(challengeIdParam);
+    if (!numericChallengeId) return res.status(404).json({ success: false, message: 'Challenge not found' });
     const { code } = req.body;
 
     if (!code) {
       return res.status(400).json({ success: false, message: 'Please provide code to evaluate' });
     }
 
-    const challenge = await Challenge.findByPk(challengeId);
+    const challenge = await Challenge.findByPk(numericChallengeId);
     if (!challenge) return res.status(404).json({ success: false, message: 'Challenge not found' });
 
     // Call AI evaluator directly; do NOT award points here
@@ -156,7 +176,9 @@ exports.aiReview = async (req, res, next) => {
 // 5. تحديث تحدي موجود
 exports.updateChallenge = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const idParam = req.params.id;
+    const id = await resolveToNumericId(idParam);
+    if (!id) return res.status(404).json({ success: false, message: 'Challenge not found' });
     const updateData = req.body;
 
     // حساب النقط لو الـ level اتغير
@@ -181,7 +203,9 @@ exports.updateChallenge = async (req, res, next) => {
 // 6. حذف تحدي
 exports.deleteChallenge = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const idParam = req.params.id;
+    const id = await resolveToNumericId(idParam);
+    if (!id) return res.status(404).json({ success: false, message: 'Challenge not found' });
     const deletedRowsCount = await Challenge.destroy({ where: { id } });
     
     if (deletedRowsCount === 0) {

@@ -7,6 +7,12 @@ const Challenge = sequelize.define('Challenge', {
     primaryKey: true,
     autoIncrement: true,
   },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   title: {
     type: DataTypes.STRING,
     allowNull: false,
