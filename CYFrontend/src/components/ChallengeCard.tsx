@@ -4,6 +4,12 @@ import { Challenge, ChallengeDifficulty } from '../types';
 import { Play, Activity } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+type ChallengeCardProps = {
+  challenge: Challenge & { solved?: boolean };
+  index: number;
+  solved?: boolean;
+};
+
 const difficultyStyles: Record<ChallengeDifficulty, { badge: string; glow: string }> = {
   [ChallengeDifficulty.Easy]: {
     badge: 'bg-gray-800 text-gray-400',
@@ -19,7 +25,7 @@ const difficultyStyles: Record<ChallengeDifficulty, { badge: string; glow: strin
   },
 };
 
-const ChallengeCard: React.FC<ChallengeCardProps> = React.memo(({ challenge, index }) => {
+const ChallengeCard: React.FC<ChallengeCardProps> = React.memo(({ challenge, index, solved }) => {
   const styles = difficultyStyles[challenge.difficulty];
 
   return (
@@ -52,11 +58,18 @@ const ChallengeCard: React.FC<ChallengeCardProps> = React.memo(({ challenge, ind
             <span className="text-[10px] text-gray-500 font-bold tracking-widest uppercase">System.Ready</span>
           </div>
 
-          <h3 className="text-xl font-black text-white leading-none group-hover:bg-gradient-to-r group-hover:from-red-500 group-hover:to-orange-500 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">
-            {challenge.title}
-          </h3>
+          <div className="flex items-center gap-3 mb-3">
+            <h3 className="text-xl font-black text-white leading-none group-hover:bg-gradient-to-r group-hover:from-red-500 group-hover:to-orange-500 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">
+              {challenge.title}
+            </h3>
+            {solved && (
+              <span className="px-2 py-1 text-[10px] uppercase tracking-[0.24em] font-semibold text-emerald-300 bg-emerald-500/10 rounded-full border border-emerald-500/20">
+                Solved
+              </span>
+            )}
+          </div>
           
-          <p className="mt-3 text-sm text-gray-300 font-medium leading-relaxed">
+          <p className="mt-1 text-sm text-gray-300 font-medium leading-relaxed">
             {challenge.description || 'Complete this challenge to prove your mettle and earn points. High-stakes execution required.'}
           </p>
         </div>

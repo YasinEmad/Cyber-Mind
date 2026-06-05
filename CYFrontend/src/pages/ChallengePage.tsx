@@ -93,27 +93,121 @@ const ChallengePage: React.FC = React.memo(() => {
   const dispatch = useDispatch<AppDispatch>();
   const storeChallenges = useSelector((state: RootState) => state.challenges.challenges);
   const status = useSelector((state: RootState) => state.challenges.status);
+  const currentUser = useSelector((state: RootState) => state.user.user);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'easy' | 'medium' | 'hard'>('all');
+  const [progressFilter, setProgressFilter] = useState<'all' | 'solved' | 'unsolved'>('all');
 
-  const mapToCard = useCallback((ch: any): Challenge => {
+  const solvedChallengeIds = useMemo(() => {
+    const ids = currentUser?.profile?.solvedChallenges ?? currentUser?.solvedChallenges ?? [];
+    const normalizedSet = new Set<string>();
+    ids.forEach((id) => {
+      const normalized = String(id);
+      normalizedSet.add(normalized);
+      const numeric = Number(id);
+      if (!Number.isNaN(numeric)) normalizedSet.add(String(numeric));
+    });
+    return normalizedSet;
+  }, [currentUser]);
+
+  type DisplayChallenge = Challenge & {
+    solved: boolean;
+    category?: string;
+    level?: string;
+    challengeKey: string;
+  };
+
+  const getChallengeKey = useCallback((ch: any) => {
+    const key = String(ch.id ?? ch._id ?? ch.uuid ?? '');
+    const alternative = String(ch._id ?? ch.uuid ?? ch.id ?? '');
+    return key || alternative;
+  }, []);
+
+  const isChallengeSolved = useCallback((ch: any) => {
+    const keys = [
+      String(ch.id ?? ''),
+      String(ch._id ?? ''),
+      String(ch.uuid ?? ''),
+    ].filter(Boolean);
+    return keys.some((key) => solvedChallengeIds.has(key));
+  }, [solvedChallengeIds]);
+
+  const mapToCard = useCallback((ch: any): DisplayChallenge => {
+    const key = getChallengeKey(ch);
     const lvl = ch.level || ch.difficulty || 'easy';
-    const difficulty = lvl.toLowerCase() === 'medium' ? ChallengeDifficulty.Medium : (lvl.toLowerCase() === 'hard' ? ChallengeDifficulty.Hard : ChallengeDifficulty.Easy);
+    const difficulty = lvl.toLowerCase() === 'medium'
+      ? ChallengeDifficulty.Medium
+      : lvl.toLowerCase() === 'hard'
+      ? ChallengeDifficulty.Hard
+      : ChallengeDifficulty.Easy;
+
     return {
-      id: ch.uuid || ch._id || ch.id,
+      id: ch.id ?? ch._id ?? ch.uuid,
+      _id: ch._id,
+      uuid: ch.uuid,
       title: ch.title,
       description: ch.description,
       difficulty,
+      level: lvl.toLowerCase(),
+      category: ch.category,
+      challengeDetails: ch.challengeDetails,
+      recommendation: ch.recommendation,
+      solved: isChallengeSolved(ch),
+      challengeKey: key,
     };
-  }, []);
+  }, [isChallengeSolved]);
 
   useEffect(() => {
     if (status === 'idle') dispatch(fetchChallenges());
   }, [dispatch, status]); // Added status to dependencies
 
-  // Memoize the cards to prevent unnecessary re-computations
-  const cards = useMemo(() => 
-    storeChallenges.map(mapToCard), 
+  const mappedChallenges = useMemo(
+    () => storeChallenges.map(mapToCard),
     [storeChallenges, mapToCard]
   );
+
+  const filteredChallenges = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return mappedChallenges.filter((challenge) => {
+      const isSolved = challenge.solved ?? isChallengeSolved(challenge);
+
+      if (difficultyFilter !== 'all') {
+        const normalizedLevel = (challenge.level || challenge.difficulty?.toString() || '').toLowerCase();
+        if (normalizedLevel !== difficultyFilter) {
+          return false;
+        }
+      }
+
+      if (progressFilter === 'solved' && !isSolved) {
+        return false;
+      }
+      if (progressFilter === 'unsolved' && isSolved) {
+        return false;
+      }
+
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      const searchableText = [
+        challenge.title,
+        challenge.description,
+        challenge.challengeDetails,
+        challenge.recommendation,
+        challenge.category,
+        challenge.level,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return searchableText.includes(normalizedSearch);
+    });
+  }, [mappedChallenges, difficultyFilter, progressFilter, searchTerm, isChallengeSolved]);
+
+  const visibleCount = filteredChallenges.length;
+  const totalCount = mappedChallenges.length;
 
   return (
     <PageWrapper>
@@ -155,9 +249,55 @@ const ChallengePage: React.FC = React.memo(() => {
               </motion.div>
             </div>
 
+            <div className="rounded-3xl border border-red-900/40 bg-zinc-950 p-6 mb-10 text-white relative z-0">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="relative flex-1">
+                  <input
+                    type="search"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search by title, category, or keywords..."
+                    className="w-full rounded-2xl border border-red-900/40 bg-black px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:border-red-500 focus:outline-none"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2 items-center">
+                  <span className="text-xs uppercase tracking-[0.3em] text-red-400">Difficulty</span>
+                  {['all', 'easy', 'medium', 'hard'].map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setDifficultyFilter(option as 'all' | 'easy' | 'medium' | 'hard')}
+                      className={`px-3 py-2 rounded-2xl text-xs font-semibold transition-colors ${difficultyFilter === option ? 'bg-red-600 text-white' : 'bg-black border border-red-900/40 text-gray-300 hover:bg-red-900/20'}`}
+                    >
+                      {option === 'all' ? 'All' : option.charAt(0).toUpperCase() + option.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-3 items-center justify-between sm:justify-start">
+                <div className="flex flex-wrap gap-2 items-center">
+                  <span className="text-xs uppercase tracking-[0.3em] text-red-400">Progress</span>
+                  {['all', 'solved', 'unsolved'].map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setProgressFilter(option as 'all' | 'solved' | 'unsolved')}
+                      className={`px-3 py-2 rounded-2xl text-xs font-semibold transition-colors ${progressFilter === option ? 'bg-red-600 text-white' : 'bg-black border border-red-900/40 text-gray-300 hover:bg-red-900/20'}`}
+                    >
+                      {option === 'all' ? 'All Challenges' : option === 'solved' ? 'Solved' : 'Unsolved'}
+                    </button>
+                  ))}
+                </div>
+                <div className="text-right text-sm text-gray-400">
+                  Showing <span className="text-white font-semibold">{visibleCount}</span> of <span className="text-white font-semibold">{totalCount}</span> challenges
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 relative z-0">
-              {cards.map((challenge, index) => (
-                <ChallengeCard key={challenge.id} challenge={challenge} index={index} />
+              {filteredChallenges.map((challenge, index) => (
+                <ChallengeCard key={challenge.id} challenge={challenge} index={index} solved={challenge.solved} />
               ))}
             </div>
           </div>

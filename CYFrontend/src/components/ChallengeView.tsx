@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Trophy,
   Plus,
@@ -8,23 +8,29 @@ import {
   Save,
   Code,
   FileText,
-  Lightbulb,
   Target,
-  AlertTriangle
+  AlertTriangle,
+  Search,
+  CheckCircle2
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createChallenge, fetchChallenges, updateChallenge, deleteChallenge, deleteAllChallenges } from '../redux/slices/challengeSlice';
 import type { Challenge } from '../redux/slices/challengeSlice';
+import { selectUser } from '../redux/slices/userSlice';
 import { AppDispatch, RootState } from '../redux/store';
 import toast from 'react-hot-toast';
 
 const ChallengeView = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { challenges, status } = useSelector((state: RootState) => state.challenges);
+  const currentUser = useSelector(selectUser);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; challenge: Challenge | null }>({ isOpen: false, challenge: null });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'easy' | 'medium' | 'hard'>('all');
+  const [progressFilter, setProgressFilter] = useState<'all' | 'solved' | 'unsolved'>('all');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -42,7 +48,55 @@ const ChallengeView = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  
+  const solvedChallengeIds = useMemo(() => {
+    const ids = currentUser?.profile?.solvedChallenges ?? currentUser?.solvedChallenges ?? [];
+    return new Set(ids.map((id) => String(id)));
+  }, [currentUser]);
+
+  const filteredChallenges = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return challenges.filter((challenge) => {
+      const challengeKey = String(challenge.id || challenge._id || challenge.uuid || '');
+      const isSolved = solvedChallengeIds.has(challengeKey);
+
+      if (difficultyFilter !== 'all') {
+        const normalizedLevel = challenge.level?.toLowerCase() || (challenge as any).difficulty?.toString().toLowerCase() || '';
+        if (normalizedLevel !== difficultyFilter) {
+          return false;
+        }
+      }
+
+      if (progressFilter === 'solved' && !isSolved) {
+        return false;
+      }
+      if (progressFilter === 'unsolved' && isSolved) {
+        return false;
+      }
+
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      const searchableText = [
+        challenge.title,
+        challenge.description,
+        challenge.challengeDetails,
+        challenge.recommendation,
+        challenge.level,
+        (challenge as any).difficulty?.toString(),
+        (challenge as any).category,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return searchableText.includes(normalizedSearch);
+    });
+  }, [challenges, difficultyFilter, progressFilter, searchTerm, solvedChallengeIds]);
+
+  const visibleCount = filteredChallenges.length;
+  const totalCount = challenges.length;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,6 +243,73 @@ const ChallengeView = () => {
             <Trash2 size={20} />
             Remove All Levels
           </button>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr] mb-8">
+        <div className="rounded-2xl border border-red-900/40 bg-zinc-950 p-4">
+          <div className="relative">
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-red-400" />
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by title, category, keywords..."
+              className={`${inputClasses} pl-10`}
+            />
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <p className="text-sm text-gray-300 mb-2">Difficulty</p>
+              <div className="flex flex-wrap gap-2">
+                {['all', 'easy', 'medium', 'hard'].map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setDifficultyFilter(option as 'all' | 'easy' | 'medium' | 'hard')}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${difficultyFilter === option ? 'bg-red-600 text-white' : 'bg-black border border-red-900/40 text-gray-300 hover:bg-red-900/20'}`}
+                  >
+                    {option === 'all' ? 'All' : option.charAt(0).toUpperCase() + option.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm text-gray-300 mb-2">Progress</p>
+              <div className="flex flex-wrap gap-2">
+                {['all', 'solved', 'unsolved'].map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setProgressFilter(option as 'all' | 'solved' | 'unsolved')}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${progressFilter === option ? 'bg-red-600 text-white' : 'bg-black border border-red-900/40 text-gray-300 hover:bg-red-900/20'}`}
+                  >
+                    {option === 'all' ? 'All Challenges' : option === 'solved' ? 'Solved' : 'Unsolved'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-red-900/40 bg-zinc-950 p-4 flex flex-col justify-between gap-4">
+          <div>
+            <p className="text-sm uppercase tracking-[0.24em] text-red-400 mb-3">Challenge overview</p>
+            <div className="grid grid-cols-1 gap-3">
+              <div className="rounded-2xl bg-black/50 p-4 border border-red-900/30">
+                <p className="text-xs uppercase tracking-[0.24em] text-gray-400">Showing</p>
+                <p className="text-2xl font-bold text-white">{visibleCount} / {totalCount}</p>
+                <p className="text-sm text-gray-400">challenges match the current filters</p>
+              </div>
+              <div className="rounded-2xl bg-black/50 p-4 border border-red-900/30">
+                <p className="text-xs uppercase tracking-[0.24em] text-gray-400">Solved in view</p>
+                <p className="text-2xl font-bold text-white">{filteredChallenges.filter((challenge) => solvedChallengeIds.has(String(challenge.id || challenge._id || challenge.uuid || ''))).length}</p>
+                <p className="text-sm text-gray-400">ready to revisit or review</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -490,67 +611,80 @@ const ChallengeView = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-red-900/20">
-              {challenges?.map((challenge: Challenge) => (
-                <tr key={challenge.uuid || challenge.id || challenge._id} className="hover:bg-red-900/10 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-red-900/30 rounded-lg text-red-400 mr-3">
-                        <Trophy size={20} />
+              {filteredChallenges.map((challenge: Challenge) => {
+                const challengeKey = String(challenge.id || challenge._id || challenge.uuid || '');
+                const isSolved = solvedChallengeIds.has(challengeKey);
+
+                return (
+                  <tr key={challengeKey} className={`transition-colors ${isSolved ? 'bg-emerald-900/5 hover:bg-emerald-900/10' : 'hover:bg-red-900/10'}`}>
+                    <td className="px-6 py-4">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-red-900/30 rounded-lg text-red-400 mt-1">
+                          <Trophy size={20} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium text-white truncate">{challenge.title}</div>
+                            <div className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${isSolved ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'}`}>
+                              <CheckCircle2 size={14} />
+                              {isSolved ? 'Solved' : 'Unsolved'}
+                            </div>
+                          </div>
+                          {challenge.initialCode && (
+                            <div className="text-xs text-red-500 mt-1">Has vulnerable code</div>
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-sm font-medium text-white">{challenge.title}</div>
-                        {challenge.initialCode && (
-                          <div className="text-xs text-red-500">Has vulnerable code</div>
-                        )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        challenge.level === 'easy' ? 'bg-green-900/30 text-green-400' :
+                        challenge.level === 'medium' ? 'bg-yellow-900/30 text-yellow-400' :
+                        'bg-red-900/30 text-red-400'
+                      }`}>
+                        {challenge.level?.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-300">
+                      {challenge.points} XP
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-300 max-w-xs truncate">
+                        {challenge.description}
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      challenge.level === 'easy' ? 'bg-green-900/30 text-green-400' :
-                      challenge.level === 'medium' ? 'bg-yellow-900/30 text-yellow-400' :
-                      'bg-red-900/30 text-red-400'
-                    }`}>
-                      {challenge.level?.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-300">
-                    {challenge.points} XP
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-300 max-w-xs truncate">
-                      {challenge.description}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => openEditModal(challenge)}
-                        className="p-2 text-red-500 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-colors"
-                        title="Edit Challenge"
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(challenge)}
-                        className="p-2 text-red-500 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-colors"
-                        title="Delete Challenge"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => openEditModal(challenge)}
+                          className="p-2 text-red-500 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-colors"
+                          title="Edit Challenge"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(challenge)}
+                          className="p-2 text-red-500 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-colors"
+                          title="Delete Challenge"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
       </div>
 
-      {challenges?.length === 0 && (
+      {visibleCount === 0 && (
         <div className="text-center py-12 bg-black border border-red-900/40 rounded-xl">
           <Trophy size={48} className="text-red-600 mx-auto mb-4" />
-          <p className="text-gray-400">No challenges created yet.</p>
+          <p className="text-gray-400">
+            {totalCount === 0 ? 'No challenges created yet.' : 'No challenges match the current filters.'}
+          </p>
         </div>
       )}
     </div>
