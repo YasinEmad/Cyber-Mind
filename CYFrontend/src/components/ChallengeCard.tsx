@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Challenge, ChallengeDifficulty } from '../types';
-import { Play, Activity } from 'lucide-react';
+import { Play, CheckCircle2, Zap, Shield, Flame } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 type ChallengeCardProps = {
@@ -10,83 +10,100 @@ type ChallengeCardProps = {
   solved?: boolean;
 };
 
-const difficultyStyles: Record<ChallengeDifficulty, { badge: string; glow: string }> = {
+const difficultyConfig: Record<ChallengeDifficulty, {
+  label: string;
+  icon: React.ReactNode;
+  bar: string;
+  badge: string;
+  badgeText: string;
+  glow: string;
+  borderHover: string;
+}> = {
   [ChallengeDifficulty.Easy]: {
-    badge: 'bg-gray-800 text-gray-400',
-    glow: 'hover:shadow-[0_0_15px_rgba(75,85,99,0.1)]', // Reduced glow intensity
+    label: 'Easy',
+    icon: <Shield size={11} />,
+    bar: 'bg-emerald-500',
+    badge: 'bg-emerald-950/60 border-emerald-800/50',
+    badgeText: 'text-emerald-400',
+    glow: 'hover:shadow-[0_8px_32px_rgba(16,185,129,0.08)]',
+    borderHover: 'hover:border-emerald-800/60',
   },
   [ChallengeDifficulty.Medium]: {
-    badge: 'bg-orange-950/40 text-orange-500',
-    glow: 'hover:shadow-[0_0_15px_rgba(249,115,22,0.15)]', // Reduced glow intensity
+    label: 'Medium',
+    icon: <Zap size={11} />,
+    bar: 'bg-amber-500',
+    badge: 'bg-amber-950/60 border-amber-800/50',
+    badgeText: 'text-amber-400',
+    glow: 'hover:shadow-[0_8px_32px_rgba(245,158,11,0.08)]',
+    borderHover: 'hover:border-amber-800/60',
   },
   [ChallengeDifficulty.Hard]: {
-    badge: 'bg-red-950/40 text-red-500',
-    glow: 'hover:shadow-[0_0_15px_rgba(127,29,29,0.2)]', // Reduced glow intensity
+    label: 'Hard',
+    icon: <Flame size={11} />,
+    bar: 'bg-red-500',
+    badge: 'bg-red-950/60 border-red-800/50',
+    badgeText: 'text-red-400',
+    glow: 'hover:shadow-[0_8px_32px_rgba(239,68,68,0.1)]',
+    borderHover: 'hover:border-red-800/60',
   },
 };
 
 const ChallengeCard: React.FC<ChallengeCardProps> = React.memo(({ challenge, index, solved }) => {
-  const styles = difficultyStyles[challenge.difficulty];
+  const cfg = difficultyConfig[challenge.difficulty] ?? difficultyConfig[ChallengeDifficulty.Easy];
+  const challengeId = challenge.uuid || challenge.id || challenge._id;
 
   return (
     <motion.div
-      className={`relative bg-black border border-gray-800 rounded-lg overflow-hidden group transition-all duration-300 hover:border-red-500/60 ${styles.glow}`}
-      style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%)' }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: Math.min(index * 0.05, 1.0) }} // Reduced delay multiplier and capped max delay
-      whileHover={{ y: -3 }} // Reduced hover lift
+      transition={{ duration: 0.35, delay: Math.min(index * 0.05, 0.5) }}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className={`group relative flex flex-col bg-zinc-950 border border-zinc-800/80 rounded-2xl overflow-hidden transition-all duration-300 ${cfg.glow} ${cfg.borderHover}`}
+      style={{ background: 'linear-gradient(160deg, #0c0c0c 0%, #080808 100%)' }}
     >
-      {/* Simplified glow effect */}
-      <div className="absolute -inset-1 bg-red-500/3 blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      {/* Top color bar */}
+      <div className={`h-0.5 w-full ${cfg.bar} opacity-60 group-hover:opacity-100 transition-opacity duration-300`} />
 
-      {/* Simplified sheen effect */}
-      <div className="absolute top-0 left-[-100%] w-full h-full bg-gradient-to-r from-transparent via-white/3 to-transparent transform -skew-x-12 group-hover:left-[100%] transition-all duration-700" />
+      {/* Subtle inner sheen on hover */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-      {/* Difficulty Tag */}
-      <div
-        className={`absolute top-0 right-0 px-4 py-1 text-[10px] font-black uppercase tracking-tighter text-white ${challenge.difficulty === ChallengeDifficulty.Hard ? 'bg-red-600' : 'bg-gray-800'}`}
-        style={{ clipPath: 'polygon(10px 0, 100% 0, 100% 100%, 0% 100%)' }}
-      >
-        {challenge.difficulty}
-      </div>
-      
-      <div className="p-6 flex flex-col h-full relative z-10">
-        <div className="flex-grow">
-          <div className="flex items-center gap-2 mb-2">
-            <Activity className="w-4 h-4 text-red-500" />
-            <span className="text-[10px] text-gray-500 font-bold tracking-widest uppercase">System.Ready</span>
-          </div>
+      <div className="flex flex-col flex-1 p-5">
 
-          <div className="flex items-center gap-3 mb-3">
-            <h3 className="text-xl font-black text-white leading-none group-hover:bg-gradient-to-r group-hover:from-red-500 group-hover:to-orange-500 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">
-              {challenge.title}
-            </h3>
-            {solved && (
-              <span className="px-2 py-1 text-[10px] uppercase tracking-[0.24em] font-semibold text-emerald-300 bg-emerald-500/10 rounded-full border border-emerald-500/20">
-                Solved
-              </span>
-            )}
-          </div>
-          
-          <p className="mt-1 text-sm text-gray-300 font-medium leading-relaxed">
-            {challenge.description || 'Complete this challenge to prove your mettle and earn points. High-stakes execution required.'}
-          </p>
-        </div>
+        {/* Top row: difficulty + solved badge */}
+        <div className="flex items-center justify-between mb-4">
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-wider ${cfg.badge} ${cfg.badgeText}`}>
+            {cfg.icon}
+            {cfg.label}
+          </span>
 
-        <div className="mt-6">
-          <Link
-            to={`/challenges/${challenge.uuid || challenge.id || challenge._id}`}
-            className="relative w-full flex items-center justify-center px-4 py-3 bg-black border border-red-900/40 text-white font-black text-xs tracking-widest rounded-md overflow-hidden transition-all duration-300 group/btn"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-orange-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
-            
-            <span className="relative flex items-center">
-              <Play className="mr-2 h-4 w-4 fill-current" />
-              INITIATE SEQUENCE
+          {solved && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-950/50 border border-emerald-800/40 text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+              <CheckCircle2 size={10} />
+              Solved
             </span>
-          </Link>
+          )}
         </div>
+
+        {/* Title */}
+        <h3 className="text-base font-black text-white leading-snug tracking-tight mb-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-red-400 group-hover:to-orange-400 transition-all duration-300 line-clamp-2">
+          {challenge.title}
+        </h3>
+
+        {/* Description */}
+        <p className="text-xs text-zinc-500 leading-relaxed line-clamp-3 flex-1 group-hover:text-zinc-400 transition-colors duration-300">
+          {challenge.description || 'Complete this challenge to prove your mettle and earn points. High-stakes execution required.'}
+        </p>
+
+        {/* CTA */}
+        <Link
+          to={`/challenges/${challengeId}`}
+          className="relative mt-5 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-800 bg-black/60 text-white text-[11px] font-black tracking-widest uppercase overflow-hidden transition-all duration-300 group/btn hover:border-red-800/60"
+        >
+          {/* Fill on hover */}
+          <div className="absolute inset-0 bg-gradient-to-r from-red-700 to-red-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+          <Play size={12} className="relative fill-current" />
+          <span className="relative">Start Challenge</span>
+        </Link>
       </div>
     </motion.div>
   );
