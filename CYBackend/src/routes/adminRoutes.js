@@ -5,11 +5,10 @@ const { getAllUsers, grantAdmin, revokeAdmin } = require('../controllers/adminCo
 // التعديل هنا: استدعاء الحارس من الملف الجديد الموحد
 const { authAdmin } = require('../middlewares/auth');
 const { adminLimiter } = require('../middlewares/rateLimiter');
-const requireRole = require('../middlewares/requireRole');
 
 router.get('/users', authAdmin, getAllUsers);
-// Apply rate limiting and require a 'superadmin' role for state-changing admin endpoints.
-router.post('/users/grant-admin', authAdmin, requireRole('superadmin'), adminLimiter, grantAdmin);
-router.post('/users/revoke-admin', authAdmin, requireRole('superadmin'), adminLimiter, revokeAdmin);
+// Apply rate limiting for state-changing admin endpoints.
+router.post('/users/grant-admin', authAdmin, adminLimiter, grantAdmin);
+router.post('/users/revoke-admin', authAdmin, adminLimiter, revokeAdmin);
 
 module.exports = router;

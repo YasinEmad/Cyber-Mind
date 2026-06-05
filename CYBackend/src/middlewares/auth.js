@@ -33,7 +33,8 @@ exports.protect = async (req, res, next) => {
 exports.authAdmin = async (req, res, next) => {
   // بننادي protect الأول عشان نتأكد إنه يوزر أصلاً
   await exports.protect(req, res, () => {
-    if (req.user && req.user.role === 'admin') {
+    const role = req.user?.role;
+    if (role === 'admin' || role === 'superadmin') {
       next();
     } else {
       res.status(403).json({ success: false, message: 'Admin resource. Access denied' });

@@ -32,19 +32,19 @@ exports.grantAdmin = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }
 
-    // Enforce RBAC: only users with role 'superadmin' can grant admin
-    if ((actor.role || '').toLowerCase() !== 'superadmin') {
+    // Enforce RBAC: only users with role 'admin' or 'superadmin' can grant admin
+    if (!['admin', 'superadmin'].includes((actor.role || '').toLowerCase())) {
       // Audit the failed attempt with structured data
       logSecurityEvent('FAILED_PRIVILEGE_ATTEMPT', {
         reason: 'insufficient_role',
-        requiredRole: 'superadmin',
+        requiredRole: 'admin',
         actorId: actor.id,
         actorEmail: actor.email,
         ip: req.ip,
         target: req.body?.email || null,
       });
 
-      return res.status(403).json({ success: false, message: 'Forbidden: superadmin required' });
+      return res.status(403).json({ success: false, message: 'Forbidden: admin required' });
     }
 
     const { email } = req.body || {};
@@ -109,16 +109,16 @@ exports.revokeAdmin = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }
 
-    if ((actor.role || '').toLowerCase() !== 'superadmin') {
+    if (!['admin', 'superadmin'].includes((actor.role || '').toLowerCase())) {
       logSecurityEvent('FAILED_PRIVILEGE_ATTEMPT', {
         reason: 'insufficient_role',
-        requiredRole: 'superadmin',
+        requiredRole: 'admin',
         actorId: actor.id,
         actorEmail: actor.email,
         ip: req.ip,
         target: req.body?.email || null,
       });
-      return res.status(403).json({ success: false, message: 'Forbidden: superadmin required' });
+      return res.status(403).json({ success: false, message: 'Forbidden: admin required' });
     }
 
     const { email } = req.body || {};
