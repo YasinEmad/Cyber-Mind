@@ -77,6 +77,7 @@ const CTFLevelsAdmin: React.FC = () => {
     hints: [] as string[],
     flag: '',
     difficulty: 'easy' as 'easy' | 'medium' | 'hard',
+    category: 'Linux',
     isActive: true,
     commands: [] as Command[],
     customCommands: [] as Command[],
@@ -141,6 +142,32 @@ const CTFLevelsAdmin: React.FC = () => {
     }
   };
 
+  const getNextLevelNumber = () => {
+    const currentMax = levels.reduce((max, level) => Math.max(max, level.level), 0);
+    return String(currentMax + 1 || 1);
+  };
+
+  const openCreateForm = () => {
+    setEditingLevel(null);
+    setFormData({
+      level: getNextLevelNumber(),
+      title: '',
+      description: '',
+      hints: [],
+      flag: '',
+      difficulty: 'easy',
+      category: 'Linux',
+      isActive: true,
+      commands: [],
+      customCommands: [],
+      commandTemplates: [],
+      requiredCommandSequence: [],
+      successCondition: '',
+      initialDirectory: '/home/user',
+    });
+    setShowForm(true);
+  };
+
   const handleEdit = (level: CTFLevel) => {
     const parsedCommandTemplates = Array.isArray(level.commandTemplates) ? level.commandTemplates : [];
     setEditingLevel(level);
@@ -151,6 +178,7 @@ const CTFLevelsAdmin: React.FC = () => {
       hints: level.hints || [],
       flag: level.flag,
       difficulty: level.difficulty,
+      category: (level as any).category || 'Linux',
       isActive: level.isActive,
       commands: [], // Will be loaded from templates
       customCommands: level.customCommands || [],
@@ -195,6 +223,7 @@ const CTFLevelsAdmin: React.FC = () => {
       hints: [],
       flag: '',
       difficulty: 'easy',
+      category: 'Linux',
       isActive: true,
       commands: [],
       customCommands: [],
@@ -418,9 +447,9 @@ const CTFLevelsAdmin: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-white">Linux CTF Levels Management</h2>
+        <h2 className="text-2xl font-bold text-white">CTF Levels Management</h2>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={openCreateForm}
           className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
         >
           <Plus size={20} />
@@ -455,16 +484,22 @@ const CTFLevelsAdmin: React.FC = () => {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Level Number</label>
-                  <input
-                    type="number"
-                    value={formData.level}
-                    onChange={(e) => setFormData({ ...formData, level: e.target.value })}
-                    className="w-full px-3 py-2 bg-zinc-800 border border-red-900/40 rounded-lg text-white focus:outline-none focus:border-red-500"
-                    required
-                  />
-                </div>
+                {editingLevel ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Level Number</label>
+                    <input
+                      type="number"
+                      value={formData.level}
+                      onChange={(e) => setFormData({ ...formData, level: e.target.value })}
+                      className="w-full px-3 py-2 bg-zinc-800 border border-red-900/40 rounded-lg text-white focus:outline-none focus:border-red-500"
+                      required
+                    />
+                  </div>
+                ) : (
+                  <div className="md:col-span-2 text-sm text-neutral-400">
+                    Level number is auto-assigned when creating a new level.
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Title</label>
@@ -487,6 +522,22 @@ const CTFLevelsAdmin: React.FC = () => {
                     <option value="easy">Easy</option>
                     <option value="medium">Medium</option>
                     <option value="hard">Hard</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Category</label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-3 py-2 bg-zinc-800 border border-red-900/40 rounded-lg text-white focus:outline-none focus:border-red-500"
+                    required
+                  >
+                    <option value="">Select a category</option>
+                    <option value="Linux">Linux</option>
+                    <option value="Offensive Security">Offensive Security</option>
+                    <option value="Network">Network</option>
+                    <option value="Web Security">Web Security</option>
                   </select>
                 </div>
 

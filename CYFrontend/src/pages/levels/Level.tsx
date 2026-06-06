@@ -26,7 +26,8 @@ const Level: React.FC = () => {
   const ctfError = useSelector((state: RootState) => state.ctf.error);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  const fallbackData = !challenge && status === 'failed'
+  const shouldUseLocalFallback = !challenge && status === 'failed' && ctfError && !/not found/i.test(ctfError);
+  const fallbackData = shouldUseLocalFallback
     ? ctfInfo.levels.find((l: any) => l.level === levelNumber)
     : null;
   const displayChallenge = challenge || (fallbackData ? {

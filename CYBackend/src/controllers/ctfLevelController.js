@@ -6,18 +6,19 @@ exports.getCTFInfo = async (req, res, next) => {
     // Fetch real data from database with all details
     const levels = await CTFLevel.findAll({
       where: { isActive: true },
-      attributes: ['level', 'title', 'description', 'hint', 'difficulty'],
-      order: [['level', 'ASC']],
+      attributes: ['id', 'level', 'title', 'description', 'hint', 'difficulty', 'category'],
+      order: [['category', 'ASC'], ['level', 'ASC']],
     });
 
     // Map database records to frontend format
     const ctfInfo = {
       levels: levels.map(level => ({
+        id: level.id,
         level: level.level,
         name: level.title,
         description: level.description,
         hints: Array.isArray(level.hint) ? level.hint : [],
-        category: 'Linux', // You can add category field to DB later if needed
+        category: level.category,
         difficulty: level.difficulty,
       })),
     };
@@ -31,13 +32,45 @@ exports.getCTFInfo = async (req, res, next) => {
   }
 };
 
+// Get all available CTF categories
+exports.getCTFCategories = async (req, res, next) => {
+  try {
+    const levels = await CTFLevel.findAll({
+      attributes: ['category'],
+      where: { isActive: true },
+      raw: true,
+    });
+
+    // Extract unique categories and count levels per category
+    const categoryMap = new Map();
+    levels.forEach(level => {
+      if (!categoryMap.has(level.category)) {
+        categoryMap.set(level.category, 0);
+      }
+      categoryMap.set(level.category, categoryMap.get(level.category) + 1);
+    });
+
+    const categories = Array.from(categoryMap.entries()).map(([name, count]) => ({
+      name,
+      count,
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: { categories },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Get a specific CTF level info
 exports.getCTFLevelInfo = async (req, res, next) => {
   try {
     const { level } = req.params;
     const levelData = await CTFLevel.findOne({
       where: { level: parseInt(level), isActive: true },
-      attributes: ['level', 'title', 'description', 'difficulty'],
+      attributes: ['id', 'level', 'title', 'description', 'difficulty', 'category'],
     });
 
     if (!levelData) {
@@ -50,10 +83,11 @@ exports.getCTFLevelInfo = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: {
+        id: levelData.id,
         level: levelData.level,
         name: levelData.title,
         description: levelData.description,
-        category: 'Linux',
+        category: levelData.category,
         difficulty: levelData.difficulty,
       },
     });
@@ -225,6 +259,7 @@ exports.createCTFLevel = async (req, res, next) => {
       hints, // newer payloads use `hints` array
       flag,
       difficulty,
+      category,
       isActive,
       commands,
       customCommands,
@@ -264,6 +299,7 @@ exports.createCTFLevel = async (req, res, next) => {
     if (!description) missing.push('description');
     if (!normalizedHints || normalizedHints.length === 0) missing.push('hint(s)');
     if (!flag) missing.push('flag');
+    if (!category || category.trim() === '') missing.push('category');
     if ((!finalCommands || finalCommands.length === 0) && (!storedCommandTemplates || storedCommandTemplates.length === 0) && (!finalCustomCommands || finalCustomCommands.length === 0)) missing.push('commands (or commandTemplates or customCommands)');
 
     if (missing.length > 0) {
@@ -291,6 +327,7 @@ exports.createCTFLevel = async (req, res, next) => {
       hint: normalizedHints,
       flag,
       difficulty: difficulty || 'easy',
+      category: category.trim(),
       isActive: isActive !== undefined ? isActive : true,
       // store either commands OR commandTemplates (templates take precedence)
       commands: finalCommands,
@@ -448,15 +485,16 @@ exports.getAvailableLevels = async (req, res, next) => {
   try {
     const levels = await CTFLevel.findAll({
       where: { isActive: true },
-      attributes: ['level', 'title', 'description', 'difficulty'],
-      order: [['level', 'ASC']],
+      attributes: ['id', 'level', 'title', 'description', 'difficulty', 'category'],
+      order: [['category', 'ASC'], ['level', 'ASC']],
     });
 
     const availableLevels = levels.map(level => ({
+      id: level.id,
       level: level.level,
       name: level.title,
       description: level.description,
-      category: 'Linux',
+      category: level.category,
       difficulty: level.difficulty,
     }));
 

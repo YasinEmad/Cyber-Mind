@@ -2,15 +2,21 @@
 
 const { Sequelize, DataTypes } = require('sequelize');
 
+require('dotenv').config();
+
+const isProduction = process.env.NODE_ENV === 'production';
+
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   logging: false,
 
   dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false,
-    },
+    ssl: isProduction
+      ? {
+          require: true,
+          rejectUnauthorized: false,
+        }
+      : false, // 👈 مهم جداً للمحلي
   },
 
   pool: {
@@ -27,20 +33,23 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
 
 const connectDB = async () => {
   try {
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL is not defined in environment variables');
+    }
+
     await sequelize.authenticate();
-    console.log('PostgreSQL Connected');
+    console.log('✅ PostgreSQL Connected');
 
     const forceSync = process.env.FORCE_DB_SYNC === 'true';
 
     await sequelize.sync({ force: forceSync });
 
     console.log(
-      'Database synced',
-      forceSync ? '(force=true)' : ''
+      `📦 Database synced ${forceSync ? '(force=true)' : ''}`
     );
-
   } catch (error) {
-    console.error('PostgreSQL Connection Error:', error.message);
+    console.error('❌ PostgreSQL Connection Error:');
+    console.error(error); // 👈 مهم لإظهار السبب الحقيقي
     process.exit(1);
   }
 };

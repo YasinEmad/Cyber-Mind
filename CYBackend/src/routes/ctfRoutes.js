@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   getCTFInfo,
+  getCTFCategories,
   getCTFLevelInfo,
   getCTFChallenge,
   getCTFChallengeWithFS,
@@ -33,6 +34,9 @@ const { executeLimiter, flagLimiter } = require('../middlewares/rateLimiter');
 
 // Get all CTF level information
 router.get('/info', getCTFInfo);
+
+// Get all available CTF categories
+router.get('/categories', getCTFCategories);
 
 // Get available CTF levels (list)
 router.get('/levels/available', getAvailableLevels);

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
+import axios from "@/api/axios";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Terminal,
@@ -16,6 +17,16 @@ import CTFCategorySelect from "@/components/CTFCategorySelect";
 import CTFLevelGrid from "@/components/CTFLevelGrid";
 import FeatureItem from "@/components/FeatureItem";
 import serverAnimation from '@/assets/server.json';
+
+interface LevelData {
+  level: number;
+  name: string;
+  description: string;
+  category: string;
+  hints?: string[];
+  target?: string;
+  difficulty?: string;
+}
 
 const keyframes = `
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
@@ -34,12 +45,39 @@ const keyframes = `
 export default function CTFMindWelcome() {
   const [phase, setPhase] = useState(6);
   const [activeCategory, setActiveCategory] = useState("Linux");
+  const [backendLevels, setBackendLevels] = useState<LevelData[] | null>(null);
   const completedLevels = useSelector((state: RootState) => state.ctf.completedLevels);
+  const allLevels = backendLevels ?? ctfInfo.levels;
+
+  useEffect(() => {
+    const fetchBackendLevels = async () => {
+      try {
+        const response = await axios.get('/ctf/info');
+        if (response.data?.data?.levels) {
+          setBackendLevels(response.data.data.levels);
+        } else if (response.data?.levels) {
+          setBackendLevels(response.data.levels);
+        } else {
+          setBackendLevels([]);
+        }
+      } catch (error) {
+        console.error('Failed to load backend CTF levels:', error);
+        setBackendLevels(null);
+      }
+    };
+
+    fetchBackendLevels();
+  }, []);
+
+  const categoryCounts = allLevels.reduce<Record<string, number>>((acc, level) => {
+    acc[level.category] = (acc[level.category] || 0) + 1;
+    return acc;
+  }, {});
 
   const categories = [
     {
       name: "Linux",
-      count: 10,
+      count: categoryCounts["Linux"] || 0,
       color: "#ef4444", // Red
       icon: <Terminal className="w-5 h-5" />,
       description: "Master Linux system administration and security",
@@ -47,7 +85,7 @@ export default function CTFMindWelcome() {
     },
     {
       name: "Offensive Security",
-      count: 10,
+      count: categoryCounts["Offensive Security"] || 0,
       color: "#dc2626", // Darker Red
       icon: <Shield className="w-5 h-5" />,
       description: "Practice offensive security techniques and exploit development",
@@ -55,7 +93,7 @@ export default function CTFMindWelcome() {
     },
     {
       name: "Network",
-      count: 10,
+      count: categoryCounts["Network"] || 0,
       color: "#b91c1c", // Deep Red
       icon: <Zap className="w-5 h-5" />,
       description: "Network protocols, traffic analysis, and security",
@@ -63,7 +101,7 @@ export default function CTFMindWelcome() {
     },
     {
       name: "Web Security",
-      count: 5,
+      count: categoryCounts["Web Security"] || 0,
       color: "#991b1b", // Darkest Red
       icon: <Target className="w-5 h-5" />,
       description: "Web vulnerabilities and application security",
@@ -72,7 +110,7 @@ export default function CTFMindWelcome() {
   ];
 
   const getCategoryStats = (category: string) => {
-    const levels = ctfInfo.levels.filter(level => level.category === category);
+    const levels = allLevels.filter(level => level.category === category);
     const completed = levels.filter(level => completedLevels.includes(level.level)).length;
     return {
       total: levels.length,

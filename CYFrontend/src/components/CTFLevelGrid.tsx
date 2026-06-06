@@ -34,7 +34,7 @@ export default function CTFLevelGrid({ category }: CTFLevelGridProps) {
   const [hoveredLevel, setHoveredLevel] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
-  const [backendLevels, setBackendLevels] = useState<LevelData[]>([]);
+  const [backendLevels, setBackendLevels] = useState<LevelData[] | null>(null);
   const [_loading, _setLoading] = useState(true);
   const [_error, _setError] = useState<string | null>(null);
 
@@ -55,6 +55,9 @@ export default function CTFLevelGrid({ category }: CTFLevelGridProps) {
           // Fallback for different response structure
           setBackendLevels(response.data.levels);
           _setError(null);
+        } else {
+          setBackendLevels([]);
+          _setError(null);
         }
       } catch (err) {
         console.error("Failed to fetch CTF levels from backend:", err);
@@ -70,7 +73,7 @@ export default function CTFLevelGrid({ category }: CTFLevelGridProps) {
   }, []);
 
   // Use backend levels if available, otherwise fall back to frontend data
-  const levelsData = backendLevels.length > 0 ? backendLevels : ctfInfo.levels;
+  const levelsData = backendLevels !== null ? backendLevels : ctfInfo.levels;
   const filteredLevels = levelsData.filter((level: LevelData) => level.category === category);
 
   return (

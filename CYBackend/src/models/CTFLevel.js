@@ -34,6 +34,12 @@ const CTFLevel = sequelize.define('CTFLevel', {
     allowNull: false,
     defaultValue: 'easy',
   },
+  category: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'Linux',
+    comment: 'Category name: Linux, Offensive Security, Network, Web Security, etc.',
+  },
   isActive: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
@@ -80,8 +86,10 @@ const CTFLevel = sequelize.define('CTFLevel', {
   timestamps: true,
   indexes: [
     { fields: ['level'] },
+    { fields: ['category'] },
     { fields: ['isActive'] },
     { fields: ['difficulty'] },
+    { fields: ['category', 'isActive'] },
   ],
 });
 

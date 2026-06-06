@@ -261,9 +261,7 @@ const PlayChallengePage: React.FC = () => {
           
           {/* Editor Area */}
           <div className="flex-1 relative">
-            <div className="absolute top-0 right-0 z-10 p-2">
-              <span className="text-xs font-mono text-red-300/80">JavaScript / Node.js</span>
-            </div>
+            
             <Editor
               height="100%" 
               defaultLanguage="javascript" 
