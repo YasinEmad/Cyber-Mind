@@ -81,30 +81,64 @@ async function cleanup() {
         }
         changed = true;
       } else if (Array.isArray(data.commands) && data.commands.length > 0) {
-        // Trim command names and templateSnapshot baseCommand, and dedupe by name
+        /**
+         * CONTEXT-AWARE DEDUPLICATION
+         * Only deduplicate if name AND path rules AND output ALL match.
+         * This preserves path-aware command variants.
+         * 
+         * Composite key includes:
+         * - Command name
+         * - Allowed paths (sorted for consistency)
+         * - Blocked paths (sorted for consistency)
+         * - Output configuration (output OR outputByPath)
+         */
         const cmds = JSON.parse(JSON.stringify(data.commands));
-        const seen = new Set();
+        const seen = new Map(); // key -> first occurrence
         const out = [];
         let cmdsChanged = false;
+        
         for (const c of cmds) {
           if (!c) continue;
+          
+          // Normalize name
           if (c.name !== undefined && c.name !== null) {
             const tname = String(c.name).trim();
             if (tname !== c.name) { c.name = tname; cmdsChanged = true; }
           }
+          
+          // Normalize baseCommand
           if (c.templateSnapshot && c.templateSnapshot.baseCommand) {
             const tb = String(c.templateSnapshot.baseCommand).trim();
             if (tb !== c.templateSnapshot.baseCommand) { c.templateSnapshot.baseCommand = tb; cmdsChanged = true; }
           }
-          const key = (c.name || '').trim();
-          if (!key) continue;
-          if (seen.has(key)) {
-            cmdsChanged = true; // duplicate -> removed
+          
+          // Build composite dedup key (name + path rules + output)
+          const cmdName = (c.name || '').trim();
+          if (!cmdName) continue;
+          
+          const allowedKey = Array.isArray(c.allowedPaths)
+            ? JSON.stringify([...c.allowedPaths].sort())
+            : '';
+          const blockedKey = Array.isArray(c.blockedPaths)
+            ? JSON.stringify([...c.blockedPaths].sort())
+            : '';
+          
+          // Output key: prioritize outputByPath if present, else use output
+          const outputKey = c.outputByPath && typeof c.outputByPath === 'object'
+            ? JSON.stringify(c.outputByPath)
+            : JSON.stringify(c.output || '');
+          
+          const compositeKey = `${cmdName}|${allowedKey}|${blockedKey}|${outputKey}`;
+          
+          if (seen.has(compositeKey)) {
+            cmdsChanged = true; // true duplicate -> removed
             continue;
           }
-          seen.add(key);
+          
+          seen.set(compositeKey, c);
           out.push(c);
         }
+        
         if (cmdsChanged) {
           update.commands = out;
           changed = true;

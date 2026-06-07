@@ -1,12 +1,5 @@
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
-
-const { sequelize } = require('../config/db');
-const { Challenge } = require('../models');
-const { connectDB } = require('../config/db');
-
-const challenges = [
-    {
+module.exports = [
+  {
     "title": "SQL Injection in Login Form",
     "difficulty": "Easy",
     "description": "A login endpoint builds its SQL query by directly concatenating user-supplied username and password into a query string. An attacker can bypass authentication by entering `' OR '1'='1` as the username.",
@@ -456,25 +449,4 @@ const challenges = [
     "initialCode": "// VULNERABLE: Reflecting unkeyed header into response\napp.use((req, res, next) => {\n    const host = req.headers['x-forwarded-host'] || req.hostname;\n    // Attacker sets X-Forwarded-Host: evil.com\n    res.locals.cdnBase = `https://${host}/static`;\n    next();\n});\n\napp.get('/', (req, res) => {\n    // Cached response includes: <script src=\"https://evil.com/static/app.js\">\n    res.render('index', { cdnBase: res.locals.cdnBase });\n});",
     "recommendation": "Never reflect attacker-influenced headers (`X-Forwarded-Host`, `X-Original-URL`) into responses. Configure the CDN to include all response-influencing headers in the cache key. Use a static, hardcoded CDN base URL from configuration rather than request headers."
   }
-
 ];
-
-const seedChallenges = async () => {
-  try {
-    await connectDB();
-    // بنمسح القديم وننزل الجديد بالحلول
-    await Challenge.destroy({ truncate: true });
-    console.log('Existing challenges removed');
-    
-    await Challenge.bulkCreate(challenges);
-    console.log('Challenges seeded successfully with solutions!');
-    
-    await sequelize.close();
-  } catch (err) {
-    console.error('Seeding failed', err);
-    await sequelize.close();
-    process.exit(1);
-  }
-};
-
-seedChallenges();

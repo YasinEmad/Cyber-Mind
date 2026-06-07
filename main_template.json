@@ -1,0 +1,666 @@
+{
+  "filesystem": {
+    "/": {
+      "type": "dir",
+      "children": [
+        "home",
+        "etc",
+        "usr",
+        "var",
+        "tmp",
+        "dev"
+      ]
+    },
+    "/home": {
+      "type": "dir",
+      "children": [
+        "user"
+      ]
+    },
+    "/home/user": {
+      "type": "dir",
+      "children": [
+        "Desktop",
+        "Documents",
+        "Downloads",
+        "Pictures",
+        "Music",
+        "Videos",
+        ".bashrc",
+        ".profile"
+      ]
+    },
+    "/home/user/Desktop": {
+      "type": "dir",
+      "children": [
+        "readme.txt",
+        "todo.txt"
+      ]
+    },
+    "/home/user/Documents": {
+      "type": "dir",
+      "children": [
+        "notes.txt",
+        "resume.pdf",
+        "projects"
+      ]
+    },
+    "/home/user/Documents/projects": {
+      "type": "dir",
+      "children": [
+        "webapp",
+        "scripts"
+      ]
+    },
+    "/home/user/Documents/projects/webapp": {
+      "type": "dir",
+      "children": [
+        "index.html",
+        "app.js",
+        "style.css"
+      ]
+    },
+    "/home/user/Documents/projects/scripts": {
+      "type": "dir",
+      "children": [
+        "backup.sh",
+        "deploy.sh"
+      ]
+    },
+    "/home/user/Downloads": {
+      "type": "dir",
+      "children": [
+        "ubuntu-24.04.iso",
+        "wallpaper.png"
+      ]
+    },
+    "/home/user/Pictures": {
+      "type": "dir",
+      "children": [
+        "screenshot.png",
+        "avatar.jpg"
+      ]
+    },
+    "/home/user/Music": {
+      "type": "dir",
+      "children": []
+    },
+    "/home/user/Videos": {
+      "type": "dir",
+      "children": []
+    },
+    "/etc": {
+      "type": "dir",
+      "children": [
+        "passwd",
+        "hosts",
+        "fstab",
+        "hostname"
+      ]
+    },
+    "/usr": {
+      "type": "dir",
+      "children": [
+        "bin",
+        "lib",
+        "share"
+      ]
+    },
+    "/usr/bin": {
+      "type": "dir",
+      "children": [
+        "bash",
+        "python3",
+        "node",
+        "git",
+        "vim"
+      ]
+    },
+    "/usr/lib": {
+      "type": "dir",
+      "children": []
+    },
+    "/usr/share": {
+      "type": "dir",
+      "children": []
+    },
+    "/var": {
+      "type": "dir",
+      "children": [
+        "log",
+        "cache"
+      ]
+    },
+    "/var/log": {
+      "type": "dir",
+      "children": [
+        "syslog",
+        "auth.log"
+      ]
+    },
+    "/var/cache": {
+      "type": "dir",
+      "children": []
+    },
+    "/tmp": {
+      "type": "dir",
+      "children": []
+    },
+    "/dev": {
+      "type": "dir",
+      "children": [
+        "null",
+        "zero",
+        "random"
+      ]
+    },
+    "/home/user/.bashrc": {
+      "type": "file",
+      "content": "# ~/.bashrc: executed by bash for non-login shells.\nexport PS1=\"\\u@\\h:\\w\\$ \"\nexport PATH=\"$HOME/.local/bin:$PATH\"\nalias ll='ls -alF'\nalias la='ls -A'\nalias l='ls -CF'"
+    },
+    "/home/user/.profile": {
+      "type": "file",
+      "content": "# ~/.profile: executed by the command interpreter for login shells.\nif [ -n \"$BASH_VERSION\" ]; then\n  if [ -f \"$HOME/.bashrc\" ]; then\n    . \"$HOME/.bashrc\"\n  fi\nfi"
+    },
+    "/home/user/Desktop/readme.txt": {
+      "type": "file",
+      "content": "Welcome to Ubuntu 24.04 LTS!\n\nThis is a simulated Ubuntu desktop environment running in your browser.\nYou can open the Terminal to explore the virtual file system.\n\nTry these commands:\n  ls, cd, pwd, mkdir, touch, cat, echo, help\n\nEnjoy!"
+    },
+    "/home/user/Desktop/todo.txt": {
+      "type": "file",
+      "content": "TODO List\n=========\n[ ] Update system packages\n[ ] Configure SSH keys\n[ ] Set up development environment\n[ ] Install VS Code\n[x] Install Ubuntu\n[x] Configure network"
+    },
+    "/home/user/Documents/notes.txt": {
+      "type": "file",
+      "content": "Meeting Notes - Q4 Planning\n============================\nDate: 2024-11-15\n\n- Discussed roadmap for next quarter\n- Assigned tasks to team members\n- Set deadlines for major milestones\n\nAction Items:\n1. Review codebase\n2. Write documentation\n3. Deploy to production"
+    },
+    "/home/user/Documents/resume.pdf": {
+      "type": "file",
+      "content": "[Binary PDF file - cannot display in terminal]"
+    },
+    "/home/user/Documents/projects/webapp/index.html": {
+      "type": "file",
+      "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>My Web App</title>\n  <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n  <h1>Hello, World!</h1>\n  <script src=\"app.js\"></script>\n</body>\n</html>"
+    },
+    "/home/user/Documents/projects/webapp/app.js": {
+      "type": "file",
+      "content": "// Main application entry point\nconsole.log(\"App initialized\");\n\ndocument.addEventListener(\"DOMContentLoaded\", () => {\n  console.log(\"DOM ready\");\n});"
+    },
+    "/home/user/Documents/projects/webapp/style.css": {
+      "type": "file",
+      "content": "body {\n  margin: 0;\n  font-family: sans-serif;\n  background: #f5f5f5;\n}\n\nh1 {\n  color: #333;\n  padding: 20px;\n}"
+    },
+    "/home/user/Documents/projects/scripts/backup.sh": {
+      "type": "file",
+      "content": "#!/bin/bash\n# Backup script\necho \"Starting backup...\"\ntar -czf backup_$(date +%Y%m%d).tar.gz ~/Documents\necho \"Backup complete!\""
+    },
+    "/home/user/Documents/projects/scripts/deploy.sh": {
+      "type": "file",
+      "content": "#!/bin/bash\n# Deploy script\necho \"Deploying application...\"\ngit pull origin main\nnpm install\nnpm run build\necho \"Deployment complete!\""
+    },
+    "/etc/hostname": {
+      "type": "file",
+      "content": "ubuntu"
+    },
+    "/etc/hosts": {
+      "type": "file",
+      "content": "127.0.0.1\tlocalhost\n127.0.1.1\tubuntu\n::1\t\tlocalhost ip6-localhost ip6-loopback"
+    },
+    "/etc/passwd": {
+      "type": "file",
+      "content": "root:x:0:0:root:/root:/bin/bash\nuser:x:1000:1000:Ubuntu User:/home/user:/bin/bash\nnobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin"
+    },
+    "/etc/fstab": {
+      "type": "file",
+      "content": "# /etc/fstab: static file system information.\nUUID=xxx / ext4 errors=remount-ro 0 1\nUUID=yyy /boot/efi vfat umask=0077 0 1"
+    },
+    "/var/log/syslog": {
+      "type": "file",
+      "content": "Nov 15 10:00:01 ubuntu kernel: [    0.000000] Booting Linux on physical CPU 0x0\nNov 15 10:00:01 ubuntu kernel: [    0.000000] Linux version 6.8.0-45-generic\nNov 15 10:00:02 ubuntu systemd[1]: Started System Logging Service.\nNov 15 10:00:03 ubuntu NetworkManager[852]: <info> NetworkManager activated."
+    },
+    "/var/log/auth.log": {
+      "type": "file",
+      "content": "Nov 15 10:05:01 ubuntu sudo: user : TTY=pts/0 ; PWD=/home/user ; USER=root ; COMMAND=/usr/bin/apt update\nNov 15 10:05:45 ubuntu sshd[1234]: Accepted publickey for user from 192.168.1.100"
+    },
+    "/dev/null": {
+      "type": "file",
+      "content": ""
+    },
+    "/dev/zero": {
+      "type": "file",
+      "content": "[Device file - outputs null bytes]"
+    },
+    "/dev/random": {
+      "type": "file",
+      "content": "[Device file - outputs random bytes]"
+    },
+    "/home/user/Downloads/ubuntu-24.04.iso": {
+      "type": "file",
+      "content": "[Binary ISO file - 1.5GB]"
+    },
+    "/home/user/Downloads/wallpaper.png": {
+      "type": "file",
+      "content": "[Binary image file]"
+    },
+    "/home/user/Pictures/screenshot.png": {
+      "type": "file",
+      "content": "[Binary image file]"
+    },
+    "/home/user/Pictures/avatar.jpg": {
+      "type": "file",
+      "content": "[Binary image file]"
+    },
+    "/usr/bin/bash": {
+      "type": "file",
+      "content": "[Binary executable]"
+    },
+    "/usr/bin/python3": {
+      "type": "file",
+      "content": "[Binary executable]"
+    },
+    "/usr/bin/node": {
+      "type": "file",
+      "content": "[Binary executable]"
+    },
+    "/usr/bin/git": {
+      "type": "file",
+      "content": "[Binary executable]"
+    },
+    "/usr/bin/vim": {
+      "type": "file",
+      "content": "[Binary executable]"
+    }
+  },
+  "mainTemplate": {
+    "templateId": "main",
+    "name": "Main Template",
+    "baseCommand": "",
+    "defaultOutput": "",
+    "description": "A central admin command template that enumerates common commands and restricts them by allowed and blocked paths.",
+    "fields": [],
+    "allowedPaths": [
+      "/home/user",
+      "/home/user/Documents",
+      "/home/user/Documents/projects",
+      "/home/user/Desktop",
+      "/tmp"
+    ],
+    "blockedPaths": [
+      "/etc",
+      "/usr",
+      "/var",
+      "/dev",
+      "/home/user/Downloads",
+      "/home/user/Documents/resume.pdf"
+    ],
+    "commands": [
+      {
+        "name": "help",
+        "output": "Available commands: ls, cd, pwd, mkdir, touch, cat, echo, cp, mv, rm, find, grep, whoami, id, uname, df, du, ps, git, node, python3, npm, curl, wget",
+        "allowedPaths": [],
+        "blockedPaths": []
+      },
+      {
+        "name": "ls",
+        "output": "Desktop Documents Downloads Music Pictures Videos .bashrc .profile",
+        "outputByPath": {
+          "/": "home etc usr var tmp dev",
+          "/home": "user",
+          "/home/user": "Desktop Documents Downloads Music Pictures Videos .bashrc .profile",
+          "/home/user/Desktop": "readme.txt todo.txt",
+          "/home/user/Documents": "notes.txt resume.pdf projects",
+          "/home/user/Documents/projects": "webapp scripts",
+          "/home/user/Documents/projects/webapp": "app.js index.html style.css",
+          "/tmp": ""
+        },
+        "allowedPaths": [
+          "/",
+          "/home",
+          "/home/user",
+          "/home/user/Documents",
+          "/home/user/Documents/projects",
+          "/home/user/Desktop",
+          "/tmp"
+        ],
+        "blockedPaths": []
+      },
+      {
+        "name": "pwd",
+        "output": "/home/user",
+        "outputByPath": {
+          "/": "/",
+          "/home": "/home",
+          "/home/user": "/home/user",
+          "/home/user/Desktop": "/home/user/Desktop",
+          "/home/user/Documents": "/home/user/Documents",
+          "/home/user/Documents/projects": "/home/user/Documents/projects",
+          "/home/user/Documents/projects/webapp": "/home/user/Documents/projects/webapp",
+          "/tmp": "/tmp"
+        },
+        "allowedPaths": [
+          "/home/user",
+          "/home/user/Documents",
+          "/home/user/Documents/projects",
+          "/home/user/Desktop",
+          "/tmp"
+        ],
+        "blockedPaths": []
+      },
+      {
+        "name": "cd",
+        "output": "",
+        "outputByPath": {},
+        "allowedPaths": [
+          "/home/user",
+          "/home/user/Documents",
+          "/home/user/Documents/projects",
+          "/home/user/Desktop",
+          "/tmp"
+        ],
+        "blockedPaths": [
+          "/etc",
+          "/usr",
+          "/var",
+          "/dev"
+        ]
+      },
+      {
+        "name": "cat",
+        "output": "<file content>",
+        "outputByPath": {
+          "/home/user/Desktop/readme.txt": "Welcome to Ubuntu 24.04 LTS!\n\nThis is a simulated Ubuntu desktop environment running in your browser.\nYou can open the Terminal to explore the virtual file system.\n\nTry these commands:\n  ls, cd, pwd, mkdir, touch, cat, echo, help\n\nEnjoy!",
+          "/home/user/Desktop/todo.txt": "TODO List\n=========\n[ ] Update system packages\n[ ] Configure SSH keys\n[ ] Set up development environment\n[ ] Install VS Code\n[x] Install Ubuntu\n[x] Configure network",
+          "/home/user/Documents/notes.txt": "Meeting Notes - Q4 Planning\n============================\nDate: 2024-11-15\n\n- Discussed roadmap for next quarter\n- Assigned tasks to team members\n- Set deadlines for major milestones\n\nAction Items:\n1. Review codebase\n2. Write documentation\n3. Deploy to production",
+          "/home/user/Documents/resume.pdf": "[Binary PDF file - cannot display in terminal]",
+          "/etc/hostname": "ubuntu",
+          "/etc/hosts": "127.0.0.1\tlocalhost\n127.0.1.1\tubuntu\n::1\t\tlocalhost ip6-localhost ip6-loopback",
+          "/etc/passwd": "root:x:0:0:root:/root:/bin/bash\nuser:x:1000:1000:Ubuntu User:/home/user:/bin/bash\nnobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin",
+          "/var/log/syslog": "Nov 15 10:00:01 ubuntu kernel: [    0.000000] Booting Linux on physical CPU 0x0\nNov 15 10:00:01 ubuntu kernel: [    0.000000] Linux version 6.8.0-45-generic\nNov 15 10:00:02 ubuntu systemd[1]: Started System Logging Service.\nNov 15 10:00:03 ubuntu NetworkManager[852]: <info> NetworkManager activated.",
+          "/var/log/auth.log": "Nov 15 10:05:01 ubuntu sudo: user : TTY=pts/0 ; PWD=/home/user ; USER=root ; COMMAND=/usr/bin/apt update\nNov 15 10:05:45 ubuntu sshd[1234]: Accepted publickey for user from 192.168.1.100"
+        },
+        "allowedPaths": [
+          "/home/user/Desktop",
+          "/home/user/Documents",
+          "/home/user/Documents/projects/webapp"
+        ],
+        "blockedPaths": [
+          "/etc/passwd",
+          "/etc/hostname",
+          "/var/log/syslog",
+          "/home/user/Downloads/ubuntu-24.04.iso"
+        ]
+      },
+      {
+        "name": "mkdir",
+        "output": "Created directory '/home/user/new-folder'",
+        "outputByPath": {
+          "/home/user": "Created directory '/home/user/new-folder'",
+          "/home/user/Documents": "Created directory '/home/user/Documents/new-folder'",
+          "/tmp": "Created directory '/tmp/new-folder'"
+        },
+        "allowedPaths": [
+          "/home/user",
+          "/home/user/Documents",
+          "/tmp"
+        ],
+        "blockedPaths": [
+          "/etc",
+          "/usr",
+          "/var",
+          "/dev"
+        ]
+      },
+      {
+        "name": "touch",
+        "output": "Created file '/home/user/notes-new.txt'",
+        "outputByPath": {
+          "/home/user": "Created file '/home/user/notes-new.txt'",
+          "/home/user/Documents": "Created file '/home/user/Documents/notes-new.txt'",
+          "/tmp": "Created file '/tmp/notes-new.txt'"
+        },
+        "allowedPaths": [
+          "/home/user",
+          "/home/user/Documents",
+          "/tmp"
+        ],
+        "blockedPaths": [
+          "/etc",
+          "/usr",
+          "/var",
+          "/dev"
+        ]
+      },
+      {
+        "name": "echo",
+        "output": "Hello world",
+        "outputByPath": {
+          "/home/user": "Hello world",
+          "/tmp": "Hello world"
+        },
+        "allowedPaths": [
+          "/home/user",
+          "/tmp"
+        ],
+        "blockedPaths": []
+      },
+      {
+        "name": "rm",
+        "output": "Removed '/tmp/example.txt'",
+        "outputByPath": {
+          "/home/user/Desktop": "Removed '/home/user/Desktop/todo.txt'",
+          "/home/user/Documents/projects/webapp": "Removed '/home/user/Documents/projects/webapp/style.css'",
+          "/tmp": "Removed '/tmp/example.txt'"
+        },
+        "allowedPaths": [
+          "/home/user/Desktop",
+          "/home/user/Documents/projects/webapp",
+          "/tmp"
+        ],
+        "blockedPaths": [
+          "/",
+          "/etc",
+          "/usr",
+          "/var",
+          "/dev",
+          "/home/user/Downloads"
+        ]
+      },
+      {
+        "name": "cp",
+        "output": "Copied '/home/user/Documents/notes.txt' to '/tmp/notes.txt'",
+        "outputByPath": {
+          "/home/user/Documents": "Copied '/home/user/Documents/notes.txt' to '/tmp/notes.txt'",
+          "/home/user/Documents/projects/webapp": "Copied '/home/user/Documents/projects/webapp/index.html' to '/tmp/index.html'"
+        },
+        "allowedPaths": [
+          "/home/user/Documents/projects/webapp",
+          "/home/user/Documents"
+        ],
+        "blockedPaths": [
+          "/etc",
+          "/usr",
+          "/var",
+          "/dev"
+        ]
+      },
+      {
+        "name": "mv",
+        "output": "Renamed '/home/user/Desktop/todo.txt' to '/home/user/Desktop/todo-old.txt'",
+        "outputByPath": {
+          "/home/user/Documents": "Renamed '/home/user/Documents/resume.pdf' to '/home/user/Documents/resume-old.pdf'",
+          "/home/user/Documents/projects/webapp": "Renamed '/home/user/Documents/projects/webapp/app.js' to '/home/user/Documents/projects/webapp/app-old.js'"
+        },
+        "allowedPaths": [
+          "/home/user/Documents/projects/webapp",
+          "/home/user/Documents"
+        ],
+        "blockedPaths": [
+          "/etc",
+          "/usr",
+          "/var",
+          "/dev"
+        ]
+      },
+      {
+        "name": "find",
+        "output": "./Desktop\n./Documents\n./Documents/projects\n./Documents/projects/webapp",
+        "outputByPath": {
+          "/home/user": "./Desktop\n./Documents\n./Downloads\n./Music\n./Pictures\n./Videos",
+          "/home/user/Documents": "./notes.txt\n./resume.pdf\n./projects",
+          "/home/user/Documents/projects": "./webapp\n./scripts"
+        },
+        "allowedPaths": [
+          "/home/user",
+          "/tmp"
+        ],
+        "blockedPaths": [
+          "/etc",
+          "/usr",
+          "/var",
+          "/dev"
+        ]
+      },
+      {
+        "name": "grep",
+        "output": "[ ] Update system packages\n[ ] Configure SSH keys",
+        "outputByPath": {
+          "/home/user/Documents": "[ ] Update system packages\n[ ] Configure SSH keys",
+          "/home/user/Documents/projects/webapp": "console.log(\"App initialized\");"
+        },
+        "allowedPaths": [
+          "/home/user/Documents",
+          "/home/user/Documents/projects/webapp"
+        ],
+        "blockedPaths": []
+      },
+      {
+        "name": "whoami",
+        "output": "user",
+        "allowedPaths": [],
+        "blockedPaths": []
+      },
+      {
+        "name": "id",
+        "output": "uid=1000(user) gid=1000(user) groups=1000(user)",
+        "allowedPaths": [],
+        "blockedPaths": []
+      },
+      {
+        "name": "uname",
+        "output": "Linux",
+        "allowedPaths": [],
+        "blockedPaths": []
+      },
+      {
+        "name": "df",
+        "output": "Filesystem      Size  Used Avail Use% Mounted on\n/dev/sda1        50G   18G   30G  38% /",
+        "allowedPaths": [],
+        "blockedPaths": []
+      },
+      {
+        "name": "du",
+        "output": "4.0K    /home/user/Desktop\n12K     /home/user/Documents\n24K     /home/user/Documents/projects/webapp",
+        "allowedPaths": [
+          "/home/user"
+        ],
+        "blockedPaths": []
+      },
+      {
+        "name": "ps",
+        "output": "  PID TTY          TIME CMD\n 1024 pts/0    00:00:00 bash\n 1035 pts/0    00:00:01 node",
+        "allowedPaths": [],
+        "blockedPaths": []
+      },
+      {
+        "name": "top",
+        "output": "Top is interactive and not supported in this template. Use 'ps' for a static process list.",
+        "allowedPaths": [],
+        "blockedPaths": [
+          "/"
+        ]
+      },
+      {
+        "name": "chmod",
+        "output": "Updated permissions of '/home/user/Desktop/readme.txt'",
+        "allowedPaths": [
+          "/home/user/Documents/projects/webapp",
+          "/home/user/Desktop"
+        ],
+        "blockedPaths": [
+          "/etc",
+          "/usr",
+          "/var",
+          "/dev"
+        ]
+      },
+      {
+        "name": "chown",
+        "output": "Updated owner of '/home/user/Documents/projects/webapp/app.js' to user:user",
+        "allowedPaths": [
+          "/home/user/Documents/projects/webapp"
+        ],
+        "blockedPaths": [
+          "/etc",
+          "/usr",
+          "/var",
+          "/dev"
+        ]
+      },
+      {
+        "name": "git",
+        "output": "On branch main\nYour branch is up to date with 'origin/main'.\n\nnothing to commit, working tree clean",
+        "allowedPaths": [
+          "/home/user/Documents/projects"
+        ],
+        "blockedPaths": []
+      },
+      {
+        "name": "node",
+        "output": "v20.5.0\nWelcome to Node.js!",
+        "allowedPaths": [
+          "/home/user/Documents/projects"
+        ],
+        "blockedPaths": []
+      },
+      {
+        "name": "python3",
+        "output": "Python 3.12.0\n>>> print('hello')\nhello",
+        "allowedPaths": [
+          "/home/user/Documents/projects"
+        ],
+        "blockedPaths": []
+      },
+      {
+        "name": "npm",
+        "output": "npm notice This is a simulated npm command output",
+        "allowedPaths": [
+          "/home/user/Documents/projects"
+        ],
+        "blockedPaths": []
+      },
+      {
+        "name": "curl",
+        "output": "HTTP/1.1 200 OK\nContent-Type: text/html\n\n<html>...sample response...</html>",
+        "allowedPaths": [],
+        "blockedPaths": []
+      },
+      {
+        "name": "wget",
+        "output": "--2026-06-07 12:00:00--  http://example.com/\nResolving example.com... done\nSaving to: 'index.html'\n\nindex.html          100%[===================>]   1.23K  --.-KB/s    in 0.01s",
+        "allowedPaths": [],
+        "blockedPaths": []
+      },
+      {
+        "name": "ssh",
+        "output": "Permission denied (publickey).",
+        "allowedPaths": [],
+        "blockedPaths": [
+          "/etc",
+          "/usr",
+          "/var",
+          "/dev"
+        ]
+      }
+    ]
+  }
+}

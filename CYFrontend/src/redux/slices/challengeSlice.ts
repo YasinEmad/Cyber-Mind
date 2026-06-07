@@ -19,6 +19,7 @@ export interface Challenge {
   description?: string
   code?: string
   initialCode?: string
+  programmingLanguage?: string
   level: 'easy' | 'medium' | 'hard'
   hints?: string[]
   challengeDetails?: string

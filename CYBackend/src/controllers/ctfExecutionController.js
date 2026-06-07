@@ -11,6 +11,89 @@ const calculatePoints = (difficulty) => {
   return pointMap[difficulty] || 10;
 };
 
+/**
+ * CONTEXT-AWARE COMMAND RESOLVER
+ * Resolves command by scoring based on filesystem context
+ * 
+ * Strategy:
+ * 1. Filter candidates matching by name
+ * 2. Score each candidate based on path specificity:
+ *    - +100: exact match in outputByPath[currentPath]
+ *    - +50: currentPath in allowedPaths
+ *    - -100: currentPath in blockedPaths
+ * 3. Return highest scoring command
+ * 4. Deterministic: ties broken by first occurrence
+ */
+const resolveContextAwareCommand = (candidates, cmdName, currentPath) => {
+  if (!Array.isArray(candidates) || candidates.length === 0) {
+    return null;
+  }
+
+  // Filter candidates matching by name (full or base)
+  const cmdNameTrimmed = String(cmdName).trim();
+  const nameMatches = candidates.filter((c) => {
+    if (!c || !c.name) return false;
+    const stored = String(c.name).trim();
+    return stored === cmdNameTrimmed;
+  });
+
+  if (nameMatches.length === 0) {
+    return null;
+  }
+
+  // If only one match, return it
+  if (nameMatches.length === 1) {
+    return nameMatches[0];
+  }
+
+  // Score each match based on path context
+  const cwd = String(currentPath || '/home/user').trim();
+  const scored = nameMatches.map((cmd, idx) => {
+    let score = 0;
+    
+    // Rule 1: Exact match in outputByPath (highest priority, +100)
+    if (cmd.outputByPath && typeof cmd.outputByPath === 'object') {
+      if (cmd.outputByPath.hasOwnProperty(cwd)) {
+        score += 100;
+      }
+    }
+    
+    // Rule 2: Path in allowedPaths (+50)
+    if (Array.isArray(cmd.allowedPaths) && cmd.allowedPaths.length > 0) {
+      if (cmd.allowedPaths.some((p) => p === cwd)) {
+        score += 50;
+      }
+    }
+    
+    // Rule 3: Path in blockedPaths (-100)
+    if (Array.isArray(cmd.blockedPaths) && cmd.blockedPaths.length > 0) {
+      if (cmd.blockedPaths.some((p) => p === cwd)) {
+        score -= 100;
+      }
+    }
+
+    return { cmd, score, idx };
+  });
+
+  // Sort by score (descending), then by index (ascending) for deterministic resolution
+  scored.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    return a.idx - b.idx;
+  });
+
+  console.debug('CTF execute - context-aware resolution', {
+    cmdName: cmdNameTrimmed,
+    currentPath: cwd,
+    candidateCount: nameMatches.length,
+    scores: scored.slice(0, 3).map((s) => ({ score: s.score, name: s.cmd.name })),
+    selected: scored[0].cmd.name,
+  });
+
+  return scored[0].cmd;
+};
+
 // Execute a command for a given level (path-aware)
 exports.executeCTFCommand = async (req, res, next) => {
   try {
@@ -109,11 +192,12 @@ exports.executeCTFCommand = async (req, res, next) => {
     }
 
     // ════════════════════════════════════════════════════════════════
-    // NORMAL COMMAND HANDLING
+    // NORMAL COMMAND HANDLING (CONTEXT-AWARE RESOLUTION)
     // ════════════════════════════════════════════════════════════════
 
     const full = String(command).trim();
     const base = String(cmdName).trim();
+    const cwd = currentPath || lvl.initialDirectory || '/home/user';
 
     let matched = null;
 
@@ -123,36 +207,43 @@ exports.executeCTFCommand = async (req, res, next) => {
         try {
           const expanded = await expandTemplate(tRef.templateId, tRef.values || {});
           const flat = [].concat(...(expanded || [])).filter(Boolean);
+          
+          // Collect all template candidates (don't stop at first match)
+          const templateCandidates = [];
           for (const c of flat) {
             const stored = c && c.name ? String(c.name).trim() : '';
             const tplBase = c && c.templateSnapshot && c.templateSnapshot.baseCommand ? String(c.templateSnapshot.baseCommand).trim() : null;
             if (stored === full || stored === base || (tplBase && (tplBase === full || tplBase === base))) {
-              matched = c;
-              console.debug('CTF execute - matched via commandTemplates expansion', { templateId: tRef.templateId, matchedName: stored || tplBase });
+              templateCandidates.push(c);
+            }
+          }
+          
+          // Use context-aware resolver on template candidates
+          if (templateCandidates.length > 0) {
+            matched = resolveContextAwareCommand(templateCandidates, base, cwd);
+            if (matched) {
+              console.debug('CTF execute - matched via commandTemplates expansion', { 
+                templateId: tRef.templateId, 
+                matchedName: matched.name,
+                contextPath: cwd,
+              });
               break;
             }
           }
-          if (matched) break;
         } catch (err) {
           try { console.debug('CTF execute - template expansion error', err); } catch (e) {}
         }
       }
     }
 
-    // If no templates or none matched, fall back to explicit commands stored on the level
+    // If no templates or none matched, fall back to explicit commands (context-aware)
     if (!matched && Array.isArray(commands) && commands.length > 0) {
-      matched = commands.find((c) => {
-        const stored = (c && c.name) ? String(c.name).trim() : '';
-        return stored === full || stored === base;
-      });
+      matched = resolveContextAwareCommand(commands, base, cwd);
     }
 
-    // Finally allow customCommands as additional level commands
+    // Finally try customCommands with context-aware resolution
     if (!matched && Array.isArray(customCommands) && customCommands.length > 0) {
-      matched = customCommands.find((c) => {
-        const stored = (c && c.name) ? String(c.name).trim() : '';
-        return stored === full || stored === base;
-      });
+      matched = resolveContextAwareCommand(customCommands, base, cwd);
     }
 
     if (!matched) {
@@ -163,23 +254,23 @@ exports.executeCTFCommand = async (req, res, next) => {
     const blocked = Array.isArray(matched.blockedPaths) ? matched.blockedPaths : undefined;
     // IMPORTANT: Use currentPath sent from Frontend, not a cached/old path
     // This is critical for proper permission checks after `cd` command
-    const cwd = currentPath || lvl.initialDirectory || '/home/user';
+    const cwdForValidation = currentPath || lvl.initialDirectory || '/home/user';
 
     console.debug('CTF execute - permission validation', {
       command: cmdName,
       sentPath: currentPath,
-      resolvedCwd: cwd,
+      resolvedCwd: cwdForValidation,
       allowedPaths: allowed,
       blockedPaths: blocked,
     });
 
     // Blocked takes precedence - check if current path is exactly blocked
     if (Array.isArray(blocked) && blocked.length > 0) {
-      const isBlocked = blocked.some((p) => cwd === p);
+      const isBlocked = blocked.some((p) => cwdForValidation === p);
       if (isBlocked) {
         console.warn('CTF execute - PERMISSION DENIED (path is blocked)', {
           command: cmdName,
-          cwd: cwd,
+          cwd: cwdForValidation,
           blockedPaths: blocked,
         });
         return res.status(200).json({ success: false, output: 'Permission denied' });
@@ -188,11 +279,11 @@ exports.executeCTFCommand = async (req, res, next) => {
 
     // If allowedPaths is specified, check if current path is exactly allowed
     if (Array.isArray(allowed) && allowed.length > 0) {
-      const isAllowed = allowed.some((p) => cwd === p);
+      const isAllowed = allowed.some((p) => cwdForValidation === p);
       if (!isAllowed) {
         console.warn('CTF execute - PERMISSION DENIED (path not in allowed list)', {
           command: cmdName,
-          cwd: cwd,
+          cwd: cwdForValidation,
           allowedPaths: allowed,
         });
         return res.status(200).json({ success: false, output: 'Permission denied' });
@@ -200,12 +291,43 @@ exports.executeCTFCommand = async (req, res, next) => {
     }
     // If allowedPaths is empty or not specified, command is allowed (unless blocked)
 
+    /**
+     * OUTPUT RESOLUTION (PATH-AWARE)
+     * 1. Check outputByPath[currentPath] (highest priority)
+     * 2. Fall back to defaultOutput
+     * 3. Fall back to output (for backward compatibility)
+     */
+    let outVal = '';
+    const cwdForOutput = currentPath || lvl.initialDirectory || '/home/user';
+    
+    // Rule 1: Try outputByPath[currentPath]
+    if (matched.outputByPath && typeof matched.outputByPath === 'object') {
+      if (matched.outputByPath.hasOwnProperty(cwdForOutput)) {
+        outVal = matched.outputByPath[cwdForOutput];
+        console.debug('CTF execute - output resolved from outputByPath', {
+          path: cwdForOutput,
+          outputLength: String(outVal).length,
+        });
+      }
+    }
+    
+    // Rule 2: Fall back to defaultOutput
+    if (!outVal && matched.defaultOutput !== undefined && matched.defaultOutput !== null) {
+      outVal = matched.defaultOutput;
+      console.debug('CTF execute - output resolved from defaultOutput');
+    }
+    
+    // Rule 3: Fall back to output (backward compatibility)
+    if (!outVal && matched.output !== undefined && matched.output !== null) {
+      outVal = matched.output;
+      console.debug('CTF execute - output resolved from output (backward compat)');
+    }
+
     // Normalize output to a string for safety and log unexpected types
-    let outVal = matched.output;
     if (outVal === undefined || outVal === null) outVal = '';
     if (typeof outVal !== 'string') {
       try {
-        console.debug('CTF execute - matched.output is not a string, serializing', { type: typeof outVal });
+        console.debug('CTF execute - output is not a string, serializing', { type: typeof outVal });
         outVal = JSON.stringify(outVal);
       } catch (e) {
         outVal = String(outVal);

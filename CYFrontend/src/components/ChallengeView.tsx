@@ -37,6 +37,7 @@ const ChallengeView = () => {
     title: '',
     description: '',
     level: 'easy' as 'easy' | 'medium' | 'hard',
+    programmingLanguage: '',
     initialCode: '',
     challengeDetails: '',
     recommendation: '',
@@ -58,8 +59,6 @@ const ChallengeView = () => {
   const filteredChallenges = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
     return challenges.filter((challenge) => {
-      const challengeKey = String(challenge.id || challenge._id || challenge.uuid || '');
-      const isSolved = solvedChallengeIds.has(challengeKey);
       if (difficultyFilter !== 'all') {
         const normalizedLevel = challenge.level?.toLowerCase() || (challenge as any).difficulty?.toString().toLowerCase() || '';
         if (normalizedLevel !== difficultyFilter) return false;
@@ -88,7 +87,7 @@ const ChallengeView = () => {
       await dispatch(createChallenge(challengeData)).unwrap();
       toast.success('Challenge created successfully!');
       setIsAddModalOpen(false);
-      setFormData({ title: '', description: '', level: 'easy', initialCode: '', challengeDetails: '', recommendation: '' });
+      setFormData({ title: '', description: '', level: 'easy', programmingLanguage: '', initialCode: '', challengeDetails: '', recommendation: '' });
       dispatch(fetchChallenges());
     } catch (error) {
       toast.error('Failed to create challenge');
@@ -96,7 +95,7 @@ const ChallengeView = () => {
   };
 
   const resetForm = () => {
-    setFormData({ title: '', description: '', level: 'easy', initialCode: '', challengeDetails: '', recommendation: '' });
+    setFormData({ title: '', description: '', level: 'easy', programmingLanguage: '', initialCode: '', challengeDetails: '', recommendation: '' });
   };
 
   const openEditModal = (challenge: Challenge) => {
@@ -105,6 +104,7 @@ const ChallengeView = () => {
       title: challenge.title || '',
       description: challenge.description || '',
       level: challenge.level,
+      programmingLanguage: challenge.programmingLanguage || '',
       initialCode: challenge.initialCode || '',
       challengeDetails: challenge.challengeDetails || '',
       recommendation: challenge.recommendation || ''
@@ -218,6 +218,11 @@ const ChallengeView = () => {
               <textarea value={formData.description} onChange={(e) => handleInputChange('description', e.target.value)} rows={3} className={inputClasses} required placeholder="Brief overview of what this challenge covers..." />
             </div>
 
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Programming Language</label>
+              <input type="text" value={formData.programmingLanguage} onChange={(e) => handleInputChange('programmingLanguage', e.target.value)} className={inputClasses} placeholder="e.g. JavaScript, Python, C#" />
+            </div>
+
             {/* Challenge Details */}
             <div className="space-y-1.5">
               <label className="flex items-center gap-2 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
@@ -229,11 +234,19 @@ const ChallengeView = () => {
 
             {/* Initial Code */}
             <div className="space-y-1.5">
-              <label className="flex items-center gap-2 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                <Code size={13} className="text-red-500" />
-                Initial Code
-                <span className="normal-case font-normal text-zinc-600 ml-1">(Vulnerable snippet)</span>
-              </label>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <label className="flex items-center gap-2 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                  <Code size={13} className="text-red-500" />
+                  Initial Code
+                  <span className="normal-case font-normal text-zinc-600 ml-1">(Vulnerable snippet)</span>
+                </label>
+                {formData.programmingLanguage && (
+                  <span className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-300 bg-zinc-900 border border-zinc-800 rounded-full px-3 py-1">
+                    <Code size={12} className="text-red-400" />
+                    {formData.programmingLanguage}
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <div className="absolute top-0 left-0 right-0 h-8 bg-zinc-900/80 border-b border-red-900/20 rounded-t-lg flex items-center px-3 gap-1.5">
                   <div className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
@@ -414,12 +427,20 @@ const ChallengeView = () => {
                               {isSolved ? 'Solved' : 'Unsolved'}
                             </span>
                           </div>
-                          {challenge.initialCode && (
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <Code size={10} className="text-zinc-600" />
-                              <span className="text-[10px] text-zinc-600">Has vulnerable code</span>
-                            </div>
-                          )}
+                          <div className="flex flex-wrap gap-2 mt-0.5 text-[10px] text-zinc-600">
+                            {challenge.initialCode && (
+                              <span className="inline-flex items-center gap-1">
+                                <Code size={10} className="text-zinc-600" />
+                                Has vulnerable code
+                              </span>
+                            )}
+                            {challenge.programmingLanguage && (
+                              <span className="inline-flex items-center gap-1 bg-zinc-900/70 border border-zinc-800 rounded-full px-2 py-0.5 text-[10px] text-zinc-300">
+                                <Code size={10} className="text-red-400" />
+                                {challenge.programmingLanguage}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>
