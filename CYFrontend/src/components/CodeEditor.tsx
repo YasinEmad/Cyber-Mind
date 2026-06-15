@@ -1,4 +1,10 @@
-import { useState, useRef, useCallback, type KeyboardEvent } from 'react';
+import { useState } from 'react';
+import Editor from 'react-simple-code-editor';
+import Prism from 'prismjs';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-bash';
+import 'prismjs/components/prism-json';
 
 interface CodeEditorProps {
   value: string;
@@ -8,29 +14,16 @@ interface CodeEditorProps {
   minHeight?: string;
 }
 
-function highlightSyntax(code: string): string {
-  const escaped = code
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+const LANGUAGE_GRAMMAR: Record<string, Prism.Grammar> = {
+  javascript: Prism.languages.javascript,
+  python: Prism.languages.python,
+  bash: Prism.languages.bash,
+  json: Prism.languages.json,
+};
 
-  const patterns: [RegExp, string][] = [
-    [/\/\/.*/gm, '<span class="hljs-comment">$&</span>'],
-    [/\/\*[\s\S]*?\*\//g, '<span class="hljs-comment">$&</span>'],
-    [/"([^"\\]|\\.)*"/g, '<span class="hljs-string">$&</span>'],
-    [/'([^'\\]|\\.)*'/g, '<span class="hljs-string">$&</span>'],
-    [/`([^`\\]|\\.)*`/g, '<span class="hljs-string">$&</span>'],
-    [/\b(function|return|const|let|var|if|else|for|while|do|switch|case|break|continue|new|delete|typeof|instanceof|import|export|from|async|await|try|catch|throw|class|extends|super|this|true|false|null|undefined|of|in)\b/g, '<span class="hljs-keyword">$1</span>'],
-    [/\b(\d+\.?\d*)\b/g, '<span class="hljs-number">$1</span>'],
-    [/\b(console|Math|JSON|Promise|fetch|setTimeout|setInterval|parseInt|parseFloat)\b/g, '<span class="hljs-built_in">$1</span>'],
-  ];
-
-  let highlighted = escaped;
-  for (const [regex, replacement] of patterns) {
-    highlighted = highlighted.replace(regex, replacement);
-  }
-
-  return highlighted;
+function highlight(code: string, language: string): string {
+  const grammar = LANGUAGE_GRAMMAR[language] || Prism.languages.javascript;
+  return Prism.highlight(code, grammar, language);
 }
 
 export default function CodeEditor({
@@ -40,30 +33,7 @@ export default function CodeEditor({
   placeholder = '// write your code here...',
   minHeight = '200px',
 }: CodeEditorProps) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isFocused, setIsFocused] = useState(false);
-
-  const handleKeyDown = useCallback((e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const textarea = e.currentTarget;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const newValue = value.slice(0, start) + '  ' + value.slice(end);
-      onChange(newValue);
-      requestAnimationFrame(() => {
-        textarea.selectionStart = textarea.selectionEnd = start + 2;
-      });
-    }
-  }, [value, onChange]);
-
-  const handleScroll = useCallback(() => {
-    const pre = textareaRef.current?.previousElementSibling;
-    if (pre && textareaRef.current) {
-      pre.scrollTop = textareaRef.current.scrollTop;
-      pre.scrollLeft = textareaRef.current.scrollLeft;
-    }
-  }, []);
 
   return (
     <div
@@ -74,41 +44,59 @@ export default function CodeEditor({
       }`}
       style={{ minHeight }}
     >
-      <pre
-        className="absolute inset-0 m-0 p-4 font-mono text-sm leading-6 pointer-events-none overflow-hidden whitespace-pre-wrap break-all"
-        aria-hidden="true"
-        style={{ color: 'transparent' }}
-      >
-        <code
-          className="block font-mono text-sm leading-6"
-          dangerouslySetInnerHTML={{
-            __html: highlightSyntax(value) || placeholder,
-          }}
-        />
-      </pre>
-      <textarea
-        ref={textareaRef}
+      <Editor
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onScroll={handleScroll}
+        onValueChange={onChange}
+        highlight={(code) => highlight(code, language)}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         placeholder={placeholder}
-        spellCheck={false}
-        autoComplete="off"
-        className="absolute inset-0 w-full h-full p-4 font-mono text-sm leading-6 bg-transparent text-transparent caret-red-400 resize-none outline-none border-none focus:outline-none focus:ring-0 placeholder:text-zinc-700"
-        style={{ WebkitTextFillColor: 'transparent' }}
+        padding={16}
+        textareaClassName="focus:outline-none focus:ring-0"
+        style={{
+          fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
+          fontSize: 14,
+          lineHeight: '24px',
+          minHeight: '100%',
+          backgroundColor: 'transparent',
+          color: '#e2e8f0',
+        }}
       />
       <style>{`
-        .hljs-comment { color: #6a9955; font-style: italic; }
-        .hljs-string  { color: #ce9178; }
-        .hljs-keyword { color: #569cd6; }
-        .hljs-number  { color: #b5cea8; }
-        .hljs-built_in { color: #4ec9b0; }
-        textarea::selection {
-          background: rgba(239, 68, 68, 0.3);
+        .react-simple-code-editor textarea {
+          caret-color: #f87171 !important;
+          outline: none !important;
         }
+        .react-simple-code-editor textarea::selection {
+          background: rgba(239, 68, 68, 0.3) !important;
+        }
+        .react-simple-code-editor textarea::placeholder {
+          color: #3f3f46 !important;
+        }
+        .token.comment,
+        .token.prolog,
+        .token.doctype,
+        .token.cdata { color: #6a9955; font-style: italic; }
+        .token.string,
+        .token.char,
+        .token.attr-value { color: #ce9178; }
+        .token.keyword,
+        .token.control,
+        .token.selector,
+        .token.important { color: #569cd6; }
+        .token.number,
+        .token.boolean,
+        .token.constant { color: #b5cea8; }
+        .token.builtin,
+        .token.class-name,
+        .token.function { color: #4ec9b0; }
+        .token.operator,
+        .token.punctuation { color: #d4d4d4; }
+        .token.property,
+        .token.tag { color: #9cdcfe; }
+        .token.regex,
+        .token.url { color: #d16969; }
+        .token.variable { color: #9b9b9b; }
       `}</style>
     </div>
   );
