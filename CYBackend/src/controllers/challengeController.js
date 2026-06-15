@@ -1,9 +1,49 @@
+const { z } = require('zod');
 const { Challenge } = require('../models');
 const challengeService = require('../services/challengeService');
 // التعديل هنا: بننادي على الفانكشن اللي هنستخدمها تحت
 const { getPointsForDifficulty } = require('../utils/challingesPoints');
 const userService = require('../services/userService');
 const aiService = require('../services/aiService');
+
+const vulnerabilityTypes = ['Injection', 'XSS', 'Path Traversal', 'IDOR', 'Authentication flaw', 'Authorization flaw', 'Missing validation', 'Unsafe input handling'];
+
+
+const difficultyLevels = ['easy', 'medium', 'hard'];
+
+const validationTypes = ['regex', 'exact'];
+
+const createChallengeSchema = z.object({
+  title: z.string().min(1, 'Title is required').trim(),
+  description: z.string().optional().default(''),
+  code: z.string().optional().default(''),
+  initialCode: z.string().optional().default(''),
+  programmingLanguage: z.string().optional().default(''),
+  vulnerabilityType: z.enum(vulnerabilityTypes).optional(),
+  level: z.enum(difficultyLevels).optional().default('medium'),
+  hints: z.array(z.string()).optional().default([]),
+  challengeDetails: z.string().optional().default(''),
+  recommendation: z.string().optional().default(''),
+  feedback: z.string().optional().default(''),
+  solution: z.string().optional().default(''),
+  validationType: z.enum(validationTypes).optional().default('regex'),
+}).strict();
+
+const updateChallengeSchema = z.object({
+  title: z.string().min(1).trim().optional(),
+  description: z.string().optional(),
+  code: z.string().optional(),
+  initialCode: z.string().optional(),
+  programmingLanguage: z.string().optional(),
+  vulnerabilityType: z.enum(vulnerabilityTypes).optional(),
+  level: z.enum(difficultyLevels).optional(),
+  hints: z.array(z.string()).optional(),
+  challengeDetails: z.string().optional(),
+  recommendation: z.string().optional(),
+  feedback: z.string().optional(),
+  solution: z.string().optional(),
+  validationType: z.enum(validationTypes).optional(),
+}).strict();
 
 // 1. عرض كل التحديات
 exports.getAllChallenges = async (req, res, next) => {
@@ -28,19 +68,20 @@ exports.getChallengeById = async (req, res, next) => {
 // 3. إضافة تحدي جديد
 exports.createChallenge = async (req, res, next) => {
   try {
-    // For security challenges (with initialCode), ensure level is set
-    let body = { ...req.body };
-    if (body.initialCode && !body.level) {
-      body.level = 'medium'; // Default security challenges to medium difficulty
-      console.log('[CHALLENGE CREATE] Security challenge without level, defaulting to "medium"');
+    const parsed = createChallengeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: parsed.error.flatten().fieldErrors,
+      });
     }
-    
-    // Calculate points based on difficulty level
-    const points = getPointsForDifficulty(body.level);
-    
-    const challenge = await Challenge.create({ ...body, points });
+
+    const points = getPointsForDifficulty(parsed.data.level);
+
+    const challenge = await Challenge.create({ ...parsed.data, points });
     console.log(`[CHALLENGE CREATE] Challenge created: ID=${challenge.id}, UUID=${challenge.uuid}, level=${challenge.level}, points=${challenge.points}`);
-    
+
     res.status(201).json({ success: true, data: challenge });
   } catch (error) { next(error); }
 };
@@ -179,15 +220,22 @@ exports.updateChallenge = async (req, res, next) => {
     const idParam = req.params.id;
     const id = await resolveToNumericId(idParam);
     if (!id) return res.status(404).json({ success: false, message: 'Challenge not found' });
-    const updateData = req.body;
 
-    // حساب النقط لو الـ level اتغير
-    if (updateData.level) {
-      const { getPointsForDifficulty } = require('../utils/challingesPoints');
-      updateData.points = getPointsForDifficulty(updateData.level);
+    const parsed = updateChallengeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: parsed.error.flatten().fieldErrors,
+      });
     }
 
-    const [updatedRowsCount] = await Challenge.update(updateData, { where: { id } });
+    const data = { ...parsed.data };
+    if (data.level) {
+      data.points = getPointsForDifficulty(data.level);
+    }
+
+    const [updatedRowsCount] = await Challenge.update(data, { where: { id } });
     
     if (updatedRowsCount === 0) {
       return res.status(404).json({ success: false, message: 'Challenge not found' });
@@ -203,6 +251,10 @@ exports.updateChallenge = async (req, res, next) => {
 // 6. حذف تحدي
 exports.deleteChallenge = async (req, res, next) => {
   try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required.' });
+    }
+
     const idParam = req.params.id;
     const id = await resolveToNumericId(idParam);
     if (!id) return res.status(404).json({ success: false, message: 'Challenge not found' });
@@ -221,6 +273,10 @@ exports.deleteChallenge = async (req, res, next) => {
 // 6.5 حذف كل التحديات
 exports.deleteAllChallenges = async (req, res, next) => {
   try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required.' });
+    }
+
     const deletedRowsCount = await Challenge.destroy({ where: {} });
     res.status(200).json({ success: true, message: `Removed ${deletedRowsCount} challenge(s).` });
   } catch (error) {

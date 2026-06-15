@@ -1,6 +1,31 @@
+const { z } = require('zod');
 const { Puzzle } = require('../models');
 const puzzleService = require('../services/puzzleService');
 const userService = require('../services/userService');
+
+const createPuzzleSchema = z.object({
+  title: z.string().min(1, 'Title is required').trim(),
+  description: z.string().min(1, 'Description is required').trim(),
+  level: z.number().int().refine(v => [1, 2, 3].includes(v), { message: 'Level must be 1, 2, or 3' }),
+  hints: z.array(z.string()).optional().default([]),
+  animation_url: z.string().optional().default(''),
+  scenario: z.string().min(1, 'Scenario is required').trim(),
+  answer: z.string().min(1, 'Answer is required').trim(),
+  category: z.string().min(1, 'Category is required').trim(),
+  active: z.boolean().optional().default(true),
+}).strict();
+
+const updatePuzzleSchema = z.object({
+  title: z.string().min(1).trim().optional(),
+  description: z.string().min(1).trim().optional(),
+  level: z.number().int().refine(v => [1, 2, 3].includes(v), { message: 'Level must be 1, 2, or 3' }).optional(),
+  hints: z.array(z.string()).optional(),
+  animation_url: z.string().optional(),
+  scenario: z.string().min(1).trim().optional(),
+  answer: z.string().min(1).trim().optional(),
+  category: z.string().min(1).trim().optional(),
+  active: z.boolean().optional(),
+}).strict();
 
 // @desc    Get all puzzles
 exports.getPuzzles = async (req, res, next) => {
@@ -41,14 +66,21 @@ exports.createPuzzle = async (req, res, next) => {
       });
     }
 
+    const parsed = createPuzzleSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: parsed.error.flatten().fieldErrors,
+      });
+    }
+
     console.log(`[PUZZLE_ADMIN] Admin ${req.user.email} creating new puzzle`);
 
-    if (req.body.level) req.body.level = Number(req.body.level);
+    const data = { ...parsed.data };
+    data.tags = puzzleService.generateTags(data);
 
-    // Generate tags automatically
-    req.body.tags = puzzleService.generateTags(req.body);
-
-    const puzzle = await Puzzle.create(req.body);
+    const puzzle = await Puzzle.create(data);
     res.status(201).json(puzzle);
   } catch (err) {
     next(err);
@@ -70,7 +102,6 @@ exports.updatePuzzle = async (req, res, next) => {
 
     const { id } = req.params;
     
-    // Validate ID
     if (!id || id === 'undefined' || isNaN(id)) {
       return res.status(400).json({ message: 'Invalid puzzle ID provided' });
     }
@@ -78,15 +109,19 @@ exports.updatePuzzle = async (req, res, next) => {
     const puzzle = await Puzzle.findByPk(parseInt(id, 10));
     if (!puzzle) return res.status(404).json({ message: 'Puzzle not found' });
 
-    // update only fields sent in req.body
-    Object.keys(req.body).forEach(key => {
-      puzzle[key] = req.body[key];
-    });
+    const parsed = updatePuzzleSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: parsed.error.flatten().fieldErrors,
+      });
+    }
 
-    // Regenerate tags based on updated data
-    puzzle.tags = puzzleService.generateTags(puzzle);
+    const data = { ...parsed.data };
+    data.tags = puzzleService.generateTags({ ...puzzle.toJSON(), ...data });
 
-    await puzzle.save(); // triggers validation
+    await puzzle.update(data);
     res.json(puzzle);
   } catch (err) {
     next(err);
@@ -124,6 +159,10 @@ exports.deletePuzzle = async (req, res, next) => {
 // @desc    Delete all puzzles
 exports.deleteAllPuzzles = async (req, res, next) => {
   try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required.' });
+    }
+
     const deletedCount = await Puzzle.destroy({ where: {} });
     res.json({ message: `Removed ${deletedCount} puzzle(s).` });
   } catch (err) {

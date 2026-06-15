@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const { connectDB } = require('./config/db');
 
@@ -45,6 +46,8 @@ connectDB();
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
+app.use(helmet());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -60,10 +63,26 @@ app.use('/api/admin', require('./routes/adminRoutes')); // السطر ده نا�
 app.use('/api/ctf', require('./routes/ctfRoutes')); // CTF routes
 
 
-// Error Handler بسيط عشان السيرفر ما يقعش لو حصل غلط
+// Error handler — never expose internals in production
 app.use((err, req, res, next) => {
-  console.error("🔥 Server Error:", err.message);
-  res.status(500).json({ success: false, message: err.message });
+  console.error(`[${new Date().toISOString()}] Error:`, {
+    message: err.message,
+    stack: err.stack,
+    url: req.originalUrl,
+    method: req.method,
+    ip: req.ip,
+  });
+
+  const statusCode = err.statusCode || err.status || 500;
+
+  const clientMessage = statusCode < 500
+    ? err.message
+    : 'An internal server error occurred. Please try again later.';
+
+  res.status(statusCode).json({
+    success: false,
+    message: clientMessage,
+  });
 });
 
 const PORT = 8080;

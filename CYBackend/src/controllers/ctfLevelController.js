@@ -1,4 +1,49 @@
+const { z } = require('zod');
 const { CTFLevel } = require('../models');
+
+const difficulties = ['easy', 'medium', 'hard'];
+
+const createCTFSchema = z.object({
+  level: z.number().int().positive('Level must be a positive integer'),
+  title: z.string().min(1, 'Title is required').trim(),
+  description: z.string().min(1, 'Description is required').trim(),
+  hint: z.union([z.string(), z.array(z.string())]).optional().default([]),
+  hints: z.array(z.string()).optional(),
+  flag: z.string().min(1, 'Flag is required').trim(),
+  difficulty: z.enum(difficulties).optional().default('easy'),
+  category: z.string().min(1, 'Category is required').trim(),
+  isActive: z.boolean().optional().default(true),
+  commands: z.array(z.any()).optional().default([]),
+  customCommands: z.array(z.any()).optional().default([]),
+  commandTemplates: z.array(z.object({
+    templateId: z.string(),
+    values: z.record(z.any()).optional().default({}),
+  })).optional().default([]),
+  requiredCommandSequence: z.any().optional(),
+  successCondition: z.string().optional(),
+  initialDirectory: z.string().optional().default('/home/user'),
+}).strict();
+
+const updateCTFSchema = z.object({
+  level: z.number().int().positive().optional(),
+  title: z.string().min(1).trim().optional(),
+  description: z.string().min(1).trim().optional(),
+  hint: z.union([z.string(), z.array(z.string())]).optional(),
+  hints: z.array(z.string()).optional(),
+  flag: z.string().min(1).trim().optional(),
+  difficulty: z.enum(difficulties).optional(),
+  category: z.string().min(1).trim().optional(),
+  isActive: z.boolean().optional(),
+  commands: z.array(z.any()).optional(),
+  customCommands: z.array(z.any()).optional(),
+  commandTemplates: z.array(z.object({
+    templateId: z.string(),
+    values: z.record(z.any()).optional().default({}),
+  })).optional(),
+  requiredCommandSequence: z.any().optional(),
+  successCondition: z.string().optional(),
+  initialDirectory: z.string().optional(),
+}).strict();
 
 // Get all CTF level information
 exports.getCTFInfo = async (req, res, next) => {
@@ -241,7 +286,6 @@ exports.getCTFLevelById = async (req, res, next) => {
 // Create a new CTF level
 exports.createCTFLevel = async (req, res, next) => {
   try {
-    // ✓ SECURITY: Validate admin role (redundant check, but good practice)
     if (!req.user || req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -249,93 +293,53 @@ exports.createCTFLevel = async (req, res, next) => {
       });
     }
 
+    const parsed = createCTFSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: parsed.error.flatten().fieldErrors,
+      });
+    }
+
     console.log(`[CTF_ADMIN] Admin ${req.user.email} creating new CTF level`);
 
-    const {
-      level,
-      title,
-      description,
-      hint, // legacy: single hint or JSON
-      hints, // newer payloads use `hints` array
-      flag,
-      difficulty,
-      category,
-      isActive,
-      commands,
-      customCommands,
-      commandTemplates,
-      requiredCommandSequence,
-      successCondition,
-      initialDirectory,
-    } = req.body;
+    const data = parsed.data;
 
-    // normalize hint(s) into an array stored in `hint` field
-    const normalizedHints = Array.isArray(hints) ? hints : (hint ? (Array.isArray(hint) ? hint : [hint]) : []);
+    const normalizedHints = Array.isArray(data.hints) ? data.hints : (data.hint && Array.isArray(data.hint) ? data.hint : (data.hint ? [data.hint] : []));
 
-    const levelNum = parseInt(level);
-    if (isNaN(levelNum)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Level must be a valid number',
-      });
-    }
-
-    // Support storing templates separately: prefer storing `commandTemplates` as references
-    // instead of expanding them into `commands` to avoid duplication.
     let finalCommands = [];
     let storedCommandTemplates = [];
-    let finalCustomCommands = Array.isArray(customCommands) ? JSON.parse(JSON.stringify(customCommands)) : [];
-    if (Array.isArray(commandTemplates) && commandTemplates.length > 0) {
-      // store the template references as-is and prefer templates at runtime
-      storedCommandTemplates = commandTemplates.map((c) => ({ templateId: c.templateId, values: c.values || {} }));
+    let finalCustomCommands = Array.isArray(data.customCommands) ? JSON.parse(JSON.stringify(data.customCommands)) : [];
+    if (Array.isArray(data.commandTemplates) && data.commandTemplates.length > 0) {
+      storedCommandTemplates = data.commandTemplates.map((c) => ({ templateId: c.templateId, values: c.values || {} }));
     } else {
-      finalCommands = Array.isArray(commands) ? JSON.parse(JSON.stringify(commands)) : [];
+      finalCommands = Array.isArray(data.commands) ? JSON.parse(JSON.stringify(data.commands)) : [];
     }
 
-    // Validate required fields (commands can be created via templates)
-    const missing = [];
-    if (!level) missing.push('level');
-    if (!title) missing.push('title');
-    if (!description) missing.push('description');
-    if (!normalizedHints || normalizedHints.length === 0) missing.push('hint(s)');
-    if (!flag) missing.push('flag');
-    if (!category || category.trim() === '') missing.push('category');
-    if ((!finalCommands || finalCommands.length === 0) && (!storedCommandTemplates || storedCommandTemplates.length === 0) && (!finalCustomCommands || finalCustomCommands.length === 0)) missing.push('commands (or commandTemplates or customCommands)');
-
-    if (missing.length > 0) {
-      // Log the incoming payload for debugging
-      console.warn('CTF Create - missing fields:', missing, 'payload:', JSON.stringify(req.body).slice(0, 1000));
-      return res.status(400).json({
-        success: false,
-        message: `Missing required fields: ${missing.join(', ')}`,
-      });
-    }
-
-    // Check if level already exists
-    const existingLevel = await CTFLevel.findOne({ where: { level: levelNum } });
+    const existingLevel = await CTFLevel.findOne({ where: { level: data.level } });
     if (existingLevel) {
       return res.status(409).json({
         success: false,
-        message: `CTF level ${level} already exists`,
+        message: `CTF level ${data.level} already exists`,
       });
     }
 
     const newLevel = await CTFLevel.create({
-      level: levelNum,
-      title,
-      description,
+      level: data.level,
+      title: data.title,
+      description: data.description,
       hint: normalizedHints,
-      flag,
-      difficulty: difficulty || 'easy',
-      category: category.trim(),
-      isActive: isActive !== undefined ? isActive : true,
-      // store either commands OR commandTemplates (templates take precedence)
+      flag: data.flag,
+      difficulty: data.difficulty,
+      category: data.category,
+      isActive: data.isActive,
       commands: finalCommands,
       customCommands: finalCustomCommands,
       commandTemplates: storedCommandTemplates,
-      requiredCommandSequence,
-      successCondition,
-      initialDirectory: initialDirectory || '/home/user',
+      requiredCommandSequence: data.requiredCommandSequence,
+      successCondition: data.successCondition,
+      initialDirectory: data.initialDirectory,
     });
 
     res.status(201).json({
@@ -350,7 +354,6 @@ exports.createCTFLevel = async (req, res, next) => {
 // Update a CTF level
 exports.updateCTFLevel = async (req, res, next) => {
   try {
-    // ✓ SECURITY: Validate admin role
     if (!req.user || req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -361,7 +364,15 @@ exports.updateCTFLevel = async (req, res, next) => {
     console.log(`[CTF_ADMIN] Admin ${req.user.email} updating CTF level`);
 
     const { id } = req.params;
-    const updateData = req.body;
+
+    const parsed = updateCTFSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: parsed.error.flatten().fieldErrors,
+      });
+    }
 
     const level = await CTFLevel.findByPk(id);
     if (!level) {
@@ -371,37 +382,29 @@ exports.updateCTFLevel = async (req, res, next) => {
       });
     }
 
-    // Parse level if provided
-    if (updateData.level !== undefined) {
-      const levelNum = parseInt(updateData.level);
-      if (isNaN(levelNum)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Level must be a valid number',
-        });
-      }
-      updateData.level = levelNum;
+    const data = { ...parsed.data };
+
+    if (data.hints !== undefined) {
+      data.hint = data.hints;
+      delete data.hints;
     }
 
-    // If commandTemplates provided, store them directly (templates take precedence).
-    if (Array.isArray(updateData.commandTemplates) && updateData.commandTemplates.length > 0) {
-      updateData.commandTemplates = updateData.commandTemplates.map((c) => ({ templateId: c.templateId, values: c.values || {} }));
-      // prefer templates: clear explicit commands to avoid duplication
-      updateData.commands = [];
+    if (Array.isArray(data.commandTemplates) && data.commandTemplates.length > 0) {
+      data.commandTemplates = data.commandTemplates.map((c) => ({ templateId: c.templateId, values: c.values || {} }));
+      data.commands = [];
     }
 
-    // If updating level number, check for conflicts
-    if (updateData.level !== undefined && updateData.level !== level.level) {
-      const existingLevel = await CTFLevel.findOne({ where: { level: updateData.level } });
+    if (data.level !== undefined && data.level !== level.level) {
+      const existingLevel = await CTFLevel.findOne({ where: { level: data.level } });
       if (existingLevel) {
         return res.status(409).json({
           success: false,
-          message: `CTF level ${updateData.level} already exists`,
+          message: `CTF level ${data.level} already exists`,
         });
       }
     }
 
-    await level.update(updateData);
+    await level.update(data);
 
     res.status(200).json({
       success: true,

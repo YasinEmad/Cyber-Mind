@@ -40,16 +40,15 @@ const connectDB = async () => {
     await sequelize.authenticate();
     console.log('✅ PostgreSQL Connected');
 
-    const forceSync = process.env.FORCE_DB_SYNC === 'true';
-
-    await sequelize.sync({ force: forceSync });
-
-    console.log(
-      `📦 Database synced ${forceSync ? '(force=true)' : ''}`
-    );
+    if (process.env.NODE_ENV === 'production') {
+      console.log('Production mode: skipping sync(). Run migrations manually.');
+    } else {
+      await sequelize.sync({ alter: true });
+      console.log('📦 Database synced (development mode).');
+    }
   } catch (error) {
     console.error('❌ PostgreSQL Connection Error:');
-    console.error(error); // 👈 مهم لإظهار السبب الحقيقي
+    console.error(error);
     process.exit(1);
   }
 };

@@ -6,14 +6,28 @@ const { getPointsForLevel } = require('../utils/points');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+const { fileTypeFromBuffer } = require('file-type');
 
 const isProduction = process.env.NODE_ENV === 'production';
+
+const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
+
 const cookieOptions = {
   httpOnly: true,
   secure: isProduction,
   sameSite: isProduction ? 'none' : 'lax',
+  domain: COOKIE_DOMAIN,
   path: '/',
   maxAge: 1000 * 60 * 60 * 24 * 7, // 7 أيام
+};
+
+const clearCookieOptions = {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? 'none' : 'lax',
+  domain: COOKIE_DOMAIN,
+  path: '/',
 };
 
 // Helper بسيط لإعداد الكوكيز
@@ -21,37 +35,60 @@ const setAuthCookie = (res, token) => {
   res.cookie('token', token, cookieOptions);
 };
 
-// Multer configuration for avatar uploads
+const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif']);
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'avatar-' + req.user.id + '-' + uniqueSuffix + path.extname(file.originalname));
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!ALLOWED_EXTENSIONS.has(ext)) {
+      return cb(new Error('Invalid file extension'), false);
+    }
+    const uniqueSuffix = Date.now() + '-' + crypto.randomBytes(8).toString('hex');
+    cb(null, `avatar-${req.user.id}-${uniqueSuffix}${ext}`);
   }
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|webp/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
+  if (!ALLOWED_TYPES.has(file.mimetype)) {
+    return cb(new Error('Only JPEG, PNG, WebP, and GIF images are allowed.'), false);
+  }
+  cb(null, true);
+};
 
-  if (mimetype && extname) {
-    return cb(null, true);
-  } else {
-    cb(new Error('Only image files (jpg, jpeg, png, webp) are allowed!'));
+const validateUploadedFile = async (req, res, next) => {
+  if (!req.file) return next();
+
+  try {
+    const buffer = fs.readFileSync(req.file.path);
+    const type = await fileTypeFromBuffer(buffer);
+
+    if (!type || !ALLOWED_TYPES.has(type.mime)) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({
+        success: false,
+        message: 'File content does not match an allowed image type.'
+      });
+    }
+    next();
+  } catch (err) {
+    if (req.file?.path) fs.unlinkSync(req.file.path);
+    next(err);
   }
 };
 
 const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: fileFilter
+  storage,
+  fileFilter,
+  limits: { fileSize: 2 * 1024 * 1024 }
 });
 
 exports.uploadAvatar = [
   upload.single('avatar'),
+  validateUploadedFile,
   async (req, res, next) => {
     try {
       if (!req.file) {
@@ -128,9 +165,9 @@ exports.handleGoogleSignIn = async (req, res, next) => {
   }
 };
 
-exports.logout = (req, res) => {
-  res.clearCookie('token', cookieOptions);
-  res.status(200).json({ success: true, data: {} });
+exports.logout = async (req, res) => {
+  res.clearCookie('token', clearCookieOptions);
+  res.status(200).json({ success: true, message: 'Logged out successfully.' });
 };
 
 // controllers/userController.js
