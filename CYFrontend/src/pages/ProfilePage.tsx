@@ -92,7 +92,7 @@ const ProfilePage: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      await axios.get('/users/logout');
+      await axios.post('/users/logout');
       dispatch(clearUser());
       navigate('/login');
     } catch (error) {
