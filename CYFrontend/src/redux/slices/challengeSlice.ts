@@ -1,5 +1,6 @@
-import { createSlice, createAsyncThunk,  } from '@reduxjs/toolkit'
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import * as challengesApi from '@/api/challenges'
+import type { RootState } from '../store'
 
 // هنضيف إنترفيس للـ Response اللي جاي من الـ Submit
 export interface SubmitResponse {
@@ -52,7 +53,7 @@ const initialState: ChallengeState = {
 }
 
 // 1. الأكشن بتاع جلب التحديات
-export const fetchChallenges = createAsyncThunk<Challenge[]>(
+export const fetchChallenges = createAsyncThunk<Challenge[], void, { state: RootState }>(
   'challenges/fetchAll',
   async (_, { rejectWithValue }) => {
     try {
@@ -63,6 +64,12 @@ export const fetchChallenges = createAsyncThunk<Challenge[]>(
       const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch challenges';
       return rejectWithValue(errorMsg);
     }
+  },
+  {
+    condition: (_, { getState }) => {
+      const state = getState();
+      return state.challenges.status !== 'loading';
+    },
   }
 )
 

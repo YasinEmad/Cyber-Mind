@@ -3,13 +3,12 @@ import PageWrapper from '@/components/PageWrapper';
 import { Challenge, ChallengeDifficulty } from '@/types';
 import ChallengeCard from '@/components/ChallengeCard';
 import { motion, AnimatePresence } from 'framer-motion';
-import Lottie from 'lottie-react';
+import LazyLottie from '@/components/LazyLottie';
 import { Search, SlidersHorizontal, CheckCircle2, Circle, Layers } from 'lucide-react';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
 import { fetchChallenges } from '@/redux/slices/challengeSlice';
-import vulnerabilityAnimation from '@/assets/vulnarability.json';
 
 const motivationalQuotes = [
   "EXCELLENCE IS NOT AN ACT, BUT A HABIT.",
@@ -237,7 +236,7 @@ const ChallengePage: React.FC = React.memo(() => {
               >
                 <div className="relative w-[300px] h-[260px] overflow-hidden rounded-3xl border border-red-900/20"
                   style={{ background: 'radial-gradient(circle at 50% 50%, rgba(127,29,29,0.08) 0%, transparent 70%)' }}>
-                  <Lottie animationData={vulnerabilityAnimation} loop autoplay className="h-full w-full" />
+                  <LazyLottie animationPath="/animations/vulnarability.json" loop className="h-full w-full" />
                 </div>
               </motion.div>
             </div>

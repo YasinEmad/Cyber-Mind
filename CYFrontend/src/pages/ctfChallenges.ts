@@ -3,70 +3,110 @@ import type { Challenge } from './ctfLevels';
 import { challenges as localChallenges } from './ctfLevels';
 
 const API_BASE_URL = 'ctf';
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
-/**
- * Hybrid challenges object that merges backend API data with local fsMods functions
- * The backend API provides: description, hint, flag
- * The frontend provides: fsMods (filesystem modifications)
- */
+interface ChallengeCache {
+  data: Record<number, Challenge>;
+  timestamp: number;
+  userId: string;
+}
 
-let cachedChallenges: Record<number, Challenge> | null = null;
+let challengeCache: ChallengeCache | null = null;
+let inFlightRequest: Promise<Record<number, Challenge>> | null = null;
 
-/**
- * Load challenges from backend API with fallback to local definitions
- * This fetches challenge metadata from the backend and merges it with local fsMods
- */
-export async function loadChallengesFromBackend(): Promise<Record<number, Challenge>> {
-  // Return cached challenges if already loaded
-  if (cachedChallenges) {
-    return cachedChallenges;
-  }
+function mergeChallenge(level: number, backendChallenge: any, localChallenge: any): Challenge {
+  return {
+    description: backendChallenge?.description || localChallenge?.description || '',
+    hint:
+      (Array.isArray(backendChallenge?.hints) && backendChallenge.hints[0]) ||
+      backendChallenge?.hint ||
+      localChallenge?.hint ||
+      '',
+    hints: backendChallenge?.hints || (localChallenge?.hint ? [localChallenge.hint] : []),
+    flag: backendChallenge?.flag || localChallenge?.flag || '',
+    title: backendChallenge?.title || `Level ${level}`,
+    difficulty: backendChallenge?.difficulty || 'easy',
+    commands: backendChallenge?.commands || [],
+    requiredCommandSequence: backendChallenge?.requiredCommandSequence,
+    successCondition: backendChallenge?.successCondition,
+    initialDirectory: backendChallenge?.initialDirectory || '/home/user',
+    fsMods: localChallenge?.fsMods || (() => {}),
+  };
+}
 
-  try {
-    // Fetch all available levels from backend
-    const levelsResponse = await axiosInstance.get(`${API_BASE_URL}/levels/available`)
-    const availableLevels = levelsResponse.data.data;
-    
-    // Create challenges object by merging backend data with local fsMods
-    const mergedChallenges: Record<number, Challenge> = {};
-    
-    for (const levelInfo of availableLevels) {
-      const level = levelInfo.level;
-      const localChallenge = localChallenges[level];
-      
-      // Fetch detailed challenge data from backend
-      const backendResponse = await axiosInstance.get(`${API_BASE_URL}/challenge/${level}`)
-      const backendChallenge = backendResponse.data.data;
+async function fetchAllChallenges(availableLevels: { level: number }[]): Promise<Record<number, Challenge>> {
+  const requests = availableLevels.map((levelInfo) =>
+    axiosInstance
+      .get(`${API_BASE_URL}/challenge/${levelInfo.level}`)
+      .then((res) => ({ level: levelInfo.level, data: res.data.data }))
+      .catch((err) => {
+        console.error(`Failed to fetch level ${levelInfo.level}:`, err);
+        return null;
+      })
+  );
 
-      // Merge: use backend data but keep local fsMods
-      mergedChallenges[level] = {
-        description: backendChallenge?.description || localChallenge?.description || '',
-        // Backwards-compatible: set 'hint' to first hint if hints array exists
-        hint:
-          (Array.isArray(backendChallenge?.hints) && backendChallenge.hints[0]) ||
-          backendChallenge?.hint ||
-          localChallenge?.hint ||
-          '',
-        hints: backendChallenge?.hints || (localChallenge?.hint ? [localChallenge.hint] : []),
-        flag: backendChallenge?.flag || localChallenge?.flag || '',
-        title: backendChallenge?.title || `Level ${level}`,
-        difficulty: backendChallenge?.difficulty || 'easy',
-        commands: backendChallenge?.commands || [],
-        requiredCommandSequence: backendChallenge?.requiredCommandSequence,
-        successCondition: backendChallenge?.successCondition,
-        initialDirectory: backendChallenge?.initialDirectory || '/home/user',
-        fsMods: localChallenge?.fsMods || (() => {}), // Use local fsMods function
-      };
+  const results = await Promise.all(requests);
+  const merged: Record<number, Challenge> = {};
+
+  for (const result of results) {
+    if (result) {
+      merged[result.level] = mergeChallenge(result.level, result.data, localChallenges[result.level]);
     }
-    
-    cachedChallenges = mergedChallenges;
-    return mergedChallenges;
-  } catch (error) {
-    console.warn('Failed to load challenges from backend, falling back to local definitions:', error);
-    // Fallback to local challenges if backend is unavailable
-    cachedChallenges = localChallenges;
-    return localChallenges;
   }
+
+  return merged;
+}
+
+function isValidCache(userId: string): boolean {
+  if (!challengeCache) return false;
+  if (challengeCache.userId !== userId) return false;
+  if (Date.now() - challengeCache.timestamp > CACHE_TTL_MS) return false;
+  return true;
+}
+
+/**
+ * Load challenges from backend API with fallback to local definitions.
+ * Uses parallel requests, TTL-based caching, and in-flight deduplication.
+ */
+export async function loadChallengesFromBackend(userId?: string): Promise<Record<number, Challenge>> {
+  const uid = userId || 'anonymous';
+
+  if (isValidCache(uid)) {
+    return challengeCache!.data;
+  }
+
+  if (inFlightRequest) {
+    return inFlightRequest;
+  }
+
+  inFlightRequest = (async () => {
+    try {
+      const levelsResponse = await axiosInstance.get(`${API_BASE_URL}/levels/available`);
+      const availableLevels = levelsResponse.data.data;
+
+      const mergedChallenges = await fetchAllChallenges(availableLevels);
+
+      challengeCache = {
+        data: mergedChallenges,
+        timestamp: Date.now(),
+        userId: uid,
+      };
+
+      return mergedChallenges;
+    } catch (error) {
+      console.warn('Failed to load challenges from backend, falling back to local definitions:', error);
+      challengeCache = {
+        data: localChallenges,
+        timestamp: Date.now(),
+        userId: uid,
+      };
+      return localChallenges;
+    } finally {
+      inFlightRequest = null;
+    }
+  })();
+
+  return inFlightRequest;
 }
 
 /**
@@ -75,14 +115,15 @@ export async function loadChallengesFromBackend(): Promise<Record<number, Challe
  * Otherwise returns local fallback
  */
 export function getChallenges(): Record<number, Challenge> {
-  return cachedChallenges || localChallenges;
+  return challengeCache?.data || localChallenges;
 }
 
 /**
  * Clear the cache (useful for testing or refreshing data)
  */
 export function clearChallengeCache(): void {
-  cachedChallenges = null;
+  challengeCache = null;
+  inFlightRequest = null;
 }
 
 /**
@@ -90,33 +131,15 @@ export function clearChallengeCache(): void {
  */
 export async function preloadChallenge(level: number): Promise<Challenge> {
   try {
-    const backendResponse = await axiosInstance.get(`${API_BASE_URL}/challenge/${level}`)
+    const backendResponse = await axiosInstance.get(`${API_BASE_URL}/challenge/${level}`);
     const backendChallenge = backendResponse.data.data;
     const localChallenge = localChallenges[level];
-    
-    const challenge: Challenge = {
-      description: backendChallenge?.description || localChallenge?.description || '',
-      hint:
-        (Array.isArray(backendChallenge?.hints) && backendChallenge.hints[0]) ||
-        backendChallenge?.hint ||
-        localChallenge?.hint ||
-        '',
-      hints: backendChallenge?.hints || (localChallenge?.hint ? [localChallenge.hint] : []),
-      flag: backendChallenge?.flag || localChallenge?.flag || '',
-      title: backendChallenge?.title || `Level ${level}`,
-      difficulty: backendChallenge?.difficulty || 'easy',
-      commands: backendChallenge?.commands || [],
-      requiredCommandSequence: backendChallenge?.requiredCommandSequence,
-      successCondition: backendChallenge?.successCondition,
-      initialDirectory: backendChallenge?.initialDirectory || '/home/user',
-      fsMods: localChallenge?.fsMods || (() => {}),
-    };
-    
-    // Update cache
-    if (cachedChallenges) {
-      cachedChallenges[level] = challenge;
+    const challenge = mergeChallenge(level, backendChallenge, localChallenge);
+
+    if (challengeCache) {
+      challengeCache.data[level] = challenge;
     }
-    
+
     return challenge;
   } catch (error) {
     console.warn(`Failed to load challenge ${level} from backend, using local fallback:`, error);

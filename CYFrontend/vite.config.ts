@@ -13,4 +13,22 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-firebase': [
+            'firebase/app',
+            'firebase/auth',
+            'firebase/firestore',
+            'firebase/storage',
+          ],
+          'vendor-animations': ['framer-motion', 'lottie-react'],
+          'vendor-redux': ['@reduxjs/toolkit', 'react-redux'],
+          'vendor-router': ['react-router-dom'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 500,
+  },
 })

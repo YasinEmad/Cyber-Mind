@@ -6,7 +6,7 @@ import { fetchChallengeById, evaluateChallengeWithAI, submitChallenge } from '@/
 import { selectUser, updateScore, addCompletedLevel } from '@/redux/slices/userSlice';
 import axios from '@/api/axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import Editor from '@monaco-editor/react';
+import CodeEditor from '@/components/CodeEditor';
 import { 
   Shield, RotateCcw, 
   CheckCircle, AlertTriangle, 
@@ -45,8 +45,8 @@ const PlayChallengePage: React.FC = () => {
     if (!chFromStore) return;
     setCode(chFromStore.initialCode || chFromStore.code || "");
   }, [chFromStore]);
-  const handleEditorChange = (value: string | undefined) => {
-    if (value) setCode(value);
+  const handleEditorChange = (value: string) => {
+    setCode(value);
   };
 
   const handleReset = () => {
@@ -262,21 +262,11 @@ const PlayChallengePage: React.FC = () => {
           {/* Editor Area */}
           <div className="flex-1 relative">
             
-            <Editor
-              height="100%" 
-              defaultLanguage="javascript" 
+            <CodeEditor
               value={code}
-              onChange={handleEditorChange} 
-              theme="vs-dark"
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                lineHeight: 24,
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                padding: { top: 20 },
-              }}
+              onChange={handleEditorChange}
+              language="javascript"
+              minHeight="100%"
             />
           </div>
 

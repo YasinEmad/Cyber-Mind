@@ -1,4 +1,4 @@
-import React from 'react';
+import { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, CheckCircle2, XCircle, Lightbulb, ChevronDown } from 'lucide-react';
 
@@ -22,7 +22,7 @@ const Divider = () => (
   <div className="h-px w-full bg-white/[0.06]" />
 );
 
-const SolvePuzzleRight: React.FC<Props> = ({
+const SolvePuzzleRight = memo(function SolvePuzzleRight({
   puzzle,
   answer,
   setAnswer,
@@ -36,7 +36,7 @@ const SolvePuzzleRight: React.FC<Props> = ({
   hintMessage,
   isFocused,
   setIsFocused,
-}) => {
+}) {
   const hintsTotal = puzzle?.hints?.length ?? 0;
   const hintsLeft = hintsTotal - revealedHintsCount;
   const solved = feedback === 'correct';
@@ -256,6 +256,6 @@ const SolvePuzzleRight: React.FC<Props> = ({
       </motion.div>
     </div>
   );
-};
+});
 
 export default SolvePuzzleRight;

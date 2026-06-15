@@ -3,13 +3,7 @@ import { motion, Variants } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
 import { Link } from 'react-router-dom';
 import { ChevronDown, Zap } from 'lucide-react';
-import Lottie from 'lottie-react';
-
-// Animation files
-import heroAnimationJson from '@/assets/Untitled file.json';
-import puzzleAnimation from '@/assets/puzzle.json';
-import challingAnimation from '@/assets/security code challinging.json';
-import gameAnimation from '@/assets/ctf.json';
+import LazyLottie from '../components/LazyLottie';
 
 // --- ANIMATION VARIANTS ---
 const containerVariants: Variants = {
@@ -171,11 +165,10 @@ const HomePage: React.FC = () => {
               variants={slideInFromRight}
               className="order-1 lg:order-2 flex justify-center"
             >
-              <Lottie 
-                animationData={heroAnimationJson} 
-                loop 
-                autoplay 
-                className="w-full max-w-[450px]" 
+              <LazyLottie
+                animationPath="/animations/Untitled file.json"
+                loop
+                className="w-full max-w-[450px]"
               />
             </motion.div>
           </motion.div>
@@ -212,7 +205,7 @@ const HomePage: React.FC = () => {
               className="grid md:grid-cols-3 gap-16 md:gap-8"
             >
               <FeatureItem
-                animationData={puzzleAnimation}
+                animationPath="/animations/puzzle.json"
                 title="Puzzles"
                 desc="Decode cryptic messages and solve logic grids. Enhance your problem-solving capabilities."
                 btnText="Solve Now"
@@ -220,7 +213,7 @@ const HomePage: React.FC = () => {
                 index={0}
               />
               <FeatureItem 
-                animationData={challingAnimation}
+                animationPath="/animations/security code challinging.json"
                 title="Challenges"
                 desc="Defend against simulated threats. Test your security knowledge in real-time scenarios."
                 btnText="Defend System"
@@ -228,7 +221,7 @@ const HomePage: React.FC = () => {
                 index={1}
               />
               <FeatureItem 
-                animationData={gameAnimation}
+                animationPath="/animations/ctf.json"
                 title="CTF"
                 desc="Compete in Capture The Flag events. Apply your skills in realistic challinging"
                 btnText="Start CTF"

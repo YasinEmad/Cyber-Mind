@@ -8,8 +8,7 @@ import PuzzleCard from '@/components/PuzzleCard'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Terminal, Cpu, Activity, Filter, SortAsc, Search } from 'lucide-react'
-import Lottie from 'lottie-react'
-import puzzlesAnimation from '@/assets/Meditating Brain.json'
+import LazyLottie from '@/components/LazyLottie'
 
 const PuzzlePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
@@ -91,10 +90,9 @@ const PuzzlePage: React.FC = () => {
             </div>
 
           <div className="relative w-full max-w-lg mx-auto">
-  <Lottie
-    animationData={puzzlesAnimation}
+  <LazyLottie
+    animationPath="/animations/Meditating Brain.json"
     loop
-    autoplay
     className="w-full h-72"
   />
 </div>

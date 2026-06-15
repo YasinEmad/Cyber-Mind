@@ -6,9 +6,8 @@ import { auth } from "../firebase";
 import { setUser } from "../redux/slices/userSlice";
 import { syncUserProgressFromProfile } from '../redux/slices/ctfSlice';
 import axios from "@/api/axios";
-import Lottie from "lottie-react";
+import LazyLottie from "@/components/LazyLottie";
 import { Chrome, Github, ShieldCheck, Zap } from "lucide-react";
-import profileAnimation from '@/assets/prof.json';
 
 type Provider = "google" | "github";
 
@@ -71,7 +70,7 @@ const LoginPage: React.FC = () => {
           </div>
           
           <div className="w-full max-w-sm transform hover:scale-105 transition-transform duration-700">
-            <Lottie animationData={profileAnimation} loop={true} />
+            <LazyLottie animationPath="/animations/prof.json" loop />
           </div>
           
           <div className="text-center mt-8">

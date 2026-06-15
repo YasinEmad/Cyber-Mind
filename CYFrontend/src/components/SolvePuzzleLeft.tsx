@@ -1,4 +1,4 @@
-import React from 'react';
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, Terminal, Eye, BrainCircuit, Lightbulb, Award, Clock, CheckCircle2, XCircle, Circle } from 'lucide-react';
 import { getPointsForLevel } from '@/lib/points';
@@ -52,7 +52,7 @@ const StatCard: React.FC<{
   </div>
 );
 
-const SolvePuzzleLeft: React.FC<Props> = ({
+const SolvePuzzleLeft = memo(function SolvePuzzleLeft({
   puzzle,
   puzzleId,
   displayedTitle,
@@ -62,7 +62,7 @@ const SolvePuzzleLeft: React.FC<Props> = ({
   elapsedTime,
   formatTime,
   currentScore,
-}) => {
+}) {
   const levelPoints = getPointsForLevel(puzzle?.level);
   const getHintCost = (level?: number) => {
     if (!level) return 2;
@@ -240,6 +240,6 @@ const SolvePuzzleLeft: React.FC<Props> = ({
       </div>
     </div>
   );
-};
+});
 
 export default SolvePuzzleLeft;

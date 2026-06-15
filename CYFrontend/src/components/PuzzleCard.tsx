@@ -1,8 +1,11 @@
-import React, { useState, useRef } from 'react'
+import { useState, useRef, memo } from 'react'
 import { getPointsForLevel } from '@/lib/points'
 import { motion } from 'framer-motion'
 import { ChevronRight, Zap, Hash, Star, TrendingUp, Check } from 'lucide-react'
 import { Puzzle } from '../types'
+
+const hoverAnimation = { y: -8, scale: 1.02 };
+const hoverTransition = { duration: 0.3 };
 
 interface PuzzleCardProps {
   puzzle: Puzzle
@@ -10,7 +13,7 @@ interface PuzzleCardProps {
   isSolved?: boolean
 }
 
-const PuzzleCard: React.FC<PuzzleCardProps> = ({ puzzle, index, isSolved = false }) => {
+const PuzzleCard = memo(function PuzzleCard({ puzzle, index, isSolved = false }: PuzzleCardProps) {
   const [displayedTitle, setDisplayedTitle] = useState(puzzle.title)
   const intervalRef = useRef<number | null>(null)
 
@@ -61,8 +64,8 @@ const PuzzleCard: React.FC<PuzzleCardProps> = ({ puzzle, index, isSolved = false
     <motion.div
       onMouseEnter={scrambleTitle}
       onMouseLeave={resetTitle}
-      whileHover={{ y: -8, scale: 1.02 }}
-      transition={{ duration: 0.3 }}
+      whileHover={hoverAnimation}
+      transition={hoverTransition}
       className="
         group relative overflow-hidden rounded-2xl
         bg-gradient-to-br from-zinc-900/50 via-black to-zinc-950
@@ -160,6 +163,6 @@ const PuzzleCard: React.FC<PuzzleCardProps> = ({ puzzle, index, isSolved = false
       </div>
     </motion.div>
   )
-}
+});
 
 export default PuzzleCard

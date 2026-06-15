@@ -1,15 +1,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import Lottie from 'lottie-react';
+import LazyLottie from '@/components/LazyLottie';
 
 interface FeatureItemProps {
-  animationData: any;
+  animationPath: string;
   title: string;
   desc: string;
   btnText?: string;
   index: number;
-  link?: string; // optional prop for URL
+  link?: string;
 }
 
 const scaleIn = {
@@ -23,7 +23,7 @@ const fadeInUp = {
 };
 
 const FeatureItem: React.FC<FeatureItemProps> = ({
-  animationData,
+  animationPath,
   title,
   desc,
   btnText,
@@ -60,11 +60,10 @@ const FeatureItem: React.FC<FeatureItemProps> = ({
           delay: index * 0.2 + 0.1
         }}
       >
-        <Lottie
-          animationData={animationData}
-          loop
-          autoplay
+        <LazyLottie
+          animationPath={animationPath}
           className="w-full h-full drop-shadow-[0_0_20px_rgba(239,68,68,0.2)] group-hover:drop-shadow-[0_0_30px_rgba(239,68,68,0.4)] transition-all duration-500"
+          loop={true}
         />
       </motion.div>
     </div>

@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
 import axios from '@/api/axios'
+import type { RootState } from '../store'
 
 const API_URL = '/puzzles'
 
@@ -35,7 +36,7 @@ const initialState: PuzzleState = {
 }
 
 // 1. Get all puzzles
-export const fetchPuzzles = createAsyncThunk<Puzzle[]>(
+export const fetchPuzzles = createAsyncThunk<Puzzle[], void, { state: RootState }>(
   'puzzles/fetchAll',
   async (_, { rejectWithValue }) => {
     try {
@@ -45,6 +46,12 @@ export const fetchPuzzles = createAsyncThunk<Puzzle[]>(
       const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch puzzles';
       return rejectWithValue(errorMsg);
     }
+  },
+  {
+    condition: (_, { getState }) => {
+      const state = getState();
+      return state.puzzles.status !== 'loading';
+    },
   }
 )
 

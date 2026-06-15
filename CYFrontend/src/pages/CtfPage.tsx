@@ -16,7 +16,6 @@ import CTFHeader from "@/components/CTFHeader";
 import CTFCategorySelect from "@/components/CTFCategorySelect";
 import CTFLevelGrid from "@/components/CTFLevelGrid";
 import FeatureItem from "@/components/FeatureItem";
-import serverAnimation from '@/assets/server.json';
 
 interface LevelData {
   level: number;
@@ -221,7 +220,7 @@ export default function CTFMindWelcome() {
                     {/* Dark, subtle glow behind the server animation */}
                     <div className="absolute -inset-4 bg-gradient-to-tr from-red-900/10 via-black to-neutral-900/20 rounded-full blur-3xl" />
                     <FeatureItem
-                      animationData={serverAnimation}
+                      animationPath="/animations/server.json"
                       title="CTF"
                       desc="Compete in Capture The Flag events. Apply your skills in realistic challenges."
                       index={2}

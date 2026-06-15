@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { 
   Gamepad2, Menu, X, Home, Info, Swords, 
   Star, User, BrainCircuit, ShieldCheck
 } from 'lucide-react';
 import { selectIsAdmin } from '@/redux/slices/userSlice';
+
+const menuVariants: Variants = {
+  closed: { opacity: 0, height: 0, transition: { duration: 0.3 } },
+  open: { opacity: 1, height: "auto", transition: { duration: 0.3 } }
+};
 
 // --- ANIMATED LINK COMPONENT ---
 const NavLinkItem: React.FC<{ to: string; children: React.ReactNode; onClick?: () => void }> = ({ to, children, onClick }) => {
@@ -40,12 +45,6 @@ export default function Navbar() {
     { name: 'Profile', path: '/profile', icon: User },
     ...(isAdmin ? [{ name: 'Admin', path: '/admin', icon: ShieldCheck }] : []),
   ];
-
-  // Mobile Menu Animation Variants
-  const menuVariants = {
-    closed: { opacity: 0, height: 0, transition: { duration: 0.3 } },
-    open: { opacity: 1, height: "auto", transition: { duration: 0.3 } }
-  };
 
   return (
     <motion.nav 
