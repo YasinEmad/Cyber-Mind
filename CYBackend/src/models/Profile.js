@@ -57,7 +57,7 @@ const Profile = sequelize.define('Profile', {
   avatar: {
     type: DataTypes.STRING,
     allowNull: true,
-    comment: 'Filename of uploaded avatar image',
+    comment: 'ImageKit URL of uploaded avatar image',
   },
   globalRank: {
     type: DataTypes.INTEGER,

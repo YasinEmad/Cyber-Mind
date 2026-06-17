@@ -4,10 +4,13 @@ const userService = require('../services/userService');
 const { signToken } = require('../utils/jwt');
 const { getPointsForLevel } = require('../utils/points');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
-const { fileTypeFromBuffer } = require('file-type');
+const { ImageKit } = require('@imagekit/nodejs');
+
+const imagekit = new ImageKit({
+  publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
+});
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -36,63 +39,27 @@ const setAuthCookie = (res, token) => {
 };
 
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
-const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif']);
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (!ALLOWED_EXTENSIONS.has(ext)) {
-      return cb(new Error('Invalid file extension'), false);
-    }
-    const uniqueSuffix = Date.now() + '-' + crypto.randomBytes(8).toString('hex');
-    cb(null, `avatar-${req.user.id}-${uniqueSuffix}${ext}`);
-  }
-});
-
-const fileFilter = (req, file, cb) => {
-  if (!ALLOWED_TYPES.has(file.mimetype)) {
-    return cb(new Error('Only JPEG, PNG, WebP, and GIF images are allowed.'), false);
-  }
-  cb(null, true);
-};
-
-const validateUploadedFile = async (req, res, next) => {
-  if (!req.file) return next();
-
-  try {
-    const buffer = fs.readFileSync(req.file.path);
-    const type = await fileTypeFromBuffer(buffer);
-
-    if (!type || !ALLOWED_TYPES.has(type.mime)) {
-      fs.unlinkSync(req.file.path);
-      return res.status(400).json({
-        success: false,
-        message: 'File content does not match an allowed image type.'
-      });
-    }
-    next();
-  } catch (err) {
-    if (req.file?.path) fs.unlinkSync(req.file.path);
-    next(err);
-  }
-};
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
-  fileFilter,
-  limits: { fileSize: 2 * 1024 * 1024 }
+  limits: { fileSize: 5 * 1024 * 1024 }
 });
 
 exports.uploadAvatar = [
   upload.single('avatar'),
-  validateUploadedFile,
   async (req, res, next) => {
     try {
       if (!req.file) {
         return res.status(400).json({ success: false, message: 'No file uploaded' });
+      }
+
+      if (!ALLOWED_TYPES.has(req.file.mimetype)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Only JPEG, PNG, WebP, and GIF images are allowed.'
+        });
       }
 
       const userId = req.user.id;
@@ -101,22 +68,22 @@ exports.uploadAvatar = [
         return res.status(404).json({ success: false, message: 'Profile not found' });
       }
 
-      // Delete old avatar if exists
-      if (profile.avatar) {
-        const oldPath = path.join('uploads', profile.avatar);
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
-      }
+      // Upload to ImageKit
+      const fileName = `avatar-${userId}-${Date.now()}`;
+      const result = await imagekit.files.upload({
+        file: new File([req.file.buffer], fileName, { type: req.file.mimetype }),
+        fileName,
+        folder: '/avatars',
+      });
 
-      // Update profile with new avatar filename
-      profile.avatar = req.file.filename;
+      // Update profile with ImageKit URL
+      profile.avatar = result.url;
       await profile.save();
 
       res.status(200).json({
         success: true,
         message: 'Avatar uploaded successfully',
-        data: { avatar: req.file.filename }
+        data: { avatar: result.url }
       });
     } catch (error) {
       next(error);

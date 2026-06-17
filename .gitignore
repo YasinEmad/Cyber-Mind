@@ -37,4 +37,5 @@ firebase-service-account.json
 # Backend
 /CYBackend/dist/
 /CYBackend/node_modules/
+/CYBackend/uploads/
 Cyber-Mind-clean/

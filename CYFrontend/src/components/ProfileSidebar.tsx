@@ -9,10 +9,7 @@ interface ProfileSidebarProps {
 
 const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ user, onEdit, onLogout }) => {
   const getAvatarUrl = () => {
-    if (user?.profile?.avatar) {
-      return `https://cyber-mind.onrender.com/uploads/${user.profile.avatar}`;
-    }
-    return user?.photoURL || 'https://picsum.photos/id/239/200/200';
+    return user?.profile?.avatar || user?.photoURL || 'https://picsum.photos/id/239/200/200';
   };
 
   return (
