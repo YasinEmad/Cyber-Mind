@@ -123,6 +123,7 @@ const ChallengePage: React.FC = React.memo(() => {
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'easy' | 'medium' | 'hard'>('all');
   const [progressFilter, setProgressFilter] = useState<'all' | 'solved' | 'unsolved'>('all');
+  const [languageFilter, setLanguageFilter] = useState<string>('all');
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const solvedChallengeIds = useMemo(() => {
@@ -141,17 +142,23 @@ const ChallengePage: React.FC = React.memo(() => {
     return [String(ch.id ?? ''), String(ch._id ?? ''), String(ch.uuid ?? '')].filter(Boolean).some((k) => solvedChallengeIds.has(k));
   }, [solvedChallengeIds]);
 
-  type DisplayChallenge = Challenge & { solved: boolean; category?: string; level?: string; challengeKey: string };
+  type DisplayChallenge = Challenge & { solved: boolean; category?: string; level?: string; challengeKey: string; programmingLanguage?: string };
 
   const mapToCard = useCallback((ch: any): DisplayChallenge => {
     const lvl = ch.level || ch.difficulty || 'easy';
     const difficulty = lvl.toLowerCase() === 'medium' ? ChallengeDifficulty.Medium : lvl.toLowerCase() === 'hard' ? ChallengeDifficulty.Hard : ChallengeDifficulty.Easy;
-    return { id: ch.id ?? ch._id ?? ch.uuid, _id: ch._id, uuid: ch.uuid, title: ch.title, description: ch.description, difficulty, level: lvl.toLowerCase(), category: ch.category, challengeDetails: ch.challengeDetails, recommendation: ch.recommendation, solved: isChallengeSolved(ch), challengeKey: getChallengeKey(ch) };
+    return { id: ch.id ?? ch._id ?? ch.uuid, _id: ch._id, uuid: ch.uuid, title: ch.title, description: ch.description, programmingLanguage: ch.programmingLanguage, difficulty, level: lvl.toLowerCase(), category: ch.category, challengeDetails: ch.challengeDetails, recommendation: ch.recommendation, solved: isChallengeSolved(ch), challengeKey: getChallengeKey(ch) };
   }, [isChallengeSolved, getChallengeKey]);
 
   useEffect(() => { if (status === 'idle') dispatch(fetchChallenges()); }, [dispatch, status]);
 
   const mappedChallenges = useMemo(() => storeChallenges.map(mapToCard), [storeChallenges, mapToCard]);
+
+  const availableLanguages = useMemo(() => {
+    const langs = new Set<string>();
+    mappedChallenges.forEach((c) => { if (c.programmingLanguage) langs.add(c.programmingLanguage); });
+    return Array.from(langs).sort();
+  }, [mappedChallenges]);
 
   const filteredChallenges = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
@@ -160,10 +167,11 @@ const ChallengePage: React.FC = React.memo(() => {
       if (difficultyFilter !== 'all' && (c.level || '').toLowerCase() !== difficultyFilter) return false;
       if (progressFilter === 'solved' && !solved) return false;
       if (progressFilter === 'unsolved' && solved) return false;
+      if (languageFilter !== 'all' && (c.programmingLanguage || '').toLowerCase() !== languageFilter.toLowerCase()) return false;
       if (!q) return true;
       return [c.title, c.description, c.challengeDetails, c.recommendation, c.category, c.level].filter(Boolean).join(' ').toLowerCase().includes(q);
     });
-  }, [mappedChallenges, difficultyFilter, progressFilter, searchTerm, isChallengeSolved]);
+  }, [mappedChallenges, difficultyFilter, progressFilter, languageFilter, searchTerm, isChallengeSolved]);
 
   const visibleCount = filteredChallenges.length;
   const totalCount = mappedChallenges.length;
@@ -315,6 +323,22 @@ const ChallengePage: React.FC = React.memo(() => {
                           </FilterPill>
                         ))}
                       </div>
+
+                      {/* Language */}
+                      {availableLanguages.length > 0 && (
+                        <>
+                          <div className="hidden lg:block w-px h-5 bg-zinc-900" />
+                          <div className="flex items-center gap-2.5 flex-wrap">
+                            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-700 mr-1">Language</span>
+                            <FilterPill active={languageFilter === 'all'} onClick={() => setLanguageFilter('all')}>All</FilterPill>
+                            {availableLanguages.map((lang) => (
+                              <FilterPill key={lang} active={languageFilter === lang} onClick={() => setLanguageFilter(lang)}>
+                                {lang}
+                              </FilterPill>
+                            ))}
+                          </div>
+                        </>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -352,7 +376,7 @@ const ChallengePage: React.FC = React.memo(() => {
                 <p className="text-zinc-400 font-semibold text-sm">No challenges match your filters</p>
                 <p className="text-zinc-700 text-xs mt-1">Try adjusting your search or filter criteria</p>
                 <button
-                  onClick={() => { setSearchTerm(''); setDifficultyFilter('all'); setProgressFilter('all'); }}
+                  onClick={() => { setSearchTerm(''); setDifficultyFilter('all'); setProgressFilter('all'); setLanguageFilter('all'); }}
                   className="mt-5 px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all"
                 >
                   Clear Filters
