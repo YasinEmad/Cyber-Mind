@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../redux/store';
 import { fetchTemplates, createTemplate, updateTemplate, deleteTemplate } from '../redux/slices/ctfSlice';
-import axiosInstance from '../api/axios';
+import { selectUser, selectIsAdmin } from '../redux/slices/userSlice';
 import { Plus, Edit, Trash2, Check, AlertCircle } from 'lucide-react';
 
 interface CommandEntry {
@@ -25,56 +25,16 @@ interface Template {
   commands?: Array<CommandEntry>;
 }
 
-interface AdminStatus {
-  email: string;
-  name: string;
-  role: string;
-  isAdmin: boolean;
-  userId: number;
-  uid: string;
-}
-
 const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
   const templates = useSelector((state: RootState) => state.ctf.templates);
+  const user = useSelector(selectUser);
+  const isAdmin = useSelector(selectIsAdmin);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Template | null>(null);
   const [form, setForm] = useState<Template>({ templateId: '', name: '', baseCommand: '', defaultOutput: '', fields: [], allowedPaths: [], blockedPaths: [], description: '', commands: [] });
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string, generatedId?: string } | null>(null);
-  const [adminStatus, setAdminStatus] = useState<AdminStatus | null>(null);
-  const [checkingStatus, setCheckingStatus] = useState(true);
-
-  const checkAdminStatus = useCallback(async () => {
-    setCheckingStatus(true);
-    try {
-      const response = await axiosInstance.get('/users/me/admin-status');
-      const status = response.data.data;
-      setAdminStatus(status);
-      
-      console.log('Admin Status Check:', {
-        email: status.email,
-        role: status.role,
-        isAdmin: status.isAdmin,
-        userId: status.userId,
-      });
-
-      if (!status.isAdmin) {
-        setNotification({
-          type: 'error',
-          message: `Your account (${status.email}) has role: "${status.role}" - you need "admin" role to create templates`
-        });
-      }
-    } catch (err: any) {
-      console.error('Error checking admin status:', err);
-      setNotification({
-        type: 'error',
-        message: 'Could not verify admin status - make sure you are logged in'
-      });
-    } finally {
-      setCheckingStatus(false);
-    }
-  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -82,46 +42,20 @@ const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) =
       await dispatch(fetchTemplates()).unwrap();
     } catch (err: any) {
       console.error('Error loading templates:', err);
-
-      if (adminStatus?.isAdmin) {
-        console.log('Admin is verified but template API failed:', {
-          status: err?.response?.status,
-          message: err?.response?.data?.message
-        });
-
-        setNotification({
-          type: 'error',
-          message: 'Template API error (session issue) - Try refreshing the page or logging out and back in'
-        });
-        return;
-      }
-
-      if (!adminStatus) {
-        setNotification({ type: 'error', message: 'Still verifying permissions...' });
-        return;
-      }
-
-      if (!adminStatus.isAdmin) {
-        setNotification({
-          type: 'error',
-          message: `Your role is "${adminStatus.role}" but "admin" is required to view templates`
-        });
-        return;
-      }
+      setNotification({
+        type: 'error',
+        message: 'Template API error - Try refreshing the page or logging out and back in'
+      });
     } finally {
       setLoading(false);
     }
-  }, [adminStatus, dispatch]);
+  }, [dispatch]);
 
   useEffect(() => {
-    checkAdminStatus();
-  }, [checkAdminStatus]);
-
-  useEffect(() => {
-    if (adminStatus?.isAdmin) {
+    if (isAdmin) {
       load();
     }
-  }, [adminStatus, load]);
+  }, [isAdmin, load]);
 
   const openCreate = () => { setEditing(null); setForm({ templateId: '', name: '', baseCommand: '', defaultOutput: '', fields: [], allowedPaths: [], blockedPaths: [], description: '', commands: [] }); setShowForm(true); };
 
@@ -160,17 +94,12 @@ const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) =
     } catch (err: any) {
       console.error('Error saving template', err);
       
-      // Better error messaging
       let errorMessage = 'Error saving template';
       
       if (err?.response?.status === 401) {
-        if (adminStatus?.isAdmin) {
-          errorMessage = 'Session expired - You are verified as admin but API rejected the request. Try refreshing the page.';
-        } else {
-          errorMessage = 'Not authorized - Token issue. Please refresh and try again.';
-        }
+        errorMessage = 'Not authorized - Token issue. Please refresh and try again.';
       } else if (err?.response?.status === 403) {
-        errorMessage = `Permission denied - Your role is "${adminStatus?.role || 'unknown'}", but "admin" is required`;
+        errorMessage = `Permission denied - Your role is "${user?.role || 'unknown'}", but "admin" is required`;
       } else if (err?.response?.data?.message) {
         errorMessage = err.response.data.message;
       } else if (err?.message) {
@@ -217,17 +146,6 @@ const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) =
             <AlertCircle size={18} className="text-red-400 mt-0.5 flex-shrink-0" />
             <div>
               <p className="text-red-400 text-sm font-medium">{notification.message}</p>
-              {notification.message.includes('session issue') && (
-                <div className="text-red-300 text-xs mt-2 space-y-1">
-                  <p>💡 Even though you're verified as admin, the API needs a fresh session.</p>
-                  <p>Try one of these:</p>
-                  <ul className="ml-4 list-disc">
-                    <li>Refresh the page (F5)</li>
-                    <li>Close and reopen the admin panel</li>
-                    <li>Log out from Profile → click Logout, then log back in</li>
-                  </ul>
-                </div>
-              )}
               {notification.message.includes('authorized') && (
                 <p className="text-red-300 text-xs mt-2">
                   💡 Make sure you're logged in to the application with an admin account. Close and reopen the admin panel after logging in.
@@ -242,19 +160,11 @@ const CommandTemplatesAdmin: React.FC<{ onClose: () => void }> = ({ onClose }) =
           </div>
         )}
 
-        {/* Admin Status Check - Show while checking */}
-        {checkingStatus && (
-          <div className="mb-4 p-3 bg-blue-900/20 border border-blue-600/50 rounded flex items-center gap-2">
-            <div className="animate-spin w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full" />
-            <p className="text-blue-300 text-sm">Verifying admin permissions...</p>
-          </div>
-        )}
-
-        {/* Admin Status Confirmed - Show when verification succeeds and user IS admin */}
-        {!checkingStatus && adminStatus?.isAdmin && (
+        {/* Admin Status Confirmed */}
+        {isAdmin && (
           <div className="mb-4 p-3 bg-green-900/20 border border-green-600/50 rounded flex items-center gap-2">
             <Check size={16} className="text-green-400" />
-            <p className="text-green-300 text-xs">✓ Admin verified: <span className="font-mono">{adminStatus.email}</span></p>
+            <p className="text-green-300 text-xs">✓ Admin verified: <span className="font-mono">{user?.email}</span></p>
           </div>
         )}
 
