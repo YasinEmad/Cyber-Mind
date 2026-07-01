@@ -178,7 +178,8 @@ export const createCTFLevel = createAsyncThunk<CTFLevelAdmin, any>(
   'ctf/createCTFLevel',
   async (levelData, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.post('ctf/admin/levels', levelData)
+      const payload = { ...levelData, level: Number((levelData as any).level) };
+      const response = await axiosInstance.post('ctf/admin/levels', payload)
       return response.data.data
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || error.message || 'Failed to create CTF level')
@@ -190,7 +191,8 @@ export const updateCTFLevel = createAsyncThunk<CTFLevelAdmin, { id: number; leve
   'ctf/updateCTFLevel',
   async ({ id, levelData }, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.put(`ctf/admin/levels/${id}`, levelData)
+      const payload = { ...levelData, level: Number((levelData as any).level) };
+      const response = await axiosInstance.put(`ctf/admin/levels/${id}`, payload)
       return response.data.data
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || error.message || 'Failed to update CTF level')
