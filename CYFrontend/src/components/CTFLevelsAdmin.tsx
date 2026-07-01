@@ -595,13 +595,27 @@ const CTFLevelsAdmin: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Flag</label>
-                <input
-                  type="text"
-                  value={formData.flag}
-                  onChange={(e) => setFormData({ ...formData, flag: e.target.value })}
-                  className="w-full px-3 py-2 bg-zinc-800 border border-red-900/40 rounded-lg text-white focus:outline-none focus:border-red-500"
-                  required
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.flag}
+                    onChange={(e) => setFormData({ ...formData, flag: e.target.value })}
+                    className="flex-1 px-3 py-2 bg-zinc-800 border border-red-900/40 rounded-lg text-white focus:outline-none focus:border-red-500"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const bytes = new Uint8Array(12);
+                      crypto.getRandomValues(bytes);
+                      const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+                      setFormData({ ...formData, flag: `CTF{${hex}}` });
+                    }}
+                    className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm whitespace-nowrap"
+                  >
+                    Generate Random Flag
+                  </button>
+                </div>
               </div>
 
               {/* Commands Section */}
