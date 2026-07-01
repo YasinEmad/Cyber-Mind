@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Terminal, Shield, Zap, Target, Lock, Star, Crosshair } from "lucide-react";
+import { Terminal, Shield, Zap, Lock, Star, Crosshair } from "lucide-react";
 import ctfInfo from "@/utils/ctfinfo";
 import axios from "@/api/axios";
 
@@ -25,7 +25,6 @@ const getCategoryIcon = (cat: string) => {
     case 'Linux': return <Terminal className={iconClasses} />;
     case 'Offensive Security': return <Shield className={iconClasses} />;
     case 'Network': return <Zap className={iconClasses} />;
-    case 'Web Security': return <Target className={iconClasses} />;
     default: return <Lock className={iconClasses} />;
   }
 };

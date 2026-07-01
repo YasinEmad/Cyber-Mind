@@ -7,7 +7,6 @@ import {
   Terminal,
   Shield,
   Zap,
-  Target,
   ChevronRight,
   Play,
 } from "lucide-react";
@@ -97,14 +96,6 @@ export default function CTFMindWelcome() {
       icon: <Zap className="w-5 h-5" />,
       description: "Network protocols, traffic analysis, and security",
       difficulty: "Intermediate to Advanced"
-    },
-    {
-      name: "Web Security",
-      count: categoryCounts["Web Security"] || 0,
-      color: "#991b1b", // Darkest Red
-      icon: <Target className="w-5 h-5" />,
-      description: "Web vulnerabilities and application security",
-      difficulty: "Advanced"
     }
   ];
 

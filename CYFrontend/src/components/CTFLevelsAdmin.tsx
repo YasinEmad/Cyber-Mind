@@ -537,7 +537,6 @@ const CTFLevelsAdmin: React.FC = () => {
                     <option value="Linux">Linux</option>
                     <option value="Offensive Security">Offensive Security</option>
                     <option value="Network">Network</option>
-                    <option value="Web Security">Web Security</option>
                   </select>
                 </div>
 

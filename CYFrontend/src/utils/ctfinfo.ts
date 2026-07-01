@@ -204,35 +204,5 @@ export default {
       "description": "Analyze network traffic for forensic evidence.",
       "category": "Network"
     },
-    {
-      "level": 31,
-      "name": "SQL Injection",
-      "description": "Exploit SQL injection vulnerabilities in web applications.",
-      "category": "Web Security"
-    },
-    {
-      "level": 32,
-      "name": "Cross-Site Scripting (XSS)",
-      "description": "Inject malicious scripts into web pages.",
-      "category": "Web Security"
-    },
-    {
-      "level": 33,
-      "name": "Cross-Site Request Forgery (CSRF)",
-      "description": "Exploit CSRF vulnerabilities to perform unauthorized actions.",
-      "category": "Web Security"
-    },
-    {
-      "level": 34,
-      "name": "Broken Access Control",
-      "description": "Bypass access controls in web applications.",
-      "category": "Web Security"
-    },
-    {
-      "level": 35,
-      "name": "Web Application Firewall Bypass",
-      "description": "Bypass WAF protections to exploit web vulnerabilities.",
-      "category": "Web Security"
-    }
   ]
 }
