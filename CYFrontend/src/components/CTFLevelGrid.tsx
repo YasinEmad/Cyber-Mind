@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
 import { motion, AnimatePresence } from "framer-motion";
 import { Terminal, Shield, Zap, Lock, Star, Crosshair } from "lucide-react";
 import axios from "@/api/axios";
@@ -36,6 +38,9 @@ export default function CTFLevelGrid({ category }: CTFLevelGridProps) {
   const [backendLevels, setBackendLevels] = useState<LevelData[] | null>(null);
   const [_loading, _setLoading] = useState(true);
   const [_error, _setError] = useState<string | null>(null);
+  
+  // Get completed levels from Redux
+  const completedLevels = useSelector((state: RootState) => state.ctf.completedLevels);
 
   // Fetch CTF levels from backend
   useEffect(() => {
@@ -117,7 +122,7 @@ export default function CTFLevelGrid({ category }: CTFLevelGridProps) {
           <div className="grid grid-cols-5 gap-4 mx-auto relative">
             
             {filteredLevels.map((levelData, index) => {
-              const isFirst = index === 0;
+              const isCompleted = completedLevels.includes(levelData.id);
               const isHovered = hoveredLevel === levelData.id;
               const isSelected = selectedLevel === levelData.id;
               const levelLink = `/game/level/${levelData.id}`;
@@ -133,8 +138,8 @@ export default function CTFLevelGrid({ category }: CTFLevelGridProps) {
                   <Link to={levelLink} className="block h-full w-full">
                     <motion.div
                       className={`relative h-full w-full rounded-lg border flex flex-col items-center justify-center cursor-pointer transition-all duration-300 font-mono overflow-hidden
-                        ${isFirst 
-                          ? 'bg-neutral-950 border-red-900/60 text-red-400 shadow-[inset_0_0_12px_rgba(239,68,68,0.05)]' 
+                        ${isCompleted 
+                          ? 'bg-neutral-950 border-emerald-900/60 text-emerald-400 shadow-[inset_0_0_12px_rgba(16,185,129,0.05)]' 
                           : 'bg-neutral-950/30 border-neutral-900 text-neutral-600 hover:text-neutral-200'
                         } 
                         ${isSelected ? 'border-red-500 text-white bg-black ring-1 ring-red-500/20' : ''}`}

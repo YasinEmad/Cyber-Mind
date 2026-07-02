@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import axios from "@/api/axios";
@@ -27,20 +27,35 @@ interface LevelData {
 }
 
 const keyframes = `
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
-
 @keyframes scanline {
   0% { transform: translateY(-100%); }
   100% { transform: translateY(100vh); }
 }
 
-@keyframes pulse-slow {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.6; }
+@keyframes drift {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-14px); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.14; }
+  50% { opacity: 0.28; }
 }
 `;
 
 export default function CTFMindWelcome() {
+  const particles = useMemo(
+    () =>
+      Array.from({ length: 18 }, () => ({
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 100}%`,
+        size: `${Math.random() * 3 + 1}px`,
+        color: Math.random() > 0.85 ? 'rgba(248, 113, 113, 0.45)' : 'rgba(148, 163, 184, 0.18)',
+        delay: Math.random() * 2,
+        duration: 5 + Math.random() * 6,
+      })),
+    []
+  );
   const [phase, setPhase] = useState(6);
   const [activeCategory, setActiveCategory] = useState("Linux");
   const [backendLevels, setBackendLevels] = useState<LevelData[] | null>(null);
@@ -113,69 +128,51 @@ export default function CTFMindWelcome() {
   return (
     <>
       <style>{keyframes}</style>
-      {/* Set base background to pure black / very dark neutral */}
       <div className="min-h-screen bg-[#050505] text-neutral-200 overflow-x-hidden relative font-sans">
         
         {/* Modern Dark Background Effects */}
-        <div className="fixed inset-0 pointer-events-none z-0">
-          
-          {/* Subtle dark geometric grid */}
-          <div className="absolute inset-0 opacity-[0.15]"
-            style={{
-              backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)',
-              backgroundSize: '40px 40px',
-            }}
-          />
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(248,113,113,0.18),transparent_23%),radial-gradient(circle_at_bottom_right,rgba(244,63,94,0.12),transparent_35%),linear-gradient(180deg,rgba(10,10,10,0.94),rgba(2,2,2,0.98))]" />
+          <div className="absolute inset-0 opacity-20 bg-[linear-gradient(rgba(255,255,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.04) 1px,transparent 1px)] bg-[length:60px_60px]" />
+          <div className="absolute inset-0 bg-black/35 shadow-[inset_0_0_180px_rgba(0,0,0,0.9)]" />
 
-          {/* Deep ambient crimson glows - highly blurred and subtle */}
-          <div className="absolute inset-0 pointer-events-none"
-            style={{
-              backgroundImage: `
-                radial-gradient(circle at 15% 20%, rgba(220, 38, 38, 0.03), transparent 40%), 
-                radial-gradient(circle at 85% 80%, rgba(153, 27, 27, 0.04), transparent 50%),
-                radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.8), transparent 100%)
-              `,
-            }}
-          />
-
-          {/* Vignette effect to darken edges further */}
-          <div className="absolute inset-0 bg-black/40 shadow-[inset_0_0_150px_rgba(0,0,0,0.9)]" />
-
-          {/* Minimalist modern particles (Ash/Ember style) */}
-          {Array.from({ length: 20 }, (_, i) => (
+          {particles.map((particle, index) => (
             <motion.div
-              key={i}
-              className="absolute w-1 h-1 rounded-full"
+              key={index}
+              className="absolute rounded-full"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                background: Math.random() > 0.8 ? 'rgba(239, 68, 68, 0.4)' : 'rgba(115, 115, 115, 0.2)', // Mostly dark gray, rare red
-                boxShadow: '0 0 10px rgba(0,0,0,0.5)'
+                left: particle.left,
+                top: particle.top,
+                width: particle.size,
+                height: particle.size,
+                background: particle.color,
+                filter: 'blur(1px)',
               }}
               animate={{
-                y: [0, -40, 0],
-                opacity: [0.1, 0.5, 0.1],
+                y: [0, -24, 0],
+                opacity: [0.08, 0.45, 0.08],
               }}
               transition={{
-                duration: 5 + Math.random() * 5,
+                duration: particle.duration,
                 repeat: Infinity,
-                ease: "easeInOut",
-                delay: Math.random() * 2,
+                ease: 'easeInOut',
+                delay: particle.delay,
               }}
             />
           ))}
 
-          {/* Modern cinematic scanline overlay */}
-          <motion.div
-            className="absolute inset-0 w-full h-[10px] bg-gradient-to-b from-transparent via-red-900/5 to-transparent pointer-events-none opacity-50"
-            style={{ animation: 'scanline 8s linear infinite' }}
+          <div
+            className="absolute inset-0 pointer-events-none opacity-40"
+            style={{
+              backgroundImage: 'linear-gradient(180deg,transparent 0%,rgba(255,255,255,0.04) 50%,transparent 100%)',
+              animation: 'scanline 10s linear infinite',
+            }}
           />
 
-          {/* Sleek, subtle corner brackets */}
-          <div className="absolute top-10 left-10 w-12 h-12 border-l border-t border-neutral-800" />
-          <div className="absolute top-10 right-10 w-12 h-12 border-r border-t border-neutral-800" />
-          <div className="absolute bottom-10 left-10 w-12 h-12 border-l border-b border-neutral-800" />
-          <div className="absolute bottom-10 right-10 w-12 h-12 border-r border-b border-neutral-800" />
+          <div className="absolute top-10 left-10 w-14 h-14 border-l border-t border-neutral-800/60" />
+          <div className="absolute top-10 right-10 w-14 h-14 border-r border-t border-neutral-800/60" />
+          <div className="absolute bottom-10 left-10 w-14 h-14 border-l border-b border-neutral-800/60" />
+          <div className="absolute bottom-10 right-10 w-14 h-14 border-r border-b border-neutral-800/60" />
         </div>
 
         <div className="relative z-10 max-w-6xl mx-auto px-6 py-12">

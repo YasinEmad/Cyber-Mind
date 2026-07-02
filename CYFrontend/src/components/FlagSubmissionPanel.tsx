@@ -25,7 +25,8 @@ const FlagSubmissionPanel: React.FC<FlagSubmissionPanelProps> = ({ level: challe
 
   // Handle successful flag submission
   useEffect(() => {
-    if (!flagResult?.isCorrect || !flagResult?.isCompleted || showSuccess) {
+    // Only show success for NEW completions (pointsAwarded > 0)
+    if (!flagResult?.isCorrect || !flagResult?.isCompleted || !flagResult?.pointsAwarded || showSuccess) {
       return;
     }
 
@@ -137,6 +138,27 @@ const FlagSubmissionPanel: React.FC<FlagSubmissionPanelProps> = ({ level: challe
               <p className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wide">🎉 Level Cleared Successfully!</p>
               <p className="text-[11px] text-neutral-400 mt-0.5">
                 {flagResult?.pointsAwarded && `Database Updated: +${flagResult.pointsAwarded} Network Points added.`}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Already Completed Banner Overlay */}
+      <AnimatePresence>
+        {flagResult?.isCorrect && flagResult?.isCompleted && flagResult?.pointsAwarded === 0 && (
+          <motion.div
+            className="mb-4 p-4 bg-blue-950/20 border border-blue-900/40 rounded-lg flex items-center gap-3 shadow-[inset_0_0_15px_rgba(59,130,246,0.05)]"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+          >
+            <CheckCircle className="w-5 h-5 text-blue-400 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs font-mono font-bold text-blue-400 uppercase tracking-wide">✓ Already Mastered</p>
+              <p className="text-[11px] text-neutral-400 mt-0.5">
+                You have already successfully completed this level. No additional points awarded.
               </p>
             </div>
           </motion.div>

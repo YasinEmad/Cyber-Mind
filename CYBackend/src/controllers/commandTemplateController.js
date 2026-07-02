@@ -173,8 +173,12 @@ exports.expandTemplate = async (templateIdOrId, values = {}) => {
   // If template defines multiple commands, expand each one
   if (Array.isArray(snapshotTemplate.commands) && snapshotTemplate.commands.length > 0) {
     const vals = values && values.commands && Array.isArray(values.commands) ? values.commands : [];
+    const deletedIndexes = Array.isArray(values.deletedCommandIndexes) ? values.deletedCommandIndexes : [];
     const cmds = snapshotTemplate.commands.map((c, idx) => {
       const v = vals[idx] || {};
+      if (v.deleted === true || v.disabled === true || deletedIndexes.includes(idx)) {
+        return null;
+      }
       const name = v.name || c.name || c.baseCommand || snapshotTemplate.baseCommand || snapshotTemplate.name;
       const output = v.output !== undefined ? v.output : (c.output !== undefined ? c.output : snapshotTemplate.defaultOutput || '');
       const cmd = Object.assign({}, c, {
@@ -191,7 +195,7 @@ exports.expandTemplate = async (templateIdOrId, values = {}) => {
         cmd.blockedPaths = resolveBlockedPaths(v.blockedPaths);
       }
       return cmd;
-    });
+    }).filter(Boolean);
     return cmds;
   }
 
@@ -216,6 +220,10 @@ exports.expandTemplate = async (templateIdOrId, values = {}) => {
       if (values[f] !== undefined) cmd[f] = values[f];
     }
   });
+
+  if (values.deleted === true || values.disabled === true) {
+    return [];
+  }
 
   return [cmd];
 };

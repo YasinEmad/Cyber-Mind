@@ -49,9 +49,17 @@ interface Command {
   blockedPaths?: string[];
 }
 
+interface FormCommandTemplate {
+  templateId: string;
+  values: any;
+  instanceId?: string;
+}
+
 interface TemplateCommand extends Command {
   sourceTemplateId?: string;
+  sourceTemplateInstanceId?: string;
   sourceCommandIndex?: number;
+  deleted?: boolean;
 }
 
 const CTFLevelsAdmin: React.FC = () => {
@@ -85,7 +93,7 @@ const CTFLevelsAdmin: React.FC = () => {
     isActive: true,
     commands: [] as Command[],
     customCommands: [] as Command[],
-    commandTemplates: [] as Array<{ templateId: string; values: any }>,
+    commandTemplates: [] as FormCommandTemplate[],
     requiredCommandSequence: [] as string[],
     successCondition: '',
     initialDirectory: '/home/user',
@@ -174,6 +182,10 @@ const CTFLevelsAdmin: React.FC = () => {
 
   const handleEdit = (level: CTFLevel) => {
     const parsedCommandTemplates = Array.isArray(level.commandTemplates) ? level.commandTemplates : [];
+    const commandTemplatesWithInstance = parsedCommandTemplates.map((ct, idx) => ({
+      ...ct,
+      instanceId: `${ct.templateId}-${idx}`,
+    }));
     setEditingLevel(level);
     setFormData({
       order: level.order.toString(),
@@ -186,12 +198,12 @@ const CTFLevelsAdmin: React.FC = () => {
       isActive: level.isActive,
       commands: [], // Will be loaded from templates
       customCommands: level.customCommands || [],
-      commandTemplates: parsedCommandTemplates,
+      commandTemplates: commandTemplatesWithInstance,
       requiredCommandSequence: level.requiredCommandSequence || [],
       successCondition: level.successCondition || '',
       initialDirectory: level.initialDirectory || '/home/user',
     });
-    loadTemplateCommands(parsedCommandTemplates);
+    loadTemplateCommands(commandTemplatesWithInstance);
     setShowForm(true);
   };
 
@@ -290,27 +302,33 @@ const CTFLevelsAdmin: React.FC = () => {
   const updateTemplateCommand = (index: number, field: keyof Command, value: any) => {
     setTemplateCommands((prev) => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
+      const currentCommand = updated[index];
+      const nextCommand = { ...currentCommand, [field]: value };
+      updated[index] = nextCommand;
 
       setFormData((prevFormData) => {
         const nextTemplates = prevFormData.commandTemplates.map((ct) => {
-          const templateId = String(ct.templateId);
-          const commandsForTemplate = updated
-            .filter((cmd) => String(cmd.sourceTemplateId) === templateId)
-            .sort((a, b) => (a.sourceCommandIndex ?? 0) - (b.sourceCommandIndex ?? 0))
-            .map((cmd) => ({
-              name: cmd.name,
-              output: cmd.output,
-              description: cmd.description,
-              allowedPaths: cmd.allowedPaths || [],
-              blockedPaths: cmd.blockedPaths || [],
-            }));
+          if (String(ct.templateId) !== String(currentCommand.sourceTemplateId) || String(ct.instanceId) !== String(currentCommand.sourceTemplateInstanceId)) {
+            return ct;
+          }
+
+          const nextValuesCommands = Array.isArray(ct.values.commands) ? [...ct.values.commands] : [];
+          const targetIndex = currentCommand.sourceCommandIndex ?? index;
+          const existing = nextValuesCommands[targetIndex] || {};
+          nextValuesCommands[targetIndex] = {
+            ...existing,
+            name: nextCommand.name,
+            output: nextCommand.output,
+            description: nextCommand.description,
+            allowedPaths: nextCommand.allowedPaths || [],
+            blockedPaths: nextCommand.blockedPaths || [],
+          };
 
           return {
             ...ct,
             values: {
               ...ct.values,
-              commands: commandsForTemplate,
+              commands: nextValuesCommands,
             },
           };
         });
@@ -328,7 +346,6 @@ const CTFLevelsAdmin: React.FC = () => {
     try {
       const tmpl = templates.find((t: any) => String(t.templateId) === String(templateId) || String(t.id) === String(templateId));
       if (!tmpl) throw new Error('Template not found');
-      // Build a normalized values object that always contains a `commands` array
       const values: any = {
         name: tmpl?.baseCommand || tmpl?.name || '',
         output: tmpl?.defaultOutput || '',
@@ -338,7 +355,6 @@ const CTFLevelsAdmin: React.FC = () => {
       };
 
       if (Array.isArray(tmpl.commands) && tmpl.commands.length > 0) {
-        // Normalize each command entry to { name, output, description, allowedPaths, blockedPaths }
         values.commands = tmpl.commands.map((c: any) => ({
           name: c.name || c.baseCommand || tmpl.baseCommand || tmpl.name,
           output: c.output !== undefined ? c.output : (c.defaultOutput || tmpl.defaultOutput || ''),
@@ -347,23 +363,21 @@ const CTFLevelsAdmin: React.FC = () => {
           blockedPaths: Array.isArray(c.blockedPaths) ? c.blockedPaths : [],
         }));
       } else {
-        // Fallback: create a single command from the template baseCommand/defaultOutput
         values.commands = [{ name: values.name, output: values.output, description: '' }];
       }
       console.debug('Adding command from template:', templateId, values);
       const sourceTemplateId = tmpl.templateId ?? String(tmpl.id);
+      const newInstanceId = `${sourceTemplateId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       setFormData((prev) => ({
         ...prev,
-        commandTemplates: [...(prev.commandTemplates || []), { templateId: sourceTemplateId, values }],
+        commandTemplates: [...(prev.commandTemplates || []), { templateId: sourceTemplateId, instanceId: newInstanceId, values }],
       }));
-      // clear selection so user sees action taken
       setSelectedTemplateId('');
-      // show transient action message
       setActionMessage(`Added ${Array.isArray(values.commands) && values.commands.length > 0 ? values.commands.length : 1} command(s) from template "${tmpl.name}"`);
       setTimeout(() => setActionMessage(null), 3000);
 
-      // Also expand locally into editable template command entries
       if (Array.isArray(values.commands) && values.commands.length > 0) {
+        const newInstanceId = `${sourceTemplateId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const expanded: TemplateCommand[] = values.commands.map((c: any, idx: number) => ({
           name: c.name,
           output: c.output,
@@ -371,6 +385,7 @@ const CTFLevelsAdmin: React.FC = () => {
           allowedPaths: Array.isArray(c.allowedPaths) ? c.allowedPaths : [],
           blockedPaths: Array.isArray(c.blockedPaths) ? c.blockedPaths : [],
           sourceTemplateId,
+          sourceTemplateInstanceId: newInstanceId,
           sourceCommandIndex: idx,
         }));
         setTemplateCommands((prev) => [...prev, ...expanded]);
@@ -418,28 +433,71 @@ const CTFLevelsAdmin: React.FC = () => {
     });
   };
 
-  const loadTemplateCommands = async (commandTemplates: Array<{ templateId: string; values: any }>) => {
+  const removeTemplateCommand = (index: number) => {
+    const commandToRemove = templateCommands[index];
+    if (!commandToRemove || commandToRemove.sourceTemplateId === undefined || commandToRemove.sourceCommandIndex === undefined || commandToRemove.sourceTemplateInstanceId === undefined) {
+      return;
+    }
+
+    setTemplateCommands((prev) => prev.filter((_, idx) => idx !== index));
+    setFormData((prevFormData) => {
+      const nextTemplates = prevFormData.commandTemplates.map((ct) => {
+        if (String(ct.templateId) !== String(commandToRemove.sourceTemplateId) || String(ct.instanceId) !== String(commandToRemove.sourceTemplateInstanceId)) {
+          return ct;
+        }
+        const nextValuesCommands = Array.isArray(ct.values.commands) ? [...ct.values.commands] : [];
+        const removedIndex = commandToRemove.sourceCommandIndex;
+        if (removedIndex === undefined) {
+          return ct;
+        }
+        nextValuesCommands[removedIndex] = {
+          ...nextValuesCommands[removedIndex],
+          deleted: true,
+        };
+        return {
+          ...ct,
+          values: {
+            ...ct.values,
+            commands: nextValuesCommands,
+          },
+        };
+      });
+      return {
+        ...prevFormData,
+        commandTemplates: nextTemplates,
+      };
+    });
+  };
+
+  const loadTemplateCommands = async (commandTemplates: Array<FormCommandTemplate>) => {
     if (commandTemplates.length === 0) {
       setTemplateCommands([]);
       return;
     }
     try {
-      // For simplicity, assume we can expand locally if templates are loaded
-      let expanded: Command[] = [];
-      for (const ct of commandTemplates) {
+      let expanded: TemplateCommand[] = [];
+      for (const [templateIndex, ct] of commandTemplates.entries()) {
         const tmpl = templates.find(t => String(t.templateId) === String(ct.templateId) || String(t.id) === String(ct.templateId));
-        if (tmpl && Array.isArray(tmpl.commands)) {
-          const cmds = tmpl.commands.map((c: any, idx: number) => ({
-            name: c.name || tmpl.baseCommand,
-            output: c.output || tmpl.defaultOutput || '',
-            description: c.description || '',
-            allowedPaths: c.allowedPaths || [],
-            blockedPaths: c.blockedPaths || [],
+        if (!tmpl || !Array.isArray(tmpl.commands)) continue;
+        const instanceId = String(ct.instanceId ?? `${ct.templateId}-${templateIndex}`);
+        const storedCommands = Array.isArray(ct.values?.commands) ? ct.values.commands : [];
+        const cmds = tmpl.commands.map((c: any, idx: number) => {
+          const stored = storedCommands[idx] || {};
+          if (stored.deleted === true || stored.disabled === true) {
+            return null;
+          }
+          return {
+            name: stored.name || c.name || tmpl.baseCommand || tmpl.name || '',
+            output: stored.output !== undefined ? stored.output : (c.output !== undefined ? c.output : tmpl.defaultOutput || ''),
+            description: stored.description || c.description || '',
+            allowedPaths: Array.isArray(stored.allowedPaths) ? stored.allowedPaths : (Array.isArray(c.allowedPaths) ? c.allowedPaths : []),
+            blockedPaths: Array.isArray(stored.blockedPaths) ? stored.blockedPaths : (Array.isArray(c.blockedPaths) ? c.blockedPaths : []),
             sourceTemplateId: String(ct.templateId),
+            sourceTemplateInstanceId: instanceId,
             sourceCommandIndex: idx,
-          }));
-          expanded = [...expanded, ...cmds];
-        }
+          };
+        }).filter(Boolean) as TemplateCommand[];
+        expanded = [...expanded, ...cmds];
       }
       setTemplateCommands(expanded);
     } catch (error) {
@@ -703,13 +761,23 @@ const CTFLevelsAdmin: React.FC = () => {
                         </div>
                       </div>
                       <div className="col-span-3">
-                        <input
-                          type="text"
-                          placeholder="Description"
-                          value={command.description}
-                          onChange={(e) => updateTemplateCommand(index, 'description', e.target.value)}
-                          className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg text-white"
-                        />
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Description"
+                            value={command.description}
+                            onChange={(e) => updateTemplateCommand(index, 'description', e.target.value)}
+                            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg text-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeTemplateCommand(index)}
+                            className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                            title="Remove this template command from level"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
                       <div className="col-span-2">
                         <input
