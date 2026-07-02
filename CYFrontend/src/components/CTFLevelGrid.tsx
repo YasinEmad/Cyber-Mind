@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Terminal, Shield, Zap, Lock, Star, Crosshair } from "lucide-react";
-import ctfInfo from "@/utils/ctfinfo";
 import axios from "@/api/axios";
 
 interface LevelData {
-  level: number;
+  id: number;
+  order: number;
   name: string;
   description: string;
   category: string;
@@ -61,8 +61,8 @@ export default function CTFLevelGrid({ category }: CTFLevelGridProps) {
       } catch (err) {
         console.error("Failed to fetch CTF levels from backend:", err);
         _setError("Failed to load CTF levels");
-        // Fall back to frontend data if backend fails
-        setBackendLevels(ctfInfo.levels);
+        // Fall back to empty if backend fails
+        setBackendLevels([]);
       } finally {
         _setLoading(false);
       }
@@ -72,7 +72,7 @@ export default function CTFLevelGrid({ category }: CTFLevelGridProps) {
   }, []);
 
   // Use backend levels if available, otherwise fall back to frontend data
-  const levelsData = backendLevels !== null ? backendLevels : ctfInfo.levels;
+  const levelsData = backendLevels !== null ? backendLevels : [];
   const filteredLevels = levelsData.filter((level: LevelData) => level.category === category);
 
   return (
@@ -118,13 +118,13 @@ export default function CTFLevelGrid({ category }: CTFLevelGridProps) {
             
             {filteredLevels.map((levelData, index) => {
               const isFirst = index === 0;
-              const isHovered = hoveredLevel === levelData.level;
-              const isSelected = selectedLevel === levelData.level;
-              const levelLink = `/game/level/${levelData.level}`;
+              const isHovered = hoveredLevel === levelData.id;
+              const isSelected = selectedLevel === levelData.id;
+              const levelLink = `/game/level/${levelData.id}`;
 
               return (
                 <motion.div
-                  key={levelData.level}
+                  key={levelData.id}
                   className="relative aspect-square"
                   initial={{ opacity: 0, scale: 0.85 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -145,14 +145,14 @@ export default function CTFLevelGrid({ category }: CTFLevelGridProps) {
                       }}
                       whileTap={{ scale: 0.96 }}
                       onMouseEnter={(e) => {
-                        setHoveredLevel(levelData.level);
+                        setHoveredLevel(levelData.id);
                         const rect = e.currentTarget.getBoundingClientRect();
                         if (rect) {
                           setTooltipPosition({ x: rect.left + rect.width / 2, y: rect.top - 12 });
                         }
                       }}
                       onMouseLeave={() => setHoveredLevel(null)}
-                      onClick={() => setSelectedLevel(levelData.level)}
+                      onClick={() => setSelectedLevel(levelData.id)}
                     >
                       {/* Tech Corner Accent inside node */}
                       {isHovered && (
@@ -161,12 +161,12 @@ export default function CTFLevelGrid({ category }: CTFLevelGridProps) {
 
                       {/* Micro Node ID */}
                       <span className="text-[9px] text-neutral-600 absolute top-1 left-1.5 pointer-events-none">
-                        N{String(levelData.level).padStart(2, '0')}
+                        #{levelData.id}
                       </span>
 
-                      {/* Display Level Number */}
+                      {/* Display Order Number */}
                       <span className="text-base font-bold tracking-tight relative z-10 mt-1">
-                        {String(levelData.level).padStart(2, '0')}
+                        {String(levelData.order).padStart(2, '0')}
                       </span>
                       
                       {/* Interactive target laser line on hover */}
@@ -208,12 +208,12 @@ export default function CTFLevelGrid({ category }: CTFLevelGridProps) {
       {/* Advanced Diagnostics Tooltip */}
       <AnimatePresence>
         {hoveredLevel && (() => {
-          const levelData = levelsData.find((level: LevelData) => level.level === hoveredLevel);
+          const levelData = levelsData.find((level: LevelData) => level.id === hoveredLevel);
           if (!levelData) return null;
 
           const diffLevel = ((levelData as any)?.difficulty as string)?.toLowerCase() || '';
-          const isHard = diffLevel === 'hard' || levelData.level > 20;
-          const isMedium = diffLevel === 'medium' || (levelData.level > 10 && levelData.level <= 20);
+          const isHard = diffLevel === 'hard';
+          const isMedium = diffLevel === 'medium';
           const starCount = diffLevel === 'hard' ? 3 : diffLevel === 'medium' ? 2 : 1;
 
           return (
@@ -235,7 +235,7 @@ export default function CTFLevelGrid({ category }: CTFLevelGridProps) {
                 <div className="flex items-center gap-2 mb-2.5">
                   <Crosshair className="w-3.5 h-3.5 text-red-500 animate-spin-slow" />
                   <span className="text-[10px] font-mono font-bold text-red-500 uppercase tracking-widest">
-                    TARGET NODE // SYSTEM_0{levelData.level}
+                    TARGET NODE // SYS_{levelData.id}
                   </span>
                 </div>
 
@@ -284,7 +284,7 @@ export default function CTFLevelGrid({ category }: CTFLevelGridProps) {
 
                 {/* Simulated connection checksum string */}
                 <div className="mt-3 text-center text-[8px] font-mono text-neutral-700 tracking-widest uppercase">
-                  SHA-256 CHECK: 0x{levelData.level}F9A...SECURE
+                  SHA-256 CHECK: 0x{levelData.id}A7F...SECURE
                 </div>
 
               </div>

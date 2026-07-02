@@ -24,17 +24,20 @@ const calculatePoints = (difficulty) => {
  * 3. Return highest scoring command
  * 4. Deterministic: ties broken by first occurrence
  */
-const resolveContextAwareCommand = (candidates, cmdName, currentPath) => {
+const resolveContextAwareCommand = (candidates, cmdName, currentPath, fullCommand = null) => {
   if (!Array.isArray(candidates) || candidates.length === 0) {
     return null;
   }
 
   // Filter candidates matching by name (full or base)
   const cmdNameTrimmed = String(cmdName).trim();
+  const fullTrimmed = fullCommand ? String(fullCommand).trim() : null;
   const nameMatches = candidates.filter((c) => {
     if (!c || !c.name) return false;
     const stored = String(c.name).trim();
-    return stored === cmdNameTrimmed;
+    if (stored === cmdNameTrimmed) return true;
+    if (fullTrimmed && stored === fullTrimmed) return true;
+    return false;
   });
 
   if (nameMatches.length === 0) {
@@ -111,12 +114,12 @@ exports.executeCTFCommand = async (req, res, next) => {
     // Log execution for audit trail
     console.log(`[CTF_EXECUTION] User ${userEmail} (ID: ${userId}) executing CTF command`);
 
-    const { level, command, currentPath, sessionState } = req.body;
-    if (level === undefined || !command) {
+    const { level: ctfLevelId, command, currentPath, sessionState } = req.body;
+    if (ctfLevelId === undefined || !command) {
       return res.status(400).json({ success: false, output: 'Missing level or command' });
     }
 
-    const lvl = await CTFLevel.findOne({ where: { level: parseInt(level, 10), isActive: true } });
+    const lvl = await CTFLevel.findOne({ where: { id: parseInt(ctfLevelId, 10), isActive: true } });
     if (!lvl) {
       return res.status(404).json({ success: false, output: 'Level not found' });
     }
@@ -220,7 +223,7 @@ exports.executeCTFCommand = async (req, res, next) => {
           
           // Use context-aware resolver on template candidates
           if (templateCandidates.length > 0) {
-            matched = resolveContextAwareCommand(templateCandidates, base, cwd);
+            matched = resolveContextAwareCommand(templateCandidates, base, cwd, full);
             if (matched) {
               console.debug('CTF execute - matched via commandTemplates expansion', { 
                 templateId: tRef.templateId, 
@@ -238,12 +241,12 @@ exports.executeCTFCommand = async (req, res, next) => {
 
     // If no templates or none matched, fall back to explicit commands (context-aware)
     if (!matched && Array.isArray(commands) && commands.length > 0) {
-      matched = resolveContextAwareCommand(commands, base, cwd);
+      matched = resolveContextAwareCommand(commands, base, cwd, full);
     }
 
     // Finally try customCommands with context-aware resolution
     if (!matched && Array.isArray(customCommands) && customCommands.length > 0) {
-      matched = resolveContextAwareCommand(customCommands, base, cwd);
+      matched = resolveContextAwareCommand(customCommands, base, cwd, full);
     }
 
     if (!matched) {
@@ -347,14 +350,14 @@ exports.executeCTFCommand = async (req, res, next) => {
 // Verify flag submission
 exports.verifyFlag = async (req, res, next) => {
   try {
-    const { level, flag } = req.body;
+    const { level: ctfLevelId, flag } = req.body;
     const userId = req.user?.id;
 
     // Validate input
-    if (level === undefined || !flag) {
+    if (ctfLevelId === undefined || !flag) {
       return res.status(400).json({
         success: false,
-        message: 'Level and flag are required',
+        message: 'Level id and flag are required',
       });
     }
 
@@ -367,25 +370,25 @@ exports.verifyFlag = async (req, res, next) => {
 
     // Get level data
     const levelData = await CTFLevel.findOne({
-      where: { level: parseInt(level, 10), isActive: true },
+      where: { id: parseInt(ctfLevelId, 10), isActive: true },
     });
 
     if (!levelData) {
       return res.status(404).json({
         success: false,
-        message: `CTF level ${level} not found`,
+        message: `CTF level with id ${ctfLevelId} not found`,
       });
     }
 
     // Get or create completion record
     let completion = await CTFLevelCompletion.findOne({
-      where: { userId, level: parseInt(level, 10) },
+      where: { userId, ctfLevelId: parseInt(ctfLevelId, 10) },
     });
 
     if (!completion) {
       completion = await CTFLevelCompletion.create({
         userId,
-        level: parseInt(level, 10),
+        ctfLevelId: parseInt(ctfLevelId, 10),
         attempts: 0,
         flagSubmissions: [],
       });
@@ -439,8 +442,8 @@ exports.verifyFlag = async (req, res, next) => {
         if (!Array.isArray(user.solvedCTFLevels)) {
           user.solvedCTFLevels = [];
         }
-        if (!user.solvedCTFLevels.includes(levelData.level)) {
-          user.solvedCTFLevels.push(levelData.level);
+        if (!user.solvedCTFLevels.includes(levelData.id)) {
+          user.solvedCTFLevels.push(levelData.id);
         }
         
         await user.save();
@@ -460,7 +463,7 @@ exports.verifyFlag = async (req, res, next) => {
         if (!levelExists) {
           solvedCTFLevels.push({
             levelId: levelData.id,
-            level: levelData.level,
+            order: levelData.order,
             title: levelData.title,
             difficulty: levelData.difficulty,
             pointsAwarded: points,  // Award points based on difficulty
@@ -482,17 +485,17 @@ exports.verifyFlag = async (req, res, next) => {
       // Get all completed levels and user progress for frontend sync
       const allCompletions = await CTFLevelCompletion.findAll({
         where: { userId },
-        attributes: ['level', 'isCompleted', 'attempts', 'pointsAwarded', 'completedAt'],
+        attributes: ['ctfLevelId', 'isCompleted', 'attempts', 'pointsAwarded', 'completedAt'],
       });
 
       // Build completed levels array and progress map
       const completedLevels = allCompletions
         .filter(c => c.isCompleted)
-        .map(c => c.level);
+        .map(c => c.ctfLevelId);
 
       const userProgress = {};
       allCompletions.forEach(c => {
-        userProgress[c.level] = {
+        userProgress[c.ctfLevelId] = {
           isCompleted: c.isCompleted,
           attempts: c.attempts,
           pointsAwarded: c.pointsAwarded,
@@ -554,7 +557,7 @@ exports.verifyFlag = async (req, res, next) => {
 // Get user progress for a level
 exports.getUserLevelProgress = async (req, res, next) => {
   try {
-    const { level } = req.params;
+    const { id } = req.params;
     const userId = req.user?.id;
 
     if (!userId) {
@@ -565,7 +568,7 @@ exports.getUserLevelProgress = async (req, res, next) => {
     }
 
     const completion = await CTFLevelCompletion.findOne({
-      where: { userId, level: parseInt(level, 10) },
+      where: { userId, ctfLevelId: parseInt(id, 10) },
       attributes: ['isCompleted', 'attempts', 'pointsAwarded', 'completedAt'],
     });
 
@@ -597,7 +600,7 @@ exports.getUserCompletedLevels = async (req, res, next) => {
 
     const completions = await CTFLevelCompletion.findAll({
       where: { userId, isCompleted: true },
-      attributes: ['level', 'attempts', 'pointsAwarded', 'completedAt'],
+      attributes: ['ctfLevelId', 'attempts', 'pointsAwarded', 'completedAt'],
       order: [['completedAt', 'DESC']],
     });
 

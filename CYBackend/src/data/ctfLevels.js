@@ -1,5 +1,6 @@
 // ─── CTF CHALLENGES ──────────────────────────────────────────────────────────
 // Note: fsMods are kept as functions for backend reference, but sent as JSON to frontend
+// Keyed by CTFLevel id (DB primary key)
 const challenges = {
   1: {
     description: 'Find the hidden file in the Desktop folder that contains the flag.',

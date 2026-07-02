@@ -11,7 +11,7 @@ export interface TerminalLine {
 export function createTerminalEngine(
   initialCwd = '/home/user',
   challengesParam?: Record<number, any>,
-  ctfExecute?: (level: number, command: string, currentPath: string, sessionState: any) => Promise<any>
+  ctfExecute?: (challengeId: number, command: string, currentPath: string, sessionState: any) => Promise<any>
 ) {
   // Use provided challenges or fall back to default (local) challenges
   const challenges = challengesParam || defaultChallenges;
@@ -24,7 +24,7 @@ export function createTerminalEngine(
     async execute(
       cmd: string,
       isCTFMode: boolean,
-      currentLevel: number
+      currentChallengeId: number
     ): Promise<TerminalLine[]> {
       const trimmed = cmd.trim();
       if (!trimmed) return [];
@@ -51,7 +51,7 @@ export function createTerminalEngine(
           return err('CTF backend execution is unavailable');
         }
         try {
-          const resp = await ctfExecute(currentLevel, trimmed, cwd, {});
+          const resp = await ctfExecute(currentChallengeId, trimmed, cwd, {});
           console.log('CTF execute response:', resp);
 
           // SPECIAL HANDLING FOR cd COMMAND (Navigation)
@@ -80,7 +80,7 @@ export function createTerminalEngine(
       }
 
       // If not in CTF backend mode but the challenge defines custom commands (templates), use them.
-      const levelCmds = challenges[currentLevel] && challenges[currentLevel].commands ? challenges[currentLevel].commands : null;
+      const levelCmds = challenges[currentChallengeId] && challenges[currentChallengeId].commands ? challenges[currentChallengeId].commands : null;
       if (!isCTFMode && Array.isArray(levelCmds) && levelCmds.length > 0) {
         // Try to match either full command or base name; trim stored names to tolerate stray spaces
         const matched = levelCmds.find((c: any) => {

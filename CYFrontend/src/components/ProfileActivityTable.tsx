@@ -41,7 +41,7 @@ const ProfileActivityTable: React.FC<ProfileActivityTableProps> = ({
               <thead>
                 <tr className="text-[11px] font-bold uppercase text-neutral-500 border-b border-neutral-700 bg-neutral-900/30">
                   <th className="px-6 py-4">Challenge</th>
-                  <th className="px-6 py-4">Level</th>
+                  <th className="px-6 py-4">Order</th>
                   <th className="px-6 py-4">Difficulty</th>
                   <th className="px-6 py-4">Points</th>
                   <th className="px-6 py-4">Completed</th>
@@ -184,7 +184,7 @@ const CTFLevelRow = ({ level, isRecent }: { level: any; isRecent: boolean }) => 
       </td>
       <td className="px-6 py-4">
         <span className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest rounded-lg bg-neutral-800 text-neutral-300 border border-neutral-700">
-          Lv {level.level}
+          Lv {level.order}
         </span>
       </td>
       <td className="px-6 py-4">

@@ -1,7 +1,7 @@
 module.exports = {
   "levels": [
     {
-      "level": 1,
+      "order": 1,
       "name": "Linux File System Navigation",
       "description": "Navigate through Linux directories and find hidden files.",
       "category": "Linux",
@@ -9,7 +9,7 @@ module.exports = {
       "target": "Find the hidden flag file in the user directory"
     },
     {
-      "level": 2,
+      "order": 2,
       "name": "Linux Permissions",
       "description": "Understand and exploit file permission vulnerabilities in Linux.",
       "category": "Linux",
@@ -17,7 +17,7 @@ module.exports = {
       "target": "Find and read a file with restricted permissions containing the flag"
     },
     {
-      "level": 3,
+      "order": 3,
       "name": "Linux Environment Variables",
       "description": "Extract sensitive information from Linux environment variables.",
       "category": "Linux",
@@ -25,7 +25,7 @@ module.exports = {
       "target": "Find the environment variable containing the secret flag"
     },
     {
-      "level": 4,
+      "order": 4,
       "name": "Linux Process Management",
       "description": "Analyze running processes in Linux to find hidden data.",
       "category": "Linux",
@@ -33,7 +33,7 @@ module.exports = {
       "target": "Find the process running with the flag in its command line or environment"
     },
     {
-      "level": 5,
+      "order": 5,
       "name": "Linux Cron Jobs",
       "description": "Discover scheduled tasks and extract flags from cron configurations.",
       "category": "Linux",
@@ -41,7 +41,7 @@ module.exports = {
       "target": "Find the cron job that contains or generates the flag"
     },
     {
-      "level": 6,
+      "order": 6,
       "name": "Linux Log Analysis",
       "description": "Search through Linux system logs to find security incidents.",
       "category": "Linux",
@@ -49,7 +49,7 @@ module.exports = {
       "target": "Find the security incident logged with the flag"
     },
     {
-      "level": 7,
+      "order": 7,
       "name": "Linux Package Management",
       "description": "Exploit package manager vulnerabilities to gain access.",
       "category": "Linux",
@@ -57,7 +57,7 @@ module.exports = {
       "target": "Find the flag hidden in package manager database"
     },
     {
-      "level": 8,
+      "order": 8,
       "name": "Linux User Accounts",
       "description": "Analyze user account information to uncover secrets.",
       "category": "Linux",
@@ -65,7 +65,7 @@ module.exports = {
       "target": "Find the hidden flag in user account data"
     },
     {
-      "level": 9,
+      "order": 9,
       "name": "Linux File Permissions and Capabilities",
       "description": "Exploit special file permissions (SUID, SGID, sticky bit) and capabilities.",
       "category": "Linux",
@@ -73,7 +73,7 @@ module.exports = {
       "target": "Use file permissions to escalate privileges and find the flag"
     },
     {
-      "level": 10,
+      "order": 10,
       "name": "Linux Kernel Modules",
       "description": "Analyze kernel modules to find hidden information.",
       "category": "Linux",

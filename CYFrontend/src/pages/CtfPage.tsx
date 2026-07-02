@@ -10,14 +10,14 @@ import {
   ChevronRight,
   Play,
 } from "lucide-react";
-import ctfInfo from "@/utils/ctfinfo";
 import CTFHeader from "@/components/CTFHeader";
 import CTFCategorySelect from "@/components/CTFCategorySelect";
 import CTFLevelGrid from "@/components/CTFLevelGrid";
 import FeatureItem from "@/components/FeatureItem";
 
 interface LevelData {
-  level: number;
+  id: number;
+  order: number;
   name: string;
   description: string;
   category: string;
@@ -45,7 +45,7 @@ export default function CTFMindWelcome() {
   const [activeCategory, setActiveCategory] = useState("Linux");
   const [backendLevels, setBackendLevels] = useState<LevelData[] | null>(null);
   const completedLevels = useSelector((state: RootState) => state.ctf.completedLevels);
-  const allLevels = backendLevels ?? ctfInfo.levels;
+  const allLevels = backendLevels ?? [];
 
   useEffect(() => {
     const fetchBackendLevels = async () => {
@@ -101,7 +101,7 @@ export default function CTFMindWelcome() {
 
   const getCategoryStats = (category: string) => {
     const levels = allLevels.filter(level => level.category === category);
-    const completed = levels.filter(level => completedLevels.includes(level.level)).length;
+    const completed = levels.filter(level => completedLevels.includes(level.id)).length;
     return {
       total: levels.length,
       completed: completed,

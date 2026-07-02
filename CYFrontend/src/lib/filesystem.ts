@@ -100,10 +100,10 @@ export function resolvePath(current: string, target: string): string {
 }
 
 // ─── CTF UTILITIES ───────────────────────────────────────────────────────────
-export function getCTFFS(level: number, challengesParam?: Record<number, any>): FileSystem {
+export function getCTFFS(challengeId: number, challengesParam?: Record<number, any>): FileSystem {
   // Use provided challenges or fall back to default (local) challenges
   const challenges = challengesParam || defaultChallenges;
   const fs = JSON.parse(JSON.stringify(initialFS)) as FileSystem;
-  challenges[level]?.fsMods(fs);
+  challenges[challengeId]?.fsMods(fs);
   return fs;
 }

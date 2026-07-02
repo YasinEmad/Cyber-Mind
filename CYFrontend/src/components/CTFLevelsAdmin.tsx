@@ -15,7 +15,7 @@ import CommandTemplatesAdmin from './CommandTemplatesAdmin';
 
 interface CTFLevel {
   id: number;
-  level: number;
+  order: number;
   title: string;
   description: string;
   hints: string[];
@@ -71,7 +71,7 @@ const CTFLevelsAdmin: React.FC = () => {
   const templateOutputRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
   const customOutputRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
   const [formData, setFormData] = useState({
-    level: '',
+    order: '',
     title: '',
     description: '',
     hints: [] as string[],
@@ -142,15 +142,15 @@ const CTFLevelsAdmin: React.FC = () => {
     }
   };
 
-  const getNextLevelNumber = () => {
-    const currentMax = levels.reduce((max, level) => Math.max(max, level.level), 0);
+  const getNextOrderNumber = () => {
+    const currentMax = levels.reduce((max, level) => Math.max(max, level.order), 0);
     return String(currentMax + 1 || 1);
   };
 
   const openCreateForm = () => {
     setEditingLevel(null);
     setFormData({
-      level: getNextLevelNumber(),
+      order: getNextOrderNumber(),
       title: '',
       description: '',
       hints: [],
@@ -172,7 +172,7 @@ const CTFLevelsAdmin: React.FC = () => {
     const parsedCommandTemplates = Array.isArray(level.commandTemplates) ? level.commandTemplates : [];
     setEditingLevel(level);
     setFormData({
-      level: level.level.toString(),
+      order: level.order.toString(),
       title: level.title,
       description: level.description,
       hints: level.hints || [],
@@ -217,7 +217,7 @@ const CTFLevelsAdmin: React.FC = () => {
 
   const resetForm = () => {
     setFormData({
-      level: '',
+      order: '',
       title: '',
       description: '',
       hints: [],
@@ -436,7 +436,7 @@ const CTFLevelsAdmin: React.FC = () => {
 
   const filteredLevels = levels.filter(level =>
     level.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    level.level.toString().includes(searchTerm)
+    level.order.toString().includes(searchTerm)
   );
 
   if (loading) {
@@ -486,18 +486,18 @@ const CTFLevelsAdmin: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {editingLevel ? (
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Level Number</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Order</label>
                     <input
                       type="number"
-                      value={formData.level}
-                      onChange={(e) => setFormData({ ...formData, level: e.target.value })}
+                      value={formData.order}
+                      onChange={(e) => setFormData({ ...formData, order: e.target.value })}
                       className="w-full px-3 py-2 bg-zinc-800 border border-red-900/40 rounded-lg text-white focus:outline-none focus:border-red-500"
                       required
                     />
                   </div>
                 ) : (
                   <div className="md:col-span-2 text-sm text-neutral-400">
-                    Level number is auto-assigned when creating a new level.
+                    Order is auto-assigned when creating a new level.
                   </div>
                 )}
 
@@ -853,7 +853,7 @@ const CTFLevelsAdmin: React.FC = () => {
           <table className="w-full">
             <thead className="bg-zinc-900/50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Level</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Order</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Title</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Difficulty</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
@@ -864,7 +864,7 @@ const CTFLevelsAdmin: React.FC = () => {
             <tbody className="divide-y divide-red-900/20">
               {filteredLevels.map((level) => (
                 <tr key={level.id} className="hover:bg-zinc-900/30">
-                  <td className="px-4 py-3 text-sm text-white">{level.level}</td>
+                  <td className="px-4 py-3 text-sm text-white">{level.order}</td>
                   <td className="px-4 py-3 text-sm text-white">{level.title}</td>
                   <td className="px-4 py-3 text-sm text-white capitalize">{level.difficulty}</td>
                   <td className="px-4 py-3 text-sm">

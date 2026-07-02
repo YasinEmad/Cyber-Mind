@@ -32,5 +32,6 @@ export interface Puzzle {
   hints?: string[];
   active?: boolean;
   scenario?: string;
+  order?: number;
 }
 

@@ -39,7 +39,7 @@ export interface OSContextType {
   fs: FileSystem;
   setFs: React.Dispatch<React.SetStateAction<FileSystem>>;
   isCTFMode: boolean;
-  currentLevel: number;
+  currentChallengeId: number;
   setCtfNotification: React.Dispatch<React.SetStateAction<string | null>>;
   challenges?: Record<number, any>;
 }

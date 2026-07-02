@@ -45,9 +45,9 @@ function LinuxDesktop() {
       if (m) levelParam = m[1];
     } catch (e) {}
   }
-  const levelNumber = Number(levelParam);
-  const isCTFMode = Number.isInteger(levelNumber) && levelNumber > 0;
-  const [currentLevel, setCurrentLevel] = useState<number>(isCTFMode ? levelNumber : 0);
+  const challengeId = Number(levelParam);
+  const isCTFMode = Number.isInteger(challengeId) && challengeId > 0;
+  const [currentChallengeId, setCurrentChallengeId] = useState<number>(isCTFMode ? challengeId : 0);
 
   // CTF state
   const [challengeDescription, setChallengeDescription] = useState('');
@@ -58,7 +58,7 @@ function LinuxDesktop() {
 
   // OS state
   const [booted, setBooted] = useState(false);
-  const [fs, setFs] = useState(isCTFMode ? getCTFFS(levelNumber, loadedChallenges || undefined) : initialFS);
+  const [fs, setFs] = useState(isCTFMode ? getCTFFS(challengeId, loadedChallenges || undefined) : initialFS);
   const [state, dispatch] = useReducer(osReducer, {
     windows: [],
     zCounter: 1,
@@ -74,10 +74,10 @@ function LinuxDesktop() {
         const loaded = getChallenges();
         setLoadedChallenges(loaded);
         // If CTF mode is active, reload the challenge data from backend
-        if (isCTFMode && levelNumber) {
-          if (loaded[levelNumber]) {
-            setChallengeDescription(loaded[levelNumber].description);
-            setHint(loaded[levelNumber].hint);
+        if (isCTFMode && challengeId) {
+          if (loaded[challengeId]) {
+            setChallengeDescription(loaded[challengeId].description);
+            setHint(loaded[challengeId].hint);
           }
         }
       } catch (error) {
@@ -95,11 +95,11 @@ function LinuxDesktop() {
         await loadChallengesFromBackend();
         const loaded = getChallenges();
         setLoadedChallenges(loaded);
-        if (isCTFMode && levelNumber) {
-          if (loaded[levelNumber]) {
-            setChallengeDescription(loaded[levelNumber].description);
-            setHint(loaded[levelNumber].hint);
-            setFs(getCTFFS(levelNumber, loaded || undefined));
+        if (isCTFMode && challengeId) {
+          if (loaded[challengeId]) {
+            setChallengeDescription(loaded[challengeId].description);
+            setHint(loaded[challengeId].hint);
+            setFs(getCTFFS(challengeId, loaded || undefined));
           }
         }
       } catch (error) {
@@ -109,23 +109,23 @@ function LinuxDesktop() {
 
     window.addEventListener('ctf:updated', onCTFUpdated as EventListener);
     return () => window.removeEventListener('ctf:updated', onCTFUpdated as EventListener);
-  }, [isCTFMode, levelNumber]);
+  }, [isCTFMode, challengeId]);
 
   // Load CTF challenge data when CTF mode is enabled
   useEffect(() => {
     if (isCTFMode) {
-      setCurrentLevel(levelNumber);
-      setFs(getCTFFS(levelNumber, loadedChallenges || undefined));
+      setCurrentChallengeId(challengeId);
+      setFs(getCTFFS(challengeId, loadedChallenges || undefined));
       const availableChallenges = loadedChallenges || challenges;
-      if (availableChallenges[levelNumber]) {
-        setChallengeDescription(availableChallenges[levelNumber].description);
-        setHint(availableChallenges[levelNumber].hint);
+      if (availableChallenges[challengeId]) {
+        setChallengeDescription(availableChallenges[challengeId].description);
+        setHint(availableChallenges[challengeId].hint);
       }
     } else {
-      setCurrentLevel(0);
+      setCurrentChallengeId(0);
       setFs(initialFS);
     }
-  }, [isCTFMode, levelNumber, loadedChallenges]);
+  }, [isCTFMode, challengeId, loadedChallenges]);
 
   // Handle app open requests
   const onAppOpen = useCallback((appId: string, forceNew = false) => {
@@ -150,7 +150,7 @@ function LinuxDesktop() {
 
   // Main desktop UI
   return (
-    <OSContext.Provider value={{ fs, setFs, isCTFMode, currentLevel, setCtfNotification, challenges: loadedChallenges || undefined }}>
+    <OSContext.Provider value={{ fs, setFs, isCTFMode, currentChallengeId, setCtfNotification, challenges: loadedChallenges || undefined }}>
       <div className="linux-page h-screen overflow-hidden relative wallpaper" style={{fontFamily:'Ubuntu, sans-serif'}}>
         {/* System UI Components */}
         <TopBar onAppOpen={onAppOpen} />
@@ -169,7 +169,7 @@ function LinuxDesktop() {
                   <div className="w-2 h-2 bg-[#ff8c42] rounded-full" />
                   <div className="text-left">
                     <p className="text-xs font-semibold text-[#ff8c42]/70 uppercase tracking-wide">Challenge</p>
-                    <h3 className="text-lg font-semibold text-white">Level {currentLevel}</h3>
+                    <h3 className="text-lg font-semibold text-white">Challenge #{currentChallengeId}</h3>
                   </div>
                 </div>
                 <ChevronDown 
@@ -212,7 +212,7 @@ function LinuxDesktop() {
 
                   {/* Submit Button */}
                   <button
-                    onClick={() => navigate(`/game/level/${currentLevel}`)}
+                    onClick={() => navigate(`/game/level/${currentChallengeId}`)}
                     className="w-full mt-2 bg-[#ff8c42] hover:bg-[#ff9500] text-white font-semibold py-2 px-4 rounded transition-colors duration-200"
                   >
                     lab finished - submit flag

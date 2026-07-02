@@ -13,7 +13,7 @@ interface FlagSubmissionPanelProps {
   onSuccess?: () => void;
 }
 
-const FlagSubmissionPanel: React.FC<FlagSubmissionPanelProps> = ({ level, onSuccess }) => {
+const FlagSubmissionPanel: React.FC<FlagSubmissionPanelProps> = ({ level: challengeId, onSuccess }) => {
   const dispatch = useDispatch<AppDispatch>();
   const [flagInput, setFlagInput] = useState<string>('');
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
@@ -45,7 +45,7 @@ const FlagSubmissionPanel: React.FC<FlagSubmissionPanelProps> = ({ level, onSucc
     }
     
     // Add to completed levels
-    dispatch(addCompletedLevel(level));
+    dispatch(addCompletedLevel(challengeId));
 
     // Refetch user data to sync with server
     const refetchUserData = async () => {
@@ -76,7 +76,7 @@ const FlagSubmissionPanel: React.FC<FlagSubmissionPanelProps> = ({ level, onSucc
         window.clearTimeout(successTimeoutRef.current);
       }
     };
-  }, [flagResult, onSuccess, level, dispatch, showSuccess]);
+  }, [flagResult, onSuccess, challengeId, dispatch, showSuccess]);
 
   const handleSubmitFlag = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +85,7 @@ const FlagSubmissionPanel: React.FC<FlagSubmissionPanelProps> = ({ level, onSucc
       return;
     }
 
-    dispatch(verifyFlagSubmission({ level, flag: flagInput }));
+    dispatch(verifyFlagSubmission({ level: challengeId, flag: flagInput }));
   };
 
   const handleClearResult = () => {
@@ -113,7 +113,7 @@ const FlagSubmissionPanel: React.FC<FlagSubmissionPanelProps> = ({ level, onSucc
           </div>
           <div>
             <h2 className="text-sm font-bold font-mono text-neutral-200 tracking-wider uppercase">Submit Captured Flag</h2>
-            <p className="text-[10px] font-mono text-neutral-600 uppercase">Target Node Protocol // Lvl_{level}</p>
+            <p className="text-[10px] font-mono text-neutral-600 uppercase">Target Node Protocol // ID_{challengeId}</p>
           </div>
         </div>
         <div className="hidden sm:flex items-center gap-1.5 font-mono text-[9px] text-neutral-600 bg-neutral-950 px-2 py-1 rounded border border-neutral-900">

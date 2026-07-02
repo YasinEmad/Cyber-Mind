@@ -25,6 +25,7 @@ export interface Challenge {
 }
 
 // ─── CTF CHALLENGES ──────────────────────────────────────────────────────────
+// Keyed by CTFLevel id (DB primary key). These are local fallback values.
 export const challenges: Record<number, Challenge> = {
   1: {
     description: 'Find the hidden file in the Desktop folder that contains the flag.',

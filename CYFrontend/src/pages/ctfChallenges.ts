@@ -14,7 +14,7 @@ interface ChallengeCache {
 let challengeCache: ChallengeCache | null = null;
 let inFlightRequest: Promise<Record<number, Challenge>> | null = null;
 
-function mergeChallenge(level: number, backendChallenge: any, localChallenge: any): Challenge {
+function mergeChallenge(id: number, backendChallenge: any, localChallenge: any): Challenge {
   return {
     description: backendChallenge?.description || localChallenge?.description || '',
     hint:
@@ -24,7 +24,7 @@ function mergeChallenge(level: number, backendChallenge: any, localChallenge: an
       '',
     hints: backendChallenge?.hints || (localChallenge?.hint ? [localChallenge.hint] : []),
     flag: backendChallenge?.flag || localChallenge?.flag || '',
-    title: backendChallenge?.title || `Level ${level}`,
+    title: backendChallenge?.title || `Level`,
     difficulty: backendChallenge?.difficulty || 'easy',
     commands: backendChallenge?.commands || [],
     requiredCommandSequence: backendChallenge?.requiredCommandSequence,
@@ -34,13 +34,13 @@ function mergeChallenge(level: number, backendChallenge: any, localChallenge: an
   };
 }
 
-async function fetchAllChallenges(availableLevels: { level: number }[]): Promise<Record<number, Challenge>> {
+async function fetchAllChallenges(availableLevels: { id: number }[]): Promise<Record<number, Challenge>> {
   const requests = availableLevels.map((levelInfo) =>
     axiosInstance
-      .get(`${API_BASE_URL}/challenge/${levelInfo.level}`)
-      .then((res) => ({ level: levelInfo.level, data: res.data.data }))
+      .get(`${API_BASE_URL}/challenge/${levelInfo.id}`)
+      .then((res) => ({ id: levelInfo.id, data: res.data.data }))
       .catch((err) => {
-        console.error(`Failed to fetch level ${levelInfo.level}:`, err);
+        console.error(`Failed to fetch challenge ${levelInfo.id}:`, err);
         return null;
       })
   );
@@ -50,7 +50,7 @@ async function fetchAllChallenges(availableLevels: { level: number }[]): Promise
 
   for (const result of results) {
     if (result) {
-      merged[result.level] = mergeChallenge(result.level, result.data, localChallenges[result.level]);
+      merged[result.id] = mergeChallenge(result.id, result.data, localChallenges[result.id]);
     }
   }
 
@@ -129,25 +129,25 @@ export function clearChallengeCache(): void {
 /**
  * Preload a specific challenge from backend
  */
-export async function preloadChallenge(level: number): Promise<Challenge> {
+export async function preloadChallenge(id: number): Promise<Challenge> {
   try {
-    const backendResponse = await axiosInstance.get(`${API_BASE_URL}/challenge/${level}`);
+    const backendResponse = await axiosInstance.get(`${API_BASE_URL}/challenge/${id}`);
     const backendChallenge = backendResponse.data.data;
-    const localChallenge = localChallenges[level];
-    const challenge = mergeChallenge(level, backendChallenge, localChallenge);
+    const localChallenge = localChallenges[id];
+    const challenge = mergeChallenge(id, backendChallenge, localChallenge);
 
     if (challengeCache) {
-      challengeCache.data[level] = challenge;
+      challengeCache.data[id] = challenge;
     }
 
     return challenge;
   } catch (error) {
-    console.warn(`Failed to load challenge ${level} from backend, using local fallback:`, error);
-    return localChallenges[level] || {
+    console.warn(`Failed to load challenge ${id} from backend, using local fallback:`, error);
+    return localChallenges[id] || {
       description: '',
       hint: '',
       flag: '',
-      title: `Level ${level}`,
+      title: `Challenge`,
       difficulty: 'easy',
       commands: [],
       requiredCommandSequence: null,

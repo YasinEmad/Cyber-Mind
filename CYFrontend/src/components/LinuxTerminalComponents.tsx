@@ -7,7 +7,7 @@ import { OSContext, OSContextType, TerminalLine, USERNAME, HOSTNAME, VERSION, cr
 export function TerminalApp() {
   const context = useContext(OSContext) as OSContextType;
   if (!context) throw new Error('OSContext not found');
-  const { fs, isCTFMode, currentLevel, challenges } = context;
+  const { fs, isCTFMode, currentChallengeId, challenges } = context;
   const [lines, setLines] = useState<TerminalLine[]>([
     { type: 'output', text: `Ubuntu ${VERSION} (simulated)` },
     { type: 'output', text: `Welcome to Ubuntu! Type 'help' for available commands.` },
@@ -16,8 +16,8 @@ export function TerminalApp() {
   const [input, setInput] = useState('');
   const [histIdx, setHistIdx] = useState(-1);
   const dispatch = useDispatch<AppDispatch>();
-  const ctfExecute = useCallback(async (level: number, command: string, currentPath: string, sessionState: any) => {
-    return dispatch(executeCTFCommand({ level, command, currentPath, sessionState })).unwrap();
+  const ctfExecute = useCallback(async (challengeId: number, command: string, currentPath: string, sessionState: any) => {
+    return dispatch(executeCTFCommand({ level: challengeId, command, currentPath, sessionState })).unwrap();
   }, [dispatch]);
   const engineRef = useRef(createTerminalEngine('/home/user', challenges, ctfExecute));
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -39,8 +39,8 @@ export function TerminalApp() {
 
   const run = async (cmd: string) => {
     const engine = engineRef.current;
-    console.log('Terminal run:', { cmd, isCTFMode, currentLevel });
-    const result = await engine.execute(cmd, isCTFMode, currentLevel);
+    console.log('Terminal run:', { cmd, isCTFMode, currentChallengeId });
+    const result = await engine.execute(cmd, isCTFMode, currentChallengeId);
     if (result.some((r: TerminalLine) => r.type === 'clear')) { setLines([]); }
     else { setLines(prev => [...prev, ...result]); }
     setInput('');
@@ -74,7 +74,7 @@ export function TerminalApp() {
   return (
     <div className="terminal-bg terminal-app h-full flex flex-col terminal-font text-sm" onClick={() => inputRef.current?.focus()}>
       {isCTFMode && (
-        <div className="absolute top-12 right-6 z-50 px-3 py-1 rounded bg-[#d4af37]/10 text-[#d4af37] text-xs font-semibold">CTF mode • Level {currentLevel}</div>
+        <div className="absolute top-12 right-6 z-50 px-3 py-1 rounded bg-[#d4af37]/10 text-[#d4af37] text-xs font-semibold">CTF mode • Challenge #{currentChallengeId}</div>
       )}
       <div className="terminal-output flex-1 overflow-y-auto p-4 space-y-1">
         {lines.map((l, i) => (

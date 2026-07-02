@@ -7,8 +7,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../redux/store';
 import { fetchCTFChallenge } from '../../redux/slices/ctfSlice';
-import ctfInfo from '../../utils/ctfinfo';
-
 interface LevelData {
   title: string;
   description: string;
@@ -19,38 +17,28 @@ const Level: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { levelId } = useParams<{ levelId: string }>();
-  const levelNumber = parseInt(levelId || '1', 10);
+  const challengeId = parseInt(levelId || '1', 10);
 
   const challenge = useSelector((state: RootState) => state.ctf.selectedChallenge);
   const status = useSelector((state: RootState) => state.ctf.challengeStatus);
   const ctfError = useSelector((state: RootState) => state.ctf.error);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  const shouldUseLocalFallback = !challenge && status === 'failed' && ctfError && !/not found/i.test(ctfError);
-  const fallbackData = shouldUseLocalFallback
-    ? ctfInfo.levels.find((l: any) => l.level === levelNumber)
-    : null;
-  const displayChallenge = challenge || (fallbackData ? {
-    title: fallbackData.name,
-    description: fallbackData.description,
-    hints: fallbackData.hints,
-  } : null);
-
   useEffect(() => {
     setLocalError(null);
-    dispatch(fetchCTFChallenge(levelNumber))
+    dispatch(fetchCTFChallenge(challengeId))
       .unwrap()
       .catch((err: string) => setLocalError(err));
-  }, [dispatch, levelNumber]);
+  }, [dispatch, challengeId]);
 
   const startCtf = () => {
-    navigate(`/linux?level=${levelNumber}`);
+    navigate(`/linux?level=${challengeId}`);
   };
 
   const handleFlagSuccess = useCallback(() => {
     // Refresh challenge data to show updated completion status
-    dispatch(fetchCTFChallenge(levelNumber));
-  }, [dispatch, levelNumber]);
+    dispatch(fetchCTFChallenge(challengeId));
+  }, [dispatch, challengeId]);
 
   // Loading State UI
   const isLoading = status === 'loading';
@@ -99,11 +87,11 @@ const Level: React.FC = () => {
               
               <span className="text-[10px] font-mono text-neutral-600 block uppercase tracking-wider mb-1">Mission Objective</span>
               <h1 className="text-2xl font-bold font-mono tracking-wide text-white mb-4">
-                &gt; {displayChallenge?.title}
+                &gt; {challenge?.title}
               </h1>
 
               <p className="text-neutral-400 text-xs leading-relaxed mb-6 font-sans">
-                {displayChallenge?.description}
+                {challenge?.description}
               </p>
 
               {(ctfError || localError) && (
@@ -153,8 +141,8 @@ const Level: React.FC = () => {
                />
 
                <div className="grid grid-cols-1 gap-3 relative z-10">
-                 {displayChallenge?.hints && displayChallenge.hints.length > 0 ? (
-                   displayChallenge.hints.map((hint: string, index: number) => (
+                 {challenge?.hints && challenge.hints.length > 0 ? (
+                   challenge.hints.map((hint: string, index: number) => (
                      <div key={index} className="p-4 border border-neutral-900/70 bg-black/40 rounded-lg backdrop-blur-sm transition-all duration-300 hover:border-neutral-800">
                        <p className="text-[9px] font-mono text-red-500 font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                          <Terminal className="w-3 h-3 text-red-900" />
@@ -177,7 +165,7 @@ const Level: React.FC = () => {
 
         {/* Flag Submission Section Component Integration */}
         <FlagSubmissionPanel 
-          level={levelNumber}
+          level={challengeId}
           onSuccess={handleFlagSuccess}
         />
       </div>

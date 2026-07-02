@@ -4,7 +4,7 @@ const { CTFLevel } = require('../models');
 const difficulties = ['easy', 'medium', 'hard'];
 
 const createCTFSchema = z.object({
-  level: z.number().int().positive('Level must be a positive integer'),
+  order: z.number().int().positive('Order must be a positive integer'),
   title: z.string().min(1, 'Title is required').trim(),
   description: z.string().min(1, 'Description is required').trim(),
   hint: z.union([z.string(), z.array(z.string())]).optional().default([]),
@@ -25,7 +25,7 @@ const createCTFSchema = z.object({
 }).strict();
 
 const updateCTFSchema = z.object({
-  level: z.number().int().positive().optional(),
+  order: z.number().int().positive().optional(),
   title: z.string().min(1).trim().optional(),
   description: z.string().min(1).trim().optional(),
   hint: z.union([z.string(), z.array(z.string())]).optional(),
@@ -51,15 +51,15 @@ exports.getCTFInfo = async (req, res, next) => {
     // Fetch real data from database with all details
     const levels = await CTFLevel.findAll({
       where: { isActive: true },
-      attributes: ['id', 'level', 'title', 'description', 'hint', 'difficulty', 'category'],
-      order: [['category', 'ASC'], ['level', 'ASC']],
+      attributes: ['id', 'order', 'title', 'description', 'hint', 'difficulty', 'category'],
+      order: [['category', 'ASC'], ['order', 'ASC']],
     });
 
     // Map database records to frontend format
     const ctfInfo = {
       levels: levels.map(level => ({
         id: level.id,
-        level: level.level,
+        order: level.order,
         name: level.title,
         description: level.description,
         hints: Array.isArray(level.hint) ? level.hint : [],
@@ -112,16 +112,16 @@ exports.getCTFCategories = async (req, res, next) => {
 // Get a specific CTF level info
 exports.getCTFLevelInfo = async (req, res, next) => {
   try {
-    const { level } = req.params;
+    const { id } = req.params;
     const levelData = await CTFLevel.findOne({
-      where: { level: parseInt(level), isActive: true },
-      attributes: ['id', 'level', 'title', 'description', 'difficulty', 'category'],
+      where: { id: parseInt(id), isActive: true },
+      attributes: ['id', 'order', 'title', 'description', 'difficulty', 'category'],
     });
 
     if (!levelData) {
       return res.status(404).json({
         success: false,
-        message: `CTF level ${level} not found`,
+        message: `CTF level with id ${id} not found`,
       });
     }
 
@@ -129,7 +129,7 @@ exports.getCTFLevelInfo = async (req, res, next) => {
       success: true,
       data: {
         id: levelData.id,
-        level: levelData.level,
+        order: levelData.order,
         name: levelData.title,
         description: levelData.description,
         category: levelData.category,
@@ -144,15 +144,15 @@ exports.getCTFLevelInfo = async (req, res, next) => {
 // Get CTF challenge data (flag, description, hint, commands)
 exports.getCTFChallenge = async (req, res, next) => {
   try {
-    const { level } = req.params;
+    const { id } = req.params;
     const challenge = await CTFLevel.findOne({
-      where: { level: parseInt(level), isActive: true },
+      where: { id: parseInt(id), isActive: true },
     });
 
     if (!challenge) {
       return res.status(404).json({
         success: false,
-        message: `CTF challenge ${level} not found`,
+        message: `CTF challenge with id ${id} not found`,
       });
     }
 
@@ -174,12 +174,14 @@ exports.getCTFChallenge = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: {
-        level: challenge.level,
+        id: challenge.id,
+        order: challenge.order,
         title: challenge.title,
         description: challenge.description,
         hints: challenge.hint,
         // flag: challenge.flag,  // ❌ لا نرسل الـ flag للـ frontend لأسباب أمنية
         difficulty: challenge.difficulty,
+        category: challenge.category,
         commands: allCommands, // for backward compatibility
         templateCommands,
         customCommands,
@@ -196,15 +198,15 @@ exports.getCTFChallenge = async (req, res, next) => {
 // Get challenge with filesystem info (for initialization)
 exports.getCTFChallengeWithFS = async (req, res, next) => {
   try {
-    const { level } = req.params;
+    const { id } = req.params;
     const challenge = await CTFLevel.findOne({
-      where: { level: parseInt(level), isActive: true },
+      where: { id: parseInt(id), isActive: true },
     });
 
     if (!challenge) {
       return res.status(404).json({
         success: false,
-        message: `CTF challenge ${level} not found`,
+        message: `CTF challenge with id ${id} not found`,
       });
     }
 
@@ -226,12 +228,14 @@ exports.getCTFChallengeWithFS = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: {
-        level: challenge.level,
+        id: challenge.id,
+        order: challenge.order,
         title: challenge.title,
         description: challenge.description,
         hints: challenge.hint,
         // flag: challenge.flag,  // ❌ لا نرسل الـ flag للـ frontend لأسباب أمنية
         difficulty: challenge.difficulty,
+        category: challenge.category,
         commands: allCommands, // for backward compatibility
         templateCommands,
         customCommands,
@@ -250,7 +254,7 @@ exports.getCTFChallengeWithFS = async (req, res, next) => {
 exports.getAllCTFLevels = async (req, res, next) => {
   try {
     const levels = await CTFLevel.findAll({
-      order: [['level', 'ASC']],
+      order: [['category', 'ASC'], ['order', 'ASC']],
     });
     res.status(200).json({
       success: true,
@@ -317,16 +321,16 @@ exports.createCTFLevel = async (req, res, next) => {
       finalCommands = Array.isArray(data.commands) ? JSON.parse(JSON.stringify(data.commands)) : [];
     }
 
-    const existingLevel = await CTFLevel.findOne({ where: { level: data.level } });
+    const existingLevel = await CTFLevel.findOne({ where: { category: data.category, order: data.order } });
     if (existingLevel) {
       return res.status(409).json({
         success: false,
-        message: `CTF level ${data.level} already exists`,
+        message: `CTF level with order ${data.order} in category "${data.category}" already exists`,
       });
     }
 
     const newLevel = await CTFLevel.create({
-      level: data.level,
+      order: data.order,
       title: data.title,
       description: data.description,
       hint: normalizedHints,
@@ -394,12 +398,13 @@ exports.updateCTFLevel = async (req, res, next) => {
       data.commands = [];
     }
 
-    if (data.level !== undefined && data.level !== level.level) {
-      const existingLevel = await CTFLevel.findOne({ where: { level: data.level } });
-      if (existingLevel) {
+    if (data.order !== undefined && data.order !== level.order) {
+      const targetCategory = data.category || level.category;
+      const existingLevel = await CTFLevel.findOne({ where: { category: targetCategory, order: data.order } });
+      if (existingLevel && existingLevel.id !== level.id) {
         return res.status(409).json({
           success: false,
-          message: `CTF level ${data.level} already exists`,
+          message: `CTF level with order ${data.order} in category "${targetCategory}" already exists`,
         });
       }
     }
@@ -488,13 +493,13 @@ exports.getAvailableLevels = async (req, res, next) => {
   try {
     const levels = await CTFLevel.findAll({
       where: { isActive: true },
-      attributes: ['id', 'level', 'title', 'description', 'difficulty', 'category'],
-      order: [['category', 'ASC'], ['level', 'ASC']],
+      attributes: ['id', 'order', 'title', 'description', 'difficulty', 'category'],
+      order: [['category', 'ASC'], ['order', 'ASC']],
     });
 
     const availableLevels = levels.map(level => ({
       id: level.id,
-      level: level.level,
+      order: level.order,
       name: level.title,
       description: level.description,
       category: level.category,

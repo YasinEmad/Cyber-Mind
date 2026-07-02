@@ -16,9 +16,14 @@ const CTFLevelCompletion = sequelize.define('CTFLevelCompletion', {
     },
     onDelete: 'CASCADE',
   },
-  level: {
+  ctfLevelId: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    references: {
+      model: 'ctf_levels',
+      key: 'id',
+    },
+    onDelete: 'CASCADE',
   },
   isCompleted: {
     type: DataTypes.BOOLEAN,
@@ -53,9 +58,9 @@ const CTFLevelCompletion = sequelize.define('CTFLevelCompletion', {
   tableName: 'ctf_level_completions',
   timestamps: true,
   indexes: [
-    { fields: ['userId', 'level'], unique: true },
+    { fields: ['userId', 'ctfLevelId'], unique: true },
     { fields: ['userId'] },
-    { fields: ['level'] },
+    { fields: ['ctfLevelId'] },
     { fields: ['isCompleted'] },
   ],
 });

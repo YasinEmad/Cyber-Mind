@@ -42,13 +42,13 @@ router.get('/categories', getCTFCategories);
 router.get('/levels/available', getAvailableLevels);
 
 // Get specific level information
-router.get('/info/:level', getCTFLevelInfo);
+router.get('/info/:id', getCTFLevelInfo);
 
 // Get challenge data for a specific level (without sensitive data exposure)
-router.get('/challenge/:level', getCTFChallenge);
+router.get('/challenge/:id', getCTFChallenge);
 
 // Get challenge with filesystem info for initialization
-router.get('/challenge/:level/fs', getCTFChallengeWithFS);
+router.get('/challenge/:id/fs', getCTFChallengeWithFS);
 
 // Admin routes for CTF level management (authentication required)
 router.get('/admin/levels', authAdmin, getAllCTFLevels);
@@ -69,10 +69,10 @@ router.delete('/templates/:id', authAdmin, deleteCommandTemplate);
 router.post('/execute', protect, executeLimiter, executeCTFCommand);
 
 // Verify flag submission (requires authentication)
-router.post('/verify-flag/:level', protect, flagLimiter, verifyFlag);
+router.post('/verify-flag/:id', protect, flagLimiter, verifyFlag);
 
 // Get user progress for a specific level (requires authentication)
-router.get('/user-progress/:level', protect, getUserLevelProgress);
+router.get('/user-progress/:id', protect, getUserLevelProgress);
 
 // Get all completed levels for user (requires authentication)
 router.get('/user-completed-levels', protect, getUserCompletedLevels);

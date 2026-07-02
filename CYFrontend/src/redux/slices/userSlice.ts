@@ -56,7 +56,7 @@ interface Profile {
   solvedChallenges?: number[];
   solvedCTFLevels?: Array<{
     levelId: number;
-    level: number;
+    order: number;
     title: string;
     difficulty: string;
     pointsAwarded: number;

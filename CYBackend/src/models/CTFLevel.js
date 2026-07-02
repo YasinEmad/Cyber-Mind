@@ -7,10 +7,9 @@ const CTFLevel = sequelize.define('CTFLevel', {
     primaryKey: true,
     autoIncrement: true,
   },
-  level: {
+  order: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    unique: true,
   },
   title: {
     type: DataTypes.STRING,
@@ -85,10 +84,11 @@ const CTFLevel = sequelize.define('CTFLevel', {
   tableName: 'ctf_levels',
   timestamps: true,
   indexes: [
-    { fields: ['level'] },
+    { fields: ['order'] },
     { fields: ['category'] },
     { fields: ['isActive'] },
     { fields: ['difficulty'] },
+    { fields: ['category', 'order'], unique: true },
     { fields: ['category', 'isActive'] },
   ],
 });

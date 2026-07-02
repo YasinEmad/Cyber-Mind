@@ -42,7 +42,7 @@ const Profile = sequelize.define('Profile', {
   solvedCTFLevels: {
     type: DataTypes.JSON,
     defaultValue: [],
-    comment: 'Array of objects with level info: { levelId, level, title, difficulty, pointsAwarded, completedAt }',
+    comment: 'Array of objects with level info: { levelId, order, title, difficulty, pointsAwarded, completedAt }',
   },
   usedHints: {
     type: DataTypes.JSON,

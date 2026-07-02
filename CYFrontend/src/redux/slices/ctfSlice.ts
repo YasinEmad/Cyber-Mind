@@ -2,7 +2,8 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
 import axiosInstance from '@/api/axios'
 
 export interface AvailableLevel {
-  level: number
+  id: number
+  order: number
   name: string
   description: string
   category: string
@@ -10,13 +11,15 @@ export interface AvailableLevel {
 }
 
 export interface CTFChallenge {
-  level: number
+  id: number
+  order: number
   title: string
   description: string
   hints?: string[]
   hint?: string
   // flag?: string  // لا نتلقى الـ flag من الـ frontend لأسباب أمنية
   difficulty: string
+  category?: string
   commands?: any[]
   templateCommands?: any[]
   customCommands?: any[]
@@ -28,7 +31,7 @@ export interface CTFChallenge {
 
 export interface CTFLevelAdmin {
   id: number
-  level: number
+  order: number
   title: string
   description: string
   hints: string[]
@@ -79,7 +82,7 @@ interface FlagVerificationResult {
     globalRank: number
     solvedCTFLevels?: Array<{
       levelId: number
-      level: number
+      order: number
       title: string
       difficulty: string
       pointsAwarded: number
@@ -140,9 +143,9 @@ export const fetchAvailableLevels = createAsyncThunk<AvailableLevel[]>(
 
 export const fetchCTFChallenge = createAsyncThunk<CTFChallenge, number>(
   'ctf/fetchCTFChallenge',
-  async (level, { rejectWithValue }) => {
+  async (id, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get(`ctf/challenge/${level}`)
+      const response = await axiosInstance.get(`ctf/challenge/${id}`)
       return response.data.data
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch challenge')
@@ -178,7 +181,7 @@ export const createCTFLevel = createAsyncThunk<CTFLevelAdmin, any>(
   'ctf/createCTFLevel',
   async (levelData, { rejectWithValue }) => {
     try {
-      const payload = { ...levelData, level: Number((levelData as any).level) };
+      const payload = { ...levelData, order: Number((levelData as any).order) };
       const response = await axiosInstance.post('ctf/admin/levels', payload)
       return response.data.data
     } catch (error: any) {
@@ -191,7 +194,7 @@ export const updateCTFLevel = createAsyncThunk<CTFLevelAdmin, { id: number; leve
   'ctf/updateCTFLevel',
   async ({ id, levelData }, { rejectWithValue }) => {
     try {
-      const payload = { ...levelData, level: Number((levelData as any).level) };
+      const payload = { ...levelData, order: Number((levelData as any).order) };
       const response = await axiosInstance.put(`ctf/admin/levels/${id}`, payload)
       return response.data.data
     } catch (error: any) {
@@ -262,10 +265,10 @@ export const deleteTemplate = createAsyncThunk<number, number>(
 
 export const executeCTFCommand = createAsyncThunk<CTFCommandExecutionResult, { level: number; command: string; currentPath: string; sessionState?: any }>(
   'ctf/executeCTFCommand',
-  async ({ level, command, currentPath, sessionState }, { rejectWithValue }) => {
+  async ({ level: ctfLevelId, command, currentPath, sessionState }, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.post('ctf/execute', {
-        level,
+        level: ctfLevelId,
         command,
         currentPath,
         sessionState: sessionState || {},
@@ -279,9 +282,9 @@ export const executeCTFCommand = createAsyncThunk<CTFCommandExecutionResult, { l
 
 export const verifyFlagSubmission = createAsyncThunk<FlagVerificationResult, { level: number; flag: string }>(
   'ctf/verifyFlagSubmission',
-  async ({ level, flag }, { rejectWithValue }) => {
+  async ({ level: ctfLevelId, flag }, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.post(`ctf/verify-flag/${level}`, { level, flag })
+      const response = await axiosInstance.post(`ctf/verify-flag/${ctfLevelId}`, { level: ctfLevelId, flag })
       return response.data
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || error.message || 'Failed to verify flag')
@@ -317,15 +320,15 @@ const slice = createSlice({
       if (solvedCTFLevels.length > 0) {
         const completed = [...new Set(
           solvedCTFLevels
-            .map((level) => Number(level.level))
+            .map((item) => Number(item.levelId))
             .filter((n) => !Number.isNaN(n))
         )];
 
         state.completedLevels = completed;
         state.userProgress = solvedCTFLevels.reduce((progress, item) => {
-          const levelNum = Number(item.level);
-          if (!Number.isNaN(levelNum)) {
-            progress[levelNum] = {
+          const levelId = Number(item.levelId);
+          if (!Number.isNaN(levelId)) {
+            progress[levelId] = {
               isCompleted: true,
               attempts: item.attempts || 1,
               pointsAwarded: item.pointsAwarded || 0,
@@ -335,7 +338,7 @@ const slice = createSlice({
           return progress;
         }, {} as typeof state.userProgress);
       } else if (solvedChallenges.length > 0) {
-        state.completedLevels = [...new Set(solvedChallenges.map((level) => Number(level)).filter((n) => !Number.isNaN(n)))];
+        state.completedLevels = [...new Set(solvedChallenges.map((id) => Number(id)).filter((n) => !Number.isNaN(n)))];
       }
     },
   },
@@ -448,22 +451,22 @@ const slice = createSlice({
         
         // Update completed levels and user progress when flag is correct
         if (action.payload.isCorrect && action.payload.isCompleted) {
-          const levelNum = state.selectedChallenge?.level
+          const challengeId = state.selectedChallenge?.id
           
           // Update from backend response (most reliable)
           if (action.payload.completedLevels) {
             state.completedLevels = action.payload.completedLevels
-          } else if (levelNum && !state.completedLevels.includes(levelNum)) {
+          } else if (challengeId && !state.completedLevels.includes(challengeId)) {
             // Fallback: add current level if backend didn't provide full list
-            state.completedLevels.push(levelNum)
+            state.completedLevels.push(challengeId)
           }
           
           // Update user progress with backend data
           if (action.payload.userProgress) {
             state.userProgress = action.payload.userProgress
-          } else if (levelNum) {
+          } else if (challengeId) {
             // Fallback: update just current level
-            state.userProgress[levelNum] = {
+            state.userProgress[challengeId] = {
               isCompleted: true,
               attempts: action.payload.attempts || 1,
               pointsAwarded: action.payload.pointsAwarded || 0,
