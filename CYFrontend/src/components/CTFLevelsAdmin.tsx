@@ -12,6 +12,7 @@ import {
 import { clearChallengeCache } from '../pages/ctfChallenges';
 import { Plus, Edit, Trash2, Eye, EyeOff, Search } from 'lucide-react';
 import CommandTemplatesAdmin from './CommandTemplatesAdmin';
+import DeleteAlert from './DeleteAlert';
 
 interface CTFLevel {
   id: number;
@@ -68,6 +69,9 @@ const CTFLevelsAdmin: React.FC = () => {
   const [debugJson, setDebugJson] = useState('');
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [templateCommands, setTemplateCommands] = useState<TemplateCommand[]>([]);
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [levelToDelete, setLevelToDelete] = useState<{ id: number; title: string } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const templateOutputRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
   const customOutputRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
   const [formData, setFormData] = useState({
@@ -191,16 +195,26 @@ const CTFLevelsAdmin: React.FC = () => {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this CTF level?')) {
-      try {
-        await dispatch(deleteCTFLevel(id)).unwrap();
-        clearChallengeCache();
-        window.dispatchEvent(new Event('ctf:updated'));
-        await loadLevels();
-      } catch (error) {
-        console.error('Error deleting CTF level:', error);
-      }
+  const handleDelete = (id: number, title: string) => {
+    setLevelToDelete({ id, title });
+    setShowDeleteAlert(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!levelToDelete) return;
+    
+    setDeleteLoading(true);
+    try {
+      await dispatch(deleteCTFLevel(levelToDelete.id)).unwrap();
+      clearChallengeCache();
+      window.dispatchEvent(new Event('ctf:updated'));
+      await loadLevels();
+      setShowDeleteAlert(false);
+      setLevelToDelete(null);
+    } catch (error) {
+      console.error('Error deleting CTF level:', error);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -892,7 +906,7 @@ const CTFLevelsAdmin: React.FC = () => {
                         {level.isActive ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                       <button
-                        onClick={() => handleDelete(level.id)}
+                        onClick={() => handleDelete(level.id, level.title)}
                         className="text-red-400 hover:text-red-300"
                         title="Delete"
                       >
@@ -912,6 +926,21 @@ const CTFLevelsAdmin: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Alert */}
+      {showDeleteAlert && levelToDelete && (
+        <DeleteAlert
+          title="Delete CTF Level"
+          itemName={levelToDelete.title}
+          message={`Are you sure you want to delete the CTF level "${levelToDelete.title}"? This action cannot be undone.`}
+          onConfirm={confirmDelete}
+          onCancel={() => {
+            setShowDeleteAlert(false);
+            setLevelToDelete(null);
+          }}
+          isLoading={deleteLoading}
+        />
+      )}
     </div>
   );
 };

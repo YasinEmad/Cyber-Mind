@@ -68,14 +68,20 @@ export function createTerminalEngine(
             return err(String(resp.output));
           }
         } catch (e: any) {
-          // Show detailed error when available to help debugging
+          console.log('CTF execute error:', e);
+          let msg = 'Execution failed';
           try {
-            const msg = e?.response?.data?.message || e?.response?.data?.output || e?.message || 'Execution failed';
-            console.log('CTF execute error:', e);
-            return err(String(msg));
-          } catch (inner) {
-            return err('Execution failed');
-          }
+            if (typeof e === 'string') {
+              msg = e;
+            } else if (e?.response?.data?.message) {
+              msg = e.response.data.message;
+            } else if (e?.response?.data?.output) {
+              msg = e.response.data.output;
+            } else if (e?.message) {
+              msg = e.message;
+            }
+          } catch (_) {}
+          return err(msg);
         }
       }
 

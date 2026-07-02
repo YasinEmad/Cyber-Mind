@@ -24,6 +24,14 @@ const calculatePoints = (difficulty) => {
  * 3. Return highest scoring command
  * 4. Deterministic: ties broken by first occurrence
  */
+// Helper: Normalize path for comparison (remove trailing slashes, trim whitespace)
+const normalizePath = (path) => {
+  if (!path) return '';
+  return String(path)
+    .trim()
+    .replace(/\/+$/, '') || '/'; // Remove trailing slashes, but keep root '/'
+};
+
 const resolveContextAwareCommand = (candidates, cmdName, currentPath, fullCommand = null) => {
   if (!Array.isArray(candidates) || candidates.length === 0) {
     return null;
@@ -44,33 +52,40 @@ const resolveContextAwareCommand = (candidates, cmdName, currentPath, fullComman
     return null;
   }
 
-  // If only one match, return it
+  const cwd = normalizePath(currentPath || '/home/user');
+
+  // If only one match, check if it would pass permission check
   if (nameMatches.length === 1) {
+    if (wouldDenyAccess(nameMatches[0], cwd)) return null;
     return nameMatches[0];
   }
 
   // Score each match based on path context
-  const cwd = String(currentPath || '/home/user').trim();
   const scored = nameMatches.map((cmd, idx) => {
     let score = 0;
     
     // Rule 1: Exact match in outputByPath (highest priority, +100)
     if (cmd.outputByPath && typeof cmd.outputByPath === 'object') {
-      if (cmd.outputByPath.hasOwnProperty(cwd)) {
+      // Normalize keys in outputByPath for comparison
+      const normalizedOutputByPath = {};
+      for (const [key, value] of Object.entries(cmd.outputByPath)) {
+        normalizedOutputByPath[normalizePath(key)] = value;
+      }
+      if (normalizedOutputByPath.hasOwnProperty(cwd)) {
         score += 100;
       }
     }
     
     // Rule 2: Path in allowedPaths (+50)
     if (Array.isArray(cmd.allowedPaths) && cmd.allowedPaths.length > 0) {
-      if (cmd.allowedPaths.some((p) => p === cwd)) {
+      if (cmd.allowedPaths.some((p) => normalizePath(p) === cwd)) {
         score += 50;
       }
     }
     
     // Rule 3: Path in blockedPaths (-100)
     if (Array.isArray(cmd.blockedPaths) && cmd.blockedPaths.length > 0) {
-      if (cmd.blockedPaths.some((p) => p === cwd)) {
+      if (cmd.blockedPaths.some((p) => normalizePath(p) === cwd)) {
         score -= 100;
       }
     }
@@ -94,7 +109,18 @@ const resolveContextAwareCommand = (candidates, cmdName, currentPath, fullComman
     selected: scored[0].cmd.name,
   });
 
+  // If best candidate would fail the permission check, return null to fall through
+  if (wouldDenyAccess(scored[0].cmd, cwd)) return null;
+
   return scored[0].cmd;
+};
+
+// Returns true if the command's allowedPaths would deny access at cwd
+const wouldDenyAccess = (cmd, cwd) => {
+  const allowedPaths = Array.isArray(cmd.allowedPaths) ? cmd.allowedPaths : null;
+  if (!allowedPaths || allowedPaths.length === 0) return false;
+  if (allowedPaths.includes('Anywhere')) return false;
+  return !allowedPaths.some((p) => normalizePath(p) === cwd);
 };
 
 // Execute a command for a given level (path-aware)
@@ -257,7 +283,7 @@ exports.executeCTFCommand = async (req, res, next) => {
     const blocked = Array.isArray(matched.blockedPaths) ? matched.blockedPaths : undefined;
     // IMPORTANT: Use currentPath sent from Frontend, not a cached/old path
     // This is critical for proper permission checks after `cd` command
-    const cwdForValidation = currentPath || lvl.initialDirectory || '/home/user';
+    const cwdForValidation = normalizePath(currentPath || lvl.initialDirectory || '/home/user');
 
     console.debug('CTF execute - permission validation', {
       command: cmdName,
@@ -269,7 +295,7 @@ exports.executeCTFCommand = async (req, res, next) => {
 
     // Blocked takes precedence - check if current path is exactly blocked
     if (Array.isArray(blocked) && blocked.length > 0) {
-      const isBlocked = blocked.some((p) => cwdForValidation === p);
+      const isBlocked = blocked.some((p) => normalizePath(p) === cwdForValidation);
       if (isBlocked) {
         console.warn('CTF execute - PERMISSION DENIED (path is blocked)', {
           command: cmdName,
@@ -282,7 +308,7 @@ exports.executeCTFCommand = async (req, res, next) => {
 
     // If allowedPaths is specified, check if current path is exactly allowed
     if (Array.isArray(allowed) && allowed.length > 0) {
-      const isAllowed = allowed.some((p) => cwdForValidation === p);
+      const isAllowed = allowed.some((p) => normalizePath(p) === cwdForValidation);
       if (!isAllowed) {
         console.warn('CTF execute - PERMISSION DENIED (path not in allowed list)', {
           command: cmdName,
@@ -301,16 +327,20 @@ exports.executeCTFCommand = async (req, res, next) => {
      * 3. Fall back to output (for backward compatibility)
      */
     let outVal = '';
-    const cwdForOutput = currentPath || lvl.initialDirectory || '/home/user';
+    const cwdForOutput = normalizePath(currentPath || lvl.initialDirectory || '/home/user');
     
     // Rule 1: Try outputByPath[currentPath]
     if (matched.outputByPath && typeof matched.outputByPath === 'object') {
-      if (matched.outputByPath.hasOwnProperty(cwdForOutput)) {
-        outVal = matched.outputByPath[cwdForOutput];
-        console.debug('CTF execute - output resolved from outputByPath', {
-          path: cwdForOutput,
-          outputLength: String(outVal).length,
-        });
+      // Normalize all keys for comparison
+      for (const [key, value] of Object.entries(matched.outputByPath)) {
+        if (normalizePath(key) === cwdForOutput) {
+          outVal = value;
+          console.debug('CTF execute - output resolved from outputByPath', {
+            path: cwdForOutput,
+            outputLength: String(outVal).length,
+          });
+          break;
+        }
       }
     }
     
@@ -343,6 +373,8 @@ exports.executeCTFCommand = async (req, res, next) => {
     // Passed validation — return configured output
     return res.status(200).json({ success: true, output: outVal });
   } catch (error) {
+    console.error('CTF execute - UNCAUGHT ERROR:', error.message);
+    console.error(error.stack);
     next(error);
   }
 };
@@ -550,6 +582,8 @@ exports.verifyFlag = async (req, res, next) => {
       });
     }
   } catch (error) {
+    console.error('CTF verifyFlag - UNCAUGHT ERROR:', error.message);
+    console.error(error.stack);
     next(error);
   }
 };
@@ -581,7 +615,9 @@ exports.getUserLevelProgress = async (req, res, next) => {
         completedAt: null,
       },
     });
-  } catch (error) {
+    } catch (error) {
+    console.error('CTF getUserLevelProgress - UNCAUGHT ERROR:', error.message);
+    console.error(error.stack);
     next(error);
   }
 };
@@ -609,6 +645,8 @@ exports.getUserCompletedLevels = async (req, res, next) => {
       data: completions,
     });
   } catch (error) {
+    console.error('CTF getUserCompletedLevels - UNCAUGHT ERROR:', error.message);
+    console.error(error.stack);
     next(error);
   }
 };
